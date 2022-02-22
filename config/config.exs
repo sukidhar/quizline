@@ -27,7 +27,7 @@ config :bolt_sips, Bolt,
 
 # Configures the endpoint
 config :quizline, QuizlineWeb.Endpoint,
-  url: [host: "localhost"],
+  url: [host: "lvh.me"],
   render_errors: [view: QuizlineWeb.ErrorView, accepts: ~w(html json), layout: false],
   pubsub_server: Quizline.PubSub,
   live_view: [signing_salt: "mBd/Y27G"]
