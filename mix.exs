@@ -50,7 +50,6 @@ defmodule Quizline.MixProject do
       {:phoenix_ecto, "~> 4.0"},
       {:guardian, "~> 2.0"},
       {:argon2_elixir, "~> 3.0"},
-      {:phx_gen_tailwind, "~> 0.1.3", only: :dev},
       {:email_checker, "~> 0.2.4"}
     ]
   end
