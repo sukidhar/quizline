@@ -10,11 +10,11 @@ defmodule QuizlineWeb.AdminAuthLive do
     {:ok, assign(socket, changeset: changeset)}
   end
 
-  def handle_event("validate", %{"admin" => admin_params} = var, socket) do
+  def handle_event("validate", %{"admin" => admin_params}, socket) do
     changeset =
       %Admin{}
       |> AdminManager.registration_change_admin(admin_params)
-      |> Map.put(:action, :validate)
+      |> Map.put(:action, :insert)
 
     {:noreply, assign(socket, changeset: changeset)}
   end

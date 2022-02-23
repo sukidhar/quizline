@@ -1,6 +1,7 @@
 defmodule QuizlineWeb.InputHelper do
   use Phoenix.HTML
   import Phoenix.HTML.Form
+  import QuizlineWeb.ErrorHelpers
 
   def floating_input(form, field, opts \\ []) do
     type = Phoenix.HTML.Form.input_type(form, field)
@@ -38,28 +39,35 @@ defmodule QuizlineWeb.InputHelper do
       class: Enum.join(["floating-input"] ++ (Keyword.get(opts, :wrapper) || []), " ")
     ]
 
-    label_opts =
-      if form.errors[field],
-        do: label_opts ++ ["text-error-content"],
-        else: label_opts ++ ["text-primary-content"]
+    error_tag = error_tag(form, field)
 
-    input_opts =
-      if form.errors[field],
-        do: input_opts ++ ["border-error"],
-        else: input_opts ++ ["border-gray-200"]
+    # label_opts =
+    #   if form.errors[field],
+    #     do: label_opts ++ ["text-error-content"],
+    #     else: label_opts ++ ["text-primary-content"]
+
+    # input_opts =
+    #   if form.errors[field],
+    #     do: input_opts ++ ["border-error"],
+    #     else: input_opts ++ ["border-gray-200"]
 
     input_opts = [
       class: Enum.join(input_opts, " "),
       placeholder: humanize(field),
-      phx_debounce: "blur"
+      phx_debounce: "blur",
+      id: "DOM-input-#{field}"
     ]
 
-    label_opts = [class: Enum.join(label_opts, " ")]
+    label_opts = [
+      class: Enum.join(label_opts, " "),
+      id: "DOM-label-#{field}"
+    ]
 
     content_tag :div, wrapper_opts do
       [
         apply(Phoenix.HTML.Form, type, [form, field, input_opts]),
-        label(form, field, humanize(field), label_opts)
+        label(form, field, humanize(field), label_opts),
+        error_tag
       ]
     end
   end
