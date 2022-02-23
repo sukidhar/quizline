@@ -7,4 +7,8 @@ defmodule Quizline.AdminManager do
     |> Admin.registration_changeset(attrs)
     |> create(:admin)
   end
+
+  def registration_change_admin(%Admin{} = admin, attrs \\ %{}) do
+    Admin.registration_changeset(admin, attrs)
+  end
 end

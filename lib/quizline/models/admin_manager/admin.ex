@@ -39,7 +39,7 @@ defmodule Quizline.AdminManager.Admin do
 
   defp set_uuid(changeset), do: changeset
 
-  defp validate_email(%Changeset{valid?: true, changes: %{email: email}} = changeset) do
+  defp validate_email(%Changeset{changes: %{email: email}} = changeset) do
     case EmailChecker.valid?(email) do
       true ->
         changeset
@@ -53,7 +53,6 @@ defmodule Quizline.AdminManager.Admin do
 
   defp hash_password(
          %Changeset{
-           valid?: true,
            changes: %{password: password, confirm_password: confirm_password}
          } = changeset
        ) do
@@ -66,4 +65,6 @@ defmodule Quizline.AdminManager.Admin do
       |> add_error(:confirm_password, "passwords doesn't match")
     end
   end
+
+  defp hash_password(changeset), do: changeset
 end

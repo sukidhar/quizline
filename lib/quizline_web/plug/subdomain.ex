@@ -14,8 +14,7 @@ defmodule QuizlineWeb.Plug.Subdomain do
         |> router.call(router.init({}))
         |> halt
 
-      p ->
-        IO.inspect(p)
+      _ ->
         conn
     end
   end

@@ -1,6 +1,14 @@
 <div>
-    <div class="navbar bg-base-100">
-        <a class="btn btn-ghost normal-case text-xl">Quizline</a>
+    <div class="absolute navbar bg-base-100">
+        <p class="btn btn-ghost normal-case font-semibold text-xl">Quizline</p>
     </div>
-    
+    <div class="flex flex-col relative justify-center items-start h-screen w-1/2 p-20">
+        <p class="text-3xl font-bold text-primary-content mb-5">
+            Create a new account
+        </p>
+        <.form let = {f} for={@changeset} id="signup_form", class="w-4/5 space-y-7", phx-change="validate">
+            <%= floating_input f, :email, wrapper: ["relative w-full"] %>
+        </.form>
+    </div>
 </div>
+
