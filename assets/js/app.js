@@ -58,17 +58,9 @@ Hooks.error = {
     label = document.getElementById(
       "DOM-label-" + getFieldTypeFromError(this.el.id)
     );
+
     if (input && label) {
-      if (this.el.classList.contains("phx-no-feedback")) {
-        if (input.classList.contains("border-error")) {
-          input.classList.remove("border-error");
-        }
-        input.classList.add("border-gray-200");
-        if (label.classList.contains("text-error-content")) {
-          label.classList.remove("text-error-content");
-        }
-        label.classList.add("text-primary-content");
-      } else if (this.el.classList.contains("invalid-feedback")) {
+      if (this.el.classList.contains("invalid-feedback")) {
         console.log("should still show");
         if (input.classList.contains("border-gray-200")) {
           input.classList.remove("border-gray-200");
@@ -78,6 +70,18 @@ Hooks.error = {
           label.classList.remove("text-primary-content");
         }
         label.classList.add("text-error-content");
+      } else if (
+        this.el.classList.contains("phx-no-feedback") &&
+        !this.el.classList.contains("force-error")
+      ) {
+        if (input.classList.contains("border-error")) {
+          input.classList.remove("border-error");
+        }
+        input.classList.add("border-gray-200");
+        if (label.classList.contains("text-error-content")) {
+          label.classList.remove("text-error-content");
+        }
+        label.classList.add("text-primary-content");
       }
     }
   },

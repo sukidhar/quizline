@@ -8,14 +8,25 @@ defmodule QuizlineWeb.ErrorHelpers do
   @doc """
   Generates tag for inlined form input errors.
   """
-  def error_tag(form, field) do
+  def error_tag(form, field, force_show_error \\ false) do
+    IO.inspect(Keyword.get_values(form.errors, field))
+
     Enum.map(Keyword.get_values(form.errors, field), fn error ->
-      content_tag(:span, translate_error(error),
-        class: "invalid-feedback",
+      opts = [
+        class:
+          "invalid-feedback px-1 text-error-content text-sm#{if force_show_error, do: " forcee-error", else: ""}",
         id: "DOM-error-#{field}",
-        phx_hook: "error",
-        phx_feedback_for: input_name(form, field)
-      )
+        phx_hook: "error"
+      ]
+
+      opts =
+        if force_show_error,
+          do: Keyword.put(opts, :phx_feedback_for, input_name(form, field)),
+          else: opts
+
+      IO.inspect(opts)
+
+      content_tag(:span, translate_error(error), opts)
     end)
   end
 

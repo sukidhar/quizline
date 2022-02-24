@@ -6,11 +6,15 @@
         <p class="text-3xl font-bold text-primary-content mb-5">
             Create a new account
         </p>
-        <.form let = {f} for={@changeset} id="signup_form", class="w-4/5 space-y-7", phx-change="validate">
-            <%= floating_input f, :first_name, wrapper: ["relative mb-5"] %>
-            <%= floating_input f, :last_name, wrapper: ["relative mb-5"] %>
-            <%= floating_input f, :email, wrapper: ["relative mb-5"] %>
+        <.form let = {f} for={@changeset} id="signup_form", class="w-4/5 space-y-7 mb-10", phx-change="validate">
+            <%= floating_input f, :first_name, wrapper: ["relative mb-5"], show_error: @force_errors %>
+            <%= floating_input f, :last_name, wrapper: ["relative mb-5"], show_error: @force_errors %>
+            <%= floating_input f, :email, wrapper: ["relative mb-5"], show_error: @force_errors %>
+            <%= @force_errors %>
         </.form>
+        <button class="btn" phx-click="next-step">
+            continue
+        </button>
     </div>
 </div>
 

@@ -45,7 +45,7 @@ defmodule Quizline.AdminManager.Admin do
         changeset
 
       false ->
-        changeset |> add_error(:email, "invalid_format")
+        changeset |> add_error(:email, "please, ensure if the entered email is invalid")
     end
   end
 
@@ -62,7 +62,7 @@ defmodule Quizline.AdminManager.Admin do
       |> delete_change(:confirm_password)
     else
       changeset
-      |> add_error(:confirm_password, "passwords doesn't match")
+      |> add_error(:confirm_password, "passwords entered doesn't match")
     end
   end
 
