@@ -41,12 +41,21 @@ defmodule QuizlineWeb.InputHelpers do
 
     error_tag = error_tag(form, field)
 
-    input_opts = [
-      class: Enum.join(input_opts, " "),
-      placeholder: humanize(field),
-      phx_debounce: "blur",
-      id: "DOM-input-#{field}"
-    ]
+    input_opts =
+      [
+        class: Enum.join(input_opts, " "),
+        placeholder: humanize(field),
+        phx_debounce: "blur",
+        id: "DOM-input-#{field}"
+      ] ++
+        if field == :password,
+          do: [value: Phoenix.HTML.Form.input_value(form, :password)],
+          else:
+            [] ++
+              if(field == :confirm_password,
+                do: [value: Phoenix.HTML.Form.input_value(form, :confirm_password)],
+                else: []
+              )
 
     label_opts = [
       class: Enum.join(label_opts, " "),

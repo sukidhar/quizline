@@ -1,9 +1,9 @@
 <div class="font-sans">
     <div class="absolute navbar bg-base-100">
-        <a class="btn btn-ghost normal-case text-xl">Quizline</a>
+        <button class="btn btn-ghost normal-case text-xl">Quizline</button>
     </div>
     <div class="flex flex-col relative justify-center items-start h-screen w-2/3 p-20">
-        <p class="text-5xl font-bold text-primary-content mb-5">
+        <p class="text-5xl font-bold text-base-content mb-5">
             Create a new account
         </p>
         <.form let = {f} for={@changeset} id="signup_form", class="w-4/5 space-y-10" phx-change="validate" phx-submit="submit">
@@ -14,9 +14,9 @@
             <%= floating_input f, :email, wrapper: ["relative "] %>
             <div class="flex flex-row space-x-5 w-full">
                 <%= floating_input f, :password, wrapper: ["relative flex-grow"] %>
-                <%= floating_input f, :confirm_password, wrapper: ["relative flex-grow"] %>
+                <%= floating_input f, :confirm_password,  wrapper: ["relative flex-grow"] %>
             </div>
-            <button type="submit" class="btn normal-case">Continue</button>
+            <button type="submit" class="btn btn-outline btn-primary">Continue</button>
         </.form>
     </div>
 </div>

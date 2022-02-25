@@ -12,11 +12,19 @@ defmodule Quizline.AdminManager.Admin do
     field(:confirm_password, :string)
     field(:uid, :string)
     field(:created_at, :string)
+    field(:hashed_password, :string)
   end
 
   def registration_changeset(admin, attrs) do
     admin
-    |> cast(attrs, [:first_name, :last_name, :email, :password, :confirm_password])
+    |> cast(attrs, [
+      :first_name,
+      :last_name,
+      :email,
+      :password,
+      :confirm_password,
+      :hashed_password
+    ])
     |> validate_required([:first_name, :last_name, :email, :password, :confirm_password])
     |> set_uuid()
     |> validate_email()
@@ -58,8 +66,7 @@ defmodule Quizline.AdminManager.Admin do
        ) do
     if password === confirm_password do
       changeset
-      |> put_change(:password, Argon2.hash_pwd_salt(password))
-      |> delete_change(:confirm_password)
+      |> put_change(:hashed_password, Argon2.hash_pwd_salt(password))
     else
       changeset
       |> add_error(:confirm_password, "passwords entered doesn't match")
