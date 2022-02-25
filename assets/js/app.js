@@ -52,6 +52,7 @@ window.liveSocket = liveSocket;
 
 Hooks.error = {
   mounted() {
+    console.log("called by" + this.el.id);
     input = document.getElementById(
       "DOM-input-" + getFieldTypeFromError(this.el.id)
     );
@@ -60,20 +61,7 @@ Hooks.error = {
     );
 
     if (input && label) {
-      if (this.el.classList.contains("invalid-feedback")) {
-        console.log("should still show");
-        if (input.classList.contains("border-gray-200")) {
-          input.classList.remove("border-gray-200");
-        }
-        input.classList.add("border-error");
-        if (label.classList.contains("text-primary-content")) {
-          label.classList.remove("text-primary-content");
-        }
-        label.classList.add("text-error-content");
-      } else if (
-        this.el.classList.contains("phx-no-feedback") &&
-        !this.el.classList.contains("force-error")
-      ) {
+      if (this.el.classList.contains("phx-no-feedback")) {
         if (input.classList.contains("border-error")) {
           input.classList.remove("border-error");
         }
@@ -82,8 +70,20 @@ Hooks.error = {
           label.classList.remove("text-error-content");
         }
         label.classList.add("text-primary-content");
+      } else if (this.el.classList.contains("invalid-feedback")) {
+        if (input.classList.contains("border-gray-200")) {
+          input.classList.remove("border-gray-200");
+        }
+        input.classList.add("border-error");
+        if (label.classList.contains("text-primary-content")) {
+          label.classList.remove("text-primary-content");
+        }
+        label.classList.add("text-error-content");
       }
     }
+  },
+  updated() {
+    console.log(this.el);
   },
 };
 

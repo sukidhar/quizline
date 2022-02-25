@@ -1,11 +1,9 @@
-defmodule QuizlineWeb.InputHelper do
+defmodule QuizlineWeb.InputHelpers do
   use Phoenix.HTML
-  import Phoenix.HTML.Form
   import QuizlineWeb.ErrorHelpers
 
   def floating_input(form, field, opts \\ []) do
     type = Phoenix.HTML.Form.input_type(form, field)
-    should_force_error = Keyword.get(opts, :show_error) || false
 
     input_opts =
       [
@@ -28,6 +26,7 @@ defmodule QuizlineWeb.InputHelper do
         "px-3",
         "py-5",
         "h-full",
+        "text-gray-400",
         "pointer-events-none",
         "transform ",
         "origin-left",
@@ -40,18 +39,17 @@ defmodule QuizlineWeb.InputHelper do
       class: Enum.join(["floating-input"] ++ (Keyword.get(opts, :wrapper) || []), " ")
     ]
 
-    error_tag = error_tag(form, field, should_force_error)
-    IO.inspect(form)
+    error_tag = error_tag(form, field)
 
     input_opts = [
-      class: Enum.join(input_opts, " ") <> "#{if should_force_error, do: " force-error"}",
+      class: Enum.join(input_opts, " "),
       placeholder: humanize(field),
       phx_debounce: "blur",
       id: "DOM-input-#{field}"
     ]
 
     label_opts = [
-      class: Enum.join(label_opts, " ") <> "#{if should_force_error, do: " force-error"}",
+      class: Enum.join(label_opts, " "),
       id: "DOM-label-#{field}"
     ]
 

@@ -17,7 +17,7 @@ defmodule QuizlineWeb.Router do
   scope "/", QuizlineWeb do
     pipe_through :browser
 
-    live "/", AdminAuthLive
+    live "/", AdminAuth.AuthLive
   end
 
   # Other scopes may use custom stacks.
