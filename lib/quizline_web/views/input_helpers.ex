@@ -15,7 +15,8 @@ defmodule QuizlineWeb.InputHelpers do
         "peer",
         "h-16",
         "p-3",
-        "w-full"
+        "w-full",
+        "text-primary-content"
       ] ++ (Keyword.get(opts, :input) || [])
 
     label_opts =

@@ -19,6 +19,8 @@ config :email_checker,
   smtp_retries: 2,
   timeout_milliseconds: :infinity
 
+config :quizline, Necto, modules: [admin: Quizline.AdminManager.Admin]
+
 # configures neo4j database connection
 config :bolt_sips, Bolt,
   url: "bolt://localhost:7687",
