@@ -7,7 +7,7 @@ defmodule Quizline.AdminManager.AdminEmailer do
     email =
       new()
       |> to(recipient)
-      |> from({"MyApp", "sukidhar@gmail.com"})
+      |> from({"Quizline", "sukidhar@gmail.com"})
       |> subject(subject)
       |> text_body(body)
 
