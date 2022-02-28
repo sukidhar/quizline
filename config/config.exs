@@ -43,6 +43,8 @@ config :quizline, QuizlineWeb.Endpoint,
 # at the `config/runtime.exs`.
 config :quizline, Quizline.Mailer, adapter: Swoosh.Adapters.Local
 
+config :swoosh, :api_client, Swoosh.ApiClient.Finch
+
 # Swoosh API client is needed for adapters other than SMTP.
 config :swoosh, :api_client, false
 

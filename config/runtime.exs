@@ -12,6 +12,15 @@ if System.get_env("PHX_SERVER") && System.get_env("RELEASE_NAME") do
   config :quizline, QuizlineWeb.Endpoint, server: true
 end
 
+if config_env() == :prod or config_env() == :dev do
+  # Configuring the mailer
+  config :quizline, Quizline.Mailer,
+    adapter: Swoosh.Adapters.Sendgrid,
+    api_key: "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"
+
+  config :swoosh, :api_client, Swoosh.ApiClient.Finch
+end
+
 if config_env() == :prod do
   # The secret key base is used to sign/encrypt cookies and other secrets.
   # A default value is used in config/dev.exs and config/test.exs but you

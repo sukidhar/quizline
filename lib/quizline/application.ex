@@ -15,7 +15,9 @@ defmodule Quizline.Application do
       # Start the Endpoint (http/https)
       QuizlineWeb.Endpoint,
       # db connection supervisor
-      {Bolt.Sips, Application.get_env(:bolt_sips, Bolt)}
+      {Bolt.Sips, Application.get_env(:bolt_sips, Bolt)},
+      # mailer
+      {Finch, name: Swoosh.Finch}
     ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html

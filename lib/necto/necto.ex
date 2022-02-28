@@ -8,13 +8,17 @@ defmodule Necto do
 
     conn = Sips.conn()
 
-    with {:fetch, {:ok, data}} <-
-           {:fetch,
-            Sips.query!(conn, query)
-            |> structify_response(label)} do
-      {:ok, data}
-    else
-      {:fetch, {:error, reason}} -> {:error, changeset, [reason: reason]}
+    try do
+      with {:fetch, {:ok, data}} <-
+             {:fetch,
+              Sips.query!(conn, query)
+              |> structify_response(label)} do
+        {:ok, data}
+      else
+        {:fetch, {:error, reason}} -> {:error, changeset, [reason: reason]}
+      end
+    rescue
+      e -> {:error, e.message}
     end
   end
 
@@ -30,14 +34,12 @@ defmodule Necto do
 
   defp structify_response(response, label) do
     with {:fetch, [{^label, struct}]} <- {:fetch, Application.get_env(:quizline, Necto)[:modules]} do
-      data = Kernel.struct!(struct, [])
+      data =
+        Enum.map(response.results, fn res ->
+          Kernel.struct!(struct, convert_to_klist(res["n"].properties))
+        end)
 
-      Enum.map(response.results, fn res ->
-        IO.inspect(convert_to_klist(res["n"].properties)[:email])
-      end)
-
-      IO.inspect(data)
-      {:ok, data}
+      {:ok, List.first(data) || Kernel.struct!(struct, [])}
     else
       {:fetch, _} -> {:error, "Struct Module not mentioned in config.exs"}
     end

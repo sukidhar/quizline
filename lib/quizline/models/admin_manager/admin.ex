@@ -10,7 +10,6 @@ defmodule Quizline.AdminManager.Admin do
     field(:email, :string)
     field(:password, :string)
     field(:confirm_password, :string)
-    field(:uid, :string)
     field(:created_at, :string)
     field(:hashed_password, :string)
   end
@@ -26,7 +25,6 @@ defmodule Quizline.AdminManager.Admin do
       :hashed_password
     ])
     |> validate_required([:first_name, :last_name, :email, :password, :confirm_password])
-    |> set_uuid()
     |> validate_email()
     |> validate_length(:password, min: 8)
     |> validate_format(:password, ~r/[0-9]+/, message: "Password must contain a number")
@@ -39,13 +37,6 @@ defmodule Quizline.AdminManager.Admin do
     )
     |> hash_password()
   end
-
-  defp set_uuid(%Changeset{valid?: true} = changeset) do
-    changeset
-    |> put_change(:uid, Ecto.UUID.generate())
-  end
-
-  defp set_uuid(changeset), do: changeset
 
   defp validate_email(%Changeset{changes: %{email: email}} = changeset) do
     case EmailChecker.valid?(email) do

@@ -4,6 +4,7 @@ defmodule QuizlineWeb.AdminAuth.AuthLive do
   alias Quizline.AdminManager
   alias Quizline.AdminManager.Admin
   import QuizlineWeb.InputHelpers
+  import Quizline.AdminManager.AdminEmailer
 
   def mount(_session, _params, socket) do
     {:ok,
@@ -22,8 +23,15 @@ defmodule QuizlineWeb.AdminAuth.AuthLive do
 
   def handle_event("submit", %{"admin" => admin_params}, socket) do
     case AdminManager.create_user(admin_params) do
-      {:ok, _} -> {:noreply, socket}
-      {:error, changeset} -> {:noreply, socket |> assign(changeset: changeset)}
+      {:ok, admin} ->
+        deliver_confirmation_instructions(admin, "https://google.com")
+        {:noreply, socket}
+
+      {:error, %Ecto.Changeset{} = changeset} ->
+        {:noreply, socket |> assign(changeset: changeset)}
+
+      {:error, _} ->
+        {:noreply, socket |> put_flash(:error, "email already exists")}
     end
   end
 end
