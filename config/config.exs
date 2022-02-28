@@ -7,7 +7,7 @@
 # General application configuration
 import Config
 # GUARDIAN config
-config :quizline, AuthMe.UserManager.Guardian,
+config :quizline, Quizline.AdminManager.Guardian,
   issuer: "quizline",
   secret_key: "gMbFA1ERHmI7NL74p4nbe9c0/Y3zNz3EFHsPzk9wIQg4ZV+bAXIVsEC/WgMsAUht"
 

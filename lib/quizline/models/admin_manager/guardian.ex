@@ -3,8 +3,8 @@ defmodule Quizline.AdminManager.Guardian do
 
   # alias Quizline.AdminManager
 
-  def subject_for_token(user, _claims) do
-    {:ok, to_string(user.id)}
+  def subject_for_token(data, _claims) do
+    {:ok, to_string(data.id)}
   end
 
   @spec resource_from_claims(map) :: {:error, :resource_not_found} | {:ok, any}

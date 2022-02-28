@@ -17,7 +17,9 @@ defmodule Quizline.Application do
       # db connection supervisor
       {Bolt.Sips, Application.get_env(:bolt_sips, Bolt)},
       # mailer
-      {Finch, name: Swoosh.Finch}
+      {Finch, name: Swoosh.Finch},
+      # presence
+      QuizlineWeb.Presence
     ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html

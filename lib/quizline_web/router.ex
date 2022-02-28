@@ -18,6 +18,8 @@ defmodule QuizlineWeb.Router do
     pipe_through :browser
 
     live "/", AdminAuth.AuthLive
+
+    get "/verify/:token", AdminAuthController, :verify
   end
 
   # Other scopes may use custom stacks.

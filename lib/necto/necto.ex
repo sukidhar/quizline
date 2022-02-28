@@ -48,4 +48,18 @@ defmodule Necto do
   defp convert_to_klist(map) do
     Enum.map(map, fn {key, value} -> {String.to_existing_atom(key), value} end)
   end
+
+  def verify_admin(%Quizline.AdminManager.Admin{id: id}) do
+    query =
+      "MATCH (admin:Admin) WHERE admin.id='#{id}' SET admin.verified=true RETURN admin.verified AS response"
+
+    conn = Sips.conn()
+
+    try do
+      _ = Sips.query!(conn, query)
+      {:ok, true}
+    rescue
+      e -> {:error, e}
+    end
+  end
 end

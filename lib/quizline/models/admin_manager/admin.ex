@@ -12,6 +12,7 @@ defmodule Quizline.AdminManager.Admin do
     field(:confirm_password, :string)
     field(:created_at, :string)
     field(:hashed_password, :string)
+    field(:verified, :boolean, default: false)
   end
 
   def registration_changeset(admin, attrs) do
@@ -22,7 +23,8 @@ defmodule Quizline.AdminManager.Admin do
       :email,
       :password,
       :confirm_password,
-      :hashed_password
+      :hashed_password,
+      :verified
     ])
     |> validate_required([:first_name, :last_name, :email, :password, :confirm_password])
     |> validate_email()
