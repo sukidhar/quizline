@@ -2,27 +2,46 @@
     <div class="absolute navbar bg-white z-10">
         <button class="btn btn-ghost normal-case text-xl">Quizline</button>
     </div>
-    <%= if !@show_verify_page do %> 
-        <div class="flex flex-col absolute justify-center items-start h-screen w-2/3 p-20">
-            <p class="text-5xl font-bold text-base-content mb-5">
-                Create a new account
-            </p>
-            <.form let = {f} for={@changeset} id="signup_form", class="w-4/5 space-y-10" phx-change="validate" phx-submit="submit">
-                <div class="flex flex-row space-x-5 w-full">
-                    <%= floating_input f, :first_name, wrapper: ["relative flex-grow"] %>
-                    <%= floating_input f, :last_name, wrapper: ["relative flex-grow"] %>
-                </div>
-                <%= floating_input f, :email, wrapper: ["relative "] %>
-                <div class="flex flex-row space-x-5 w-full">
+    <%= if @show_sign_up do%>
+        <%= if !@show_verify_page do %> 
+            <div class="flex flex-col absolute justify-center items-start h-screen w-2/3 p-20">
+                <p class="text-5xl font-bold text-base-content mb-5">
+                    Create a new account
+                </p>
+                <.form let = {f} for={@reg_changeset} id="signup_form", class="w-4/5 space-y-10" phx-change="sign-up-validate" phx-submit="sign-up-submit">
+                    <div class="flex flex-row space-x-5 w-full">
+                        <%= floating_input f, :first_name, wrapper: ["relative flex-grow"] %>
+                        <%= floating_input f, :last_name, wrapper: ["relative flex-grow"] %>
+                    </div>
+                    <%= floating_input f, :email, wrapper: ["relative "] %>
+                    <div class="flex flex-row space-x-5 w-full">
+                        <%= floating_input f, :password, wrapper: ["relative flex-grow"] %>
+                        <%= floating_input f, :confirm_password,  wrapper: ["relative flex-grow"] %>
+                    </div>
+                    <button type="submit" class="btn btn-outline btn-primary">Continue</button>
+                </.form>
+            </div>
+        <% else %> 
+            <div class="flex justify-center items-center h-screen">
+                <p class="text-4xl">Please check your inbox to confirm your email</p>
+            </div>
+        <% end %>
+    <% else %>
+        <%= if !@show_verify_page do %> 
+            <div class="flex flex-col absolute justify-center items-start h-screen w-2/3 p-20">
+                <p class="text-5xl font-bold text-base-content mb-5">
+                    Sign in to your account
+                </p>
+                <.form let = {f} for={@login_changeset} id="signin_form", class="w-3/5 space-y-10" phx-change="sign-in-validate" phx-submit="sign-in-submit">
+                    <%= floating_input f, :email, wrapper: ["relative "] %>
                     <%= floating_input f, :password, wrapper: ["relative flex-grow"] %>
-                    <%= floating_input f, :confirm_password,  wrapper: ["relative flex-grow"] %>
-                </div>
-                <button type="submit" class="btn btn-outline btn-primary">Continue</button>
-            </.form>
-        </div>
-    <% else %> 
-        <div class="flex justify-center items-center h-screen">
-            <p class="text-4xl">Please check your inbox to confirm your email</p>
-        </div>
+                    <button type="submit" class="btn btn-outline btn-primary">Continue</button>
+                </.form>
+            </div>
+        <% else %> 
+            <div class="flex justify-center items-center h-screen">
+                <p class="text-4xl">Please check your inbox to confirm your email</p>
+            </div>
+        <% end %>
     <% end %>
 </div>

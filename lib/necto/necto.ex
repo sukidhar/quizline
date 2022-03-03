@@ -15,7 +15,7 @@ defmodule Necto do
               |> structify_response(label)} do
         {:ok, data}
       else
-        {:fetch, {:error, reason}} -> {:error, changeset, [reason: reason]}
+        {:fetch, {:error, reason}} -> {:error, changeset, reason: reason}
       end
     rescue
       e -> {:error, e.message}
@@ -32,14 +32,17 @@ defmodule Necto do
     |> Enum.join(", ")
   end
 
-  defp structify_response(response, label) do
+  defp structify_response(response, label, error \\ "no admin found") do
     with {:fetch, [{^label, struct}]} <- {:fetch, Application.get_env(:quizline, Necto)[:modules]} do
       data =
         Enum.map(response.results, fn res ->
           Kernel.struct!(struct, convert_to_klist(res["n"].properties))
         end)
 
-      {:ok, List.first(data) || Kernel.struct!(struct, [])}
+      case List.first(data) do
+        nil -> {:error, error}
+        data -> {:ok, data}
+      end
     else
       {:fetch, _} -> {:error, "Struct Module not mentioned in config.exs"}
     end
@@ -60,6 +63,47 @@ defmodule Necto do
       {:ok, true}
     rescue
       e -> {:error, e}
+    end
+  end
+
+  def get_admin(:email, email) do
+    query = "MATCH (n : Admin) WHERE n.email='#{email}' RETURN n"
+
+    conn = Sips.conn()
+
+    try do
+      with {:fetch, {:ok, data}} <-
+             {:fetch,
+              Sips.query!(conn, query)
+              |> structify_response(:admin)} do
+        {:ok, data}
+      else
+        {:fetch, {:error, reason}} ->
+          {:error, reason: reason}
+      end
+    rescue
+      e ->
+        {:error, e.message}
+    end
+  end
+
+  def get_admin(:id, id) do
+    query = "MATCH (n : Admin) WHERE n.id='#{id}' RETURN n"
+
+    conn = Sips.conn()
+
+    try do
+      with {:fetch, {:ok, data}} <-
+             {:fetch,
+              Sips.query!(conn, query)
+              |> structify_response(:admin)} do
+        {:ok, data}
+      else
+        {:fetch, {:error, reason}} ->
+          {:error, reason: reason}
+      end
+    rescue
+      e -> {:error, reason: e.message}
     end
   end
 end

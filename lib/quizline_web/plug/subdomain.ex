@@ -7,8 +7,6 @@ defmodule QuizlineWeb.Plug.Subdomain do
   def call(conn, router) do
     case get_subdomain(conn.host) do
       subdomain when byte_size(subdomain) > 0 ->
-        IO.inspect(subdomain)
-
         conn
         |> put_private(:subdomain, subdomain)
         |> router.call(router.init({}))

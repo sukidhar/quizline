@@ -15,6 +15,12 @@ defmodule Quizline.AdminManager.Admin do
     field(:verified, :boolean, default: false)
   end
 
+  def login_changeset(admin, attrs) do
+    admin
+    |> cast(attrs, [:email, :password])
+    |> validate_required([:email, :password])
+  end
+
   def registration_changeset(admin, attrs) do
     admin
     |> cast(attrs, [
@@ -27,6 +33,7 @@ defmodule Quizline.AdminManager.Admin do
       :verified
     ])
     |> validate_required([:first_name, :last_name, :email, :password, :confirm_password])
+    |> update_change(:email, &String.downcase/1)
     |> validate_email()
     |> validate_length(:password, min: 8)
     |> validate_format(:password, ~r/[0-9]+/, message: "Password must contain a number")

@@ -14,12 +14,27 @@ defmodule QuizlineWeb.Router do
     plug :accepts, ["json"]
   end
 
+  pipeline :auth do
+    plug Quizline.AdminManager.Pipeline
+  end
+
+  pipeline :ensure_auth do
+    plug Guardian.Plug.EnsureAuthenticated
+  end
+
   scope "/", QuizlineWeb do
-    pipe_through :browser
+    pipe_through [:browser, :auth]
 
     live "/", AdminAuth.AuthLive
 
     get "/verify/:token", AdminAuthController, :verify
+    get "/authenticate/:token", AdminAuthController, :authenticate
+  end
+
+  scope "/", QuizlineWeb do
+    pipe_through [:browser, :auth, :ensure_auth]
+
+    live "/session", AdminAuth.AdminSession
   end
 
   # Other scopes may use custom stacks.

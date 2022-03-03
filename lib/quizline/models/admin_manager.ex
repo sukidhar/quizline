@@ -18,15 +18,51 @@ defmodule Quizline.AdminManager do
     Admin.registration_changeset(admin, attrs)
   end
 
+  def login_change_admin(%Admin{} = admin, attrs \\ %{}) do
+    Admin.login_changeset(admin, attrs)
+  end
+
   def generate_verification_token(%Admin{} = admin) do
     data = %{id: admin.id}
-    {:ok, jwt, claims} = Guardian.encode_and_sign(data)
-    IO.inspect(claims)
+    {:ok, jwt, _claims} = Guardian.encode_and_sign(data)
     IO.inspect(jwt)
     jwt
   end
 
   def verify_email(%Admin{} = admin) do
     verify_admin(admin)
+  end
+
+  def authenticate_admin(admin_params) do
+    changeset =
+      %Admin{}
+      |> Admin.login_changeset(admin_params)
+
+    with %Ecto.Changeset{valid?: true, changes: %{email: email, password: password}} <- changeset do
+      with {:ok, %Admin{hashed_password: hash} = admin} <- get_admin(:email, email) do
+        if Argon2.verify_pass(password, hash) do
+          {:access, admin}
+        else
+          {:error, %{changeset: changeset, reason: "Invalid email or password"}}
+        end
+      else
+        {:error, _} -> {:error, reason: "email not registered"}
+      end
+    else
+      _ -> {:error, %{changeset: changeset}}
+    end
+  end
+
+  def tokenise_admin(%Admin{} = admin) do
+    {:ok, token, _claims} = Guardian.encode_and_sign(admin)
+    token
+  end
+
+  def get_admin_by_id(id) do
+    with {:ok, %Admin{} = admin} <- get_admin(:id, id) do
+      {:ok, admin}
+    else
+      {:error, _} -> {:error, reason: "email not registered"}
+    end
   end
 end
