@@ -19,6 +19,10 @@
                         <%= floating_input f, :confirm_password,  wrapper: ["relative flex-grow"] %>
                     </div>
                     <button type="submit" class="btn btn-outline btn-primary">Continue</button>
+                    <div class="flex flex-row">
+                        <p class="text-sm py-3">Have an account already?</p>
+                        <button type="button" class="text-sm btn btn-link" phx-click="toggle-form">Forgot password?</button>
+                    </div>
                 </.form>
             </div>
         <% else %> 
@@ -39,6 +43,10 @@
                         <button type="button" class="text-sm btn btn-link" phx-click="forgot-password">Forgot password?</button>
                     </div>
                     <button type="submit" class="btn btn-outline btn-primary">Continue</button>
+                    <div class="flex flex-row">
+                        <p class="text-sm py-3">Are you new here?</p>
+                        <button type="button" class="text-sm btn btn-link" phx-click="toggle-form">Create account</button>
+                    </div>
                 </.form>
             </div>
             <%= if @show_forgot_password do  %> 

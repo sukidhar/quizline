@@ -31,7 +31,7 @@ defmodule QuizlineWeb.AdminAuth.FPLive do
       |> AdminManager.fpset_change_admin(params)
       |> Map.put(:action, :insert)
 
-    {:noreply, socket |> assign(:fp_changeset, changeset)}
+    {:noreply, socket |> assign(fpset_changeset: changeset)}
   end
 
   def handle_event("fpset-submit", %{"admin" => params}, socket) do
@@ -41,8 +41,6 @@ defmodule QuizlineWeb.AdminAuth.FPLive do
       %Admin{}
       |> AdminManager.fpset_change_admin(params)
       |> Map.put(:action, :validate)
-
-    IO.inspect(changeset)
 
     case changeset do
       %Ecto.Changeset{valid?: true, changes: %{hashed_password: password}} ->

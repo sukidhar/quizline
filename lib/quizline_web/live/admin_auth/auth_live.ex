@@ -20,6 +20,10 @@ defmodule QuizlineWeb.AdminAuth.AuthLive do
      |> assign(:reg_changeset, AdminManager.registration_change_admin(%Admin{}))}
   end
 
+  def handle_event("toggle-form", _params, socket) do
+    {:noreply, socket |> assign(:show_sign_up, !socket.assigns.show_sign_up)}
+  end
+
   def handle_event("sign-in-validate", %{"admin" => admin_params}, socket) do
     changeset =
       %Admin{}
