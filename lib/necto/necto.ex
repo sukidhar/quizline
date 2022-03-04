@@ -106,4 +106,18 @@ defmodule Necto do
       e -> {:error, reason: e.message}
     end
   end
+
+  def update_admin_password(id, password) do
+    query =
+      "MATCH (n: Admin) WHERE n.id = '#{id}' SET n += { hashed_password: '#{password}', verified: true } RETURN n.verified"
+
+    conn = Sips.conn()
+
+    try do
+      _ = Sips.query!(conn, query)
+      {:ok, true}
+    rescue
+      e -> {:error, e}
+    end
+  end
 end

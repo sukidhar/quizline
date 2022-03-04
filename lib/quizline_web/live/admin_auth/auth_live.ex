@@ -12,8 +12,10 @@ defmodule QuizlineWeb.AdminAuth.AuthLive do
   def mount(_session, _params, socket) do
     {:ok,
      socket
+     |> assign(:show_forgot_password, false)
      |> assign(:show_sign_up, false)
      |> assign(:show_verify_page, false)
+     |> assign(:fp_changeset, AdminManager.fp_change_admin(%Admin{}))
      |> assign(:login_changeset, AdminManager.login_change_admin(%Admin{}))
      |> assign(:reg_changeset, AdminManager.registration_change_admin(%Admin{}))}
   end
@@ -86,6 +88,37 @@ defmodule QuizlineWeb.AdminAuth.AuthLive do
         IO.inspect(reason)
         {:noreply, socket |> put_flash(:error, "email already exists")}
     end
+  end
+
+  def handle_event("forgot-password", _params, socket) do
+    {:noreply, socket |> assign(:show_forgot_password, true)}
+  end
+
+  def handle_event("hide-forgot-password", _params, socket) do
+    {:noreply, socket |> assign(:show_forgot_password, false)}
+  end
+
+  def handle_event("fp-change", %{"admin" => admin_params}, socket) do
+    changeset =
+      %Admin{}
+      |> AdminManager.fp_change_admin(admin_params)
+      |> Map.put(:action, :insert)
+
+    {:noreply, socket |> assign(:fp_changeset, changeset)}
+  end
+
+  def handle_event("fp-submit", %{"admin" => admin_params}, socket) do
+    changeset =
+      %Admin{}
+      |> AdminManager.fp_change_admin(admin_params)
+      |> Map.put(:action, :validate)
+
+    AdminManager.send_fp_instructions(changeset)
+
+    {:noreply,
+     socket
+     |> assign(:fp_changeset, changeset)
+     |> assign(:show_forgot_password, !changeset.valid?)}
   end
 
   def handle_info(

@@ -1,6 +1,5 @@
 defmodule QuizlineWeb.AdminAuthController do
   use QuizlineWeb, :controller
-  import Phoenix.LiveView.Controller
 
   alias Quizline.AdminManager
   alias Quizline.AdminManager.Guardian

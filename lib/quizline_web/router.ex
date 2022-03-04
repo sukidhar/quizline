@@ -29,6 +29,8 @@ defmodule QuizlineWeb.Router do
 
     get "/verify/:token", AdminAuthController, :verify
     get "/authenticate/:token", AdminAuthController, :authenticate
+
+    live "/forgot-password/:token", AdminAuth.FPLive
   end
 
   scope "/", QuizlineWeb do

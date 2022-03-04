@@ -1,7 +1,9 @@
 defmodule Quizline.AdminManager do
+  require Logger
   import Necto
   alias Quizline.AdminManager.Admin
   alias Quizline.AdminManager.Guardian
+  alias Quizline.AdminManager.AdminEmailer
   import Ecto.Changeset
 
   def create_user(attrs \\ %{}) do
@@ -20,6 +22,14 @@ defmodule Quizline.AdminManager do
 
   def login_change_admin(%Admin{} = admin, attrs \\ %{}) do
     Admin.login_changeset(admin, attrs)
+  end
+
+  def fp_change_admin(%Admin{} = admin, attrs \\ %{}) do
+    Admin.fp_changeset(admin, attrs)
+  end
+
+  def fpset_change_admin(%Admin{} = admin, attrs \\ %{}) do
+    Admin.fpset_changeset(admin, attrs)
   end
 
   def generate_verification_token(%Admin{} = admin) do
@@ -64,5 +74,25 @@ defmodule Quizline.AdminManager do
     else
       {:error, _} -> {:error, reason: "email not registered"}
     end
+  end
+
+  def send_fp_instructions(%Ecto.Changeset{valid?: true, changes: %{email: email}}) do
+    with {:ok, admin} <-
+           get_admin(:email, email) do
+      AdminEmailer.deliver_reset_instructions(
+        admin,
+        "http://lvh.me:4000/forgot-password/#{tokenise_admin(admin)}"
+      )
+    else
+      _ -> Logger.info("No such email exists")
+    end
+  end
+
+  def send_fp_instructions(%Ecto.Changeset{valid?: false}) do
+    Logger.info("Invalid data")
+  end
+
+  def update_password(id, password) do
+    update_admin_password(id, password)
   end
 end
