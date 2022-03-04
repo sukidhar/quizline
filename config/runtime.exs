@@ -16,7 +16,7 @@ if config_env() == :prod or config_env() == :dev do
   # Configuring the mailer
   config :quizline, Quizline.Mailer,
     adapter: Swoosh.Adapters.Sendgrid,
-    api_key: "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"
+    api_key: System.get_env("SENDGRID_API_KEY")
 
   config :swoosh, :api_client, Swoosh.ApiClient.Finch
 end
