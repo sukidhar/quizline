@@ -11,6 +11,10 @@ config :quizline, Quizline.AdminManager.Guardian,
   issuer: "quizline",
   secret_key: "gMbFA1ERHmI7NL74p4nbe9c0/Y3zNz3EFHsPzk9wIQg4ZV+bAXIVsEC/WgMsAUht"
 
+config :quizline, Quizline.UserManager.Guardian,
+  issuer: "quizline",
+  secret_key: "rb93/rK7qaN4iH/JUzHdMxAD5vMuy2ANzKyhQtxbS7F43D1n5qQeSLSb9otxMRm9"
+
 # email validator
 config :email_checker,
   default_dns: :system,
@@ -19,7 +23,11 @@ config :email_checker,
   smtp_retries: 2,
   timeout_milliseconds: :infinity
 
-config :quizline, Necto, modules: [admin: Quizline.AdminManager.Admin]
+config :quizline, Necto,
+  modules: %{
+    admin: Quizline.AdminManager.Admin,
+    user: Quizline.UserManager.User
+  }
 
 # configures neo4j database connection
 config :bolt_sips, Bolt,

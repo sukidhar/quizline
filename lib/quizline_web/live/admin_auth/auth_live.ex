@@ -36,6 +36,8 @@ defmodule QuizlineWeb.AdminAuth.AuthLive do
   def handle_event("sign-in-submit", %{"admin" => admin_params}, socket) do
     case AdminManager.authenticate_admin(admin_params) do
       {:access, %Admin{verified: verified} = admin} ->
+        IO.inspect(admin)
+
         if verified do
           {:noreply, redirect(socket, to: "/authenticate/#{AdminManager.tokenise_admin(admin)}")}
         else
@@ -53,6 +55,9 @@ defmodule QuizlineWeb.AdminAuth.AuthLive do
 
           {:noreply, socket |> assign(:user, admin) |> assign(:show_verify_page, true)}
         end
+
+      {:error, %{changeset: changeset}} ->
+        {:noreply, socket |> assign(login_changeset: changeset)}
 
       {:error, reason: reason} ->
         {:noreply, socket |> put_flash(:error, reason)}

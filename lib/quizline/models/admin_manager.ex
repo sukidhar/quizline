@@ -47,19 +47,24 @@ defmodule Quizline.AdminManager do
     changeset =
       %Admin{}
       |> Admin.login_changeset(admin_params)
+      |> Map.put(:action, :validate)
 
-    with %Ecto.Changeset{valid?: true, changes: %{email: email, password: password}} <- changeset do
-      with {:ok, %Admin{hashed_password: hash} = admin} <- get_admin(:email, email) do
-        if Argon2.verify_pass(password, hash) do
-          {:access, admin}
+    case changeset do
+      %Ecto.Changeset{valid?: true, changes: %{email: email, password: password}} ->
+        with {:ok, %Admin{hashed_password: hash} = admin} <- get_admin(:email, email) do
+          if Argon2.verify_pass(password, hash) do
+            {:access, admin}
+          else
+            {:error, %{changeset: changeset, reason: "Invalid email or password"}}
+          end
         else
-          {:error, %{changeset: changeset, reason: "Invalid email or password"}}
+          {:error, _} ->
+            {:error, reason: "email not registered"}
         end
-      else
-        {:error, _} -> {:error, reason: "email not registered"}
-      end
-    else
-      _ -> {:error, %{changeset: changeset}}
+
+      %Ecto.Changeset{valid?: false} ->
+        IO.inspect(changeset)
+        {:error, %{changeset: changeset}}
     end
   end
 
