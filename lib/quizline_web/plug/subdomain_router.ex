@@ -4,15 +4,40 @@ defmodule QuizlineWeb.SubdomainRouter do
   pipeline :browser do
     plug :accepts, ["html"]
     plug :fetch_session
-    plug :fetch_flash
+    plug :fetch_live_flash
+    plug :put_root_layout, {QuizlineWeb.LayoutView, :root}
     plug :protect_from_forgery
+    plug :put_secure_browser_headers
+  end
+
+  pipeline :api do
+    plug :accepts, ["json"]
+  end
+
+  pipeline :auth do
+    plug Quizline.AdminManager.Pipeline
+  end
+
+  pipeline :ensure_auth do
+    plug Guardian.Plug.EnsureAuthenticated
   end
 
   scope "/", QuizlineWeb do
-    # Use the default browser stack
-    pipe_through :browser
+    pipe_through [:browser, :auth]
 
-    get "/", PageController, :index
+    live "/auth", AdminAuth.AuthLive
+
+    get "/verify/:token", AdminAuthController, :verify
+    get "/authenticate/:token", AdminAuthController, :authenticate
+
+    live "/forgot-password/:token", AdminAuth.FPLive
+    live "/set-pw/:token", UserAuth.PasswordLive
+  end
+
+  scope "/", QuizlineWeb do
+    pipe_through [:browser, :auth, :ensure_auth]
+
+    live "/", AdminAuth.AdminSession
   end
 
   # Other scopes may use custom stacks.

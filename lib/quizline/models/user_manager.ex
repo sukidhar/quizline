@@ -2,8 +2,6 @@ defmodule Quizline.UserManager do
   alias Quizline.UserManager.UserMailer
   alias Quizline.UserManager.User
   alias Quizline.UserManager.Guardian
-  import Ecto.Changeset
-  alias Ecto.Changeset
   import Necto
 
   def create_accounts(account_data, id) do

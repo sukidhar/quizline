@@ -22,8 +22,10 @@ defmodule QuizlineWeb.AdminAuthController do
   end
 
   def authenticate(conn, %{"token" => token}) do
+    IO.inspect(token)
+
     with {:verify, {:ok, admin, _}} <- {:verify, Guardian.resource_from_token(token)} do
-      redirect(conn |> Guardian.Plug.sign_in(admin), to: "/session")
+      redirect(conn |> Guardian.Plug.sign_in(admin), to: "/")
     else
       {:verify, error} ->
         IO.inspect(error)

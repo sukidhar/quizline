@@ -43,7 +43,7 @@ defmodule QuizlineWeb.UserAuth.PasswordLive do
         end
 
       %Ecto.Changeset{valid?: false} ->
-        {:noreply, socket |> assign(fpset_changeset: changeset)}
+        {:noreply, socket |> assign(password_changeset: changeset)}
     end
   end
 end

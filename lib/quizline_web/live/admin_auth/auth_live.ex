@@ -9,6 +9,10 @@ defmodule QuizlineWeb.AdminAuth.AuthLive do
   alias QuizlineWeb.Presence
   alias Quizline.PubSub
 
+  def mount(_params, %{"guardian_default_token" => _token}, socket) do
+    {:ok, socket |> redirect(to: "/")}
+  end
+
   def mount(_session, _params, socket) do
     {:ok,
      socket
@@ -36,8 +40,6 @@ defmodule QuizlineWeb.AdminAuth.AuthLive do
   def handle_event("sign-in-submit", %{"admin" => admin_params}, socket) do
     case AdminManager.authenticate_admin(admin_params) do
       {:access, %Admin{verified: verified} = admin} ->
-        IO.inspect(admin)
-
         if verified do
           {:noreply, redirect(socket, to: "/authenticate/#{AdminManager.tokenise_admin(admin)}")}
         else
@@ -53,7 +55,7 @@ defmodule QuizlineWeb.AdminAuth.AuthLive do
             "http://lvh.me:4000/verify/#{AdminManager.generate_verification_token(admin)}"
           )
 
-          {:noreply, socket |> assign(:user, admin) |> assign(:show_verify_page, true)}
+          {:noreply, socket |> assign(:admin, admin) |> assign(:show_verify_page, true)}
         end
 
       {:error, %{changeset: changeset}} ->
@@ -85,10 +87,10 @@ defmodule QuizlineWeb.AdminAuth.AuthLive do
 
         deliver_confirmation_instructions(
           admin,
-          "http://lvh.me:4000/verify/#{AdminManager.generate_verification_token(admin)}"
+          "http://admin.lvh.me:4000/verify/#{AdminManager.generate_verification_token(admin)}"
         )
 
-        {:noreply, socket |> assign(:user, admin) |> assign(:show_verify_page, true)}
+        {:noreply, socket |> assign(:admin, admin) |> assign(:show_verify_page, true)}
 
       {:error, %Ecto.Changeset{} = changeset} ->
         {:noreply, socket |> assign(reg_changeset: changeset)}
@@ -137,13 +139,16 @@ defmodule QuizlineWeb.AdminAuth.AuthLive do
         },
         socket
       ) do
-    with %Admin{id: id} <- socket.assigns.user do
+    with %Admin{id: id} <- socket.assigns.admin do
       with %{metas: [%{is_verified: status}]} <- joins[id] do
         if status do
-          IO.inspect("should redirect from here to authentication route")
+          {:noreply,
+           redirect(socket,
+             to: "/authenticate/#{AdminManager.tokenise_admin(socket.assigns.admin)}"
+           )}
+        else
+          {:noreply, socket}
         end
-
-        {:noreply, socket}
       else
         _ -> {:noreply, socket}
       end

@@ -25,19 +25,19 @@ defmodule QuizlineWeb.Router do
   scope "/", QuizlineWeb do
     pipe_through [:browser, :auth]
 
-    live "/", AdminAuth.AuthLive
+    # live "/", AdminAuth.AuthLive
 
-    get "/verify/:token", AdminAuthController, :verify
-    get "/authenticate/:token", AdminAuthController, :authenticate
+    # get "/verify/:token", AdminAuthController, :verify
+    # get "/authenticate/:token", AdminAuthController, :authenticate
 
-    live "/forgot-password/:token", AdminAuth.FPLive
-    live "/set-pw/:token", UserAuth.PasswordLive
+    # live "/forgot-password/:token", AdminAuth.FPLive
+    # live "/set-pw/:token", UserAuth.PasswordLive
   end
 
   scope "/", QuizlineWeb do
     pipe_through [:browser, :auth, :ensure_auth]
 
-    live "/session", AdminAuth.AdminSession
+    # live "/session", AdminAuth.AdminSession
   end
 
   # Other scopes may use custom stacks.

@@ -55,6 +55,7 @@ defmodule Quizline.AdminManager do
           if Argon2.verify_pass(password, hash) do
             {:access, admin}
           else
+            IO.inspect("hello")
             {:error, %{changeset: changeset, reason: "Invalid email or password"}}
           end
         else
