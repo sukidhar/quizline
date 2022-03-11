@@ -7,10 +7,11 @@ defmodule Quizline.UserManager.Guardian do
     {:ok, to_string(data.id)}
   end
 
-  @spec resource_from_claims(map) :: {:error, :resource_not_found} | {:ok, any}
   def resource_from_claims(%{"sub" => id}) do
     UserManager.get_user_by_id(id)
   rescue
-    _ -> {:error, :resource_not_found}
+    e ->
+      IO.inspect(e)
+      {:error, :resource_not_found}
   end
 end

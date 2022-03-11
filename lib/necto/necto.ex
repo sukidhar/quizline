@@ -46,17 +46,25 @@ defmodule Necto do
         end
 
       %{label: :user, modules: %{user: struct}} ->
-        %{"n" => node, "r" => r} = response
+        case response do
+          %{"n" => node, "r" => r} ->
+            props =
+              convert_to_klist(node.properties)
+              |> Keyword.put(:account_type, String.downcase(hd(node.labels) || "student"))
+              |> Keyword.put(
+                :created_at,
+                "#{r.properties["created_at"] || DateTime.to_unix(DateTime.utc_now())}"
+              )
 
-        props =
-          convert_to_klist(node.properties)
-          |> Keyword.put(:account_type, String.downcase(hd(node.labels) || "student"))
-          |> Keyword.put(
-            :created_at,
-            "#{r.properties["created_at"] || DateTime.to_unix(DateTime.utc_now())}"
-          )
+            {:ok, Kernel.struct!(struct, props)}
 
-        {:ok, Kernel.struct!(struct, props)}
+          %{"n" => node} ->
+            props =
+              convert_to_klist(node.properties)
+              |> Keyword.put(:account_type, String.downcase(hd(node.labels) || "student"))
+
+            {:ok, Kernel.struct!(struct, props)}
+        end
 
       _ ->
         {:error, "Struct Module not mentioned in config.exs"}
@@ -172,22 +180,28 @@ defmodule Necto do
   end
 
   def get_user(:id, id) do
-    query = "MATCH (n : User) WHERE n.id='#{id}' RETURN n"
+    query = "MATCH (n : User)<-[r]-(:Admin) WHERE n.id='#{id}' RETURN n,r"
+
+    try do
+      conn = Sips.conn()
+      %Bolt.Sips.Response{results: [data | _]} = Sips.query!(conn, query)
+      structify_response(data, :user, "no such node found")
+    rescue
+      e -> {:error, reason: e.message}
+    end
+  end
+
+  def update_user_password(id, password) do
+    query =
+      "MATCH (n: User) WHERE n.id = '#{id}' SET n += { hashed_password: '#{password}' } RETURN true"
 
     conn = Sips.conn()
 
     try do
-      with {:fetch, {:ok, data}} <-
-             {:fetch,
-              Sips.query!(conn, query)
-              |> structify_response(:user, "no such user found")} do
-        {:ok, data}
-      else
-        {:fetch, {:error, reason}} ->
-          {:error, reason: reason}
-      end
+      _ = Sips.query!(conn, query)
+      {:ok, true}
     rescue
-      e -> {:error, reason: e.message}
+      e -> {:error, e}
     end
   end
 end
