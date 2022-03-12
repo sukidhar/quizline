@@ -22,6 +22,12 @@ defmodule Quizline.UserManager.User do
     |> put_change(:id, Ecto.UUID.generate())
   end
 
+  def login_changeset(user, params) do
+    user
+    |> cast(params, [:email, :password])
+    |> validate_required([:email, :password])
+  end
+
   def password_changeset(user, params) do
     user
     |> cast(params, [:password, :confirm_password])

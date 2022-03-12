@@ -15,7 +15,7 @@ defmodule QuizlineWeb.Router do
   end
 
   pipeline :auth do
-    plug Quizline.AdminManager.Pipeline
+    plug Quizline.UserManager.Pipeline
   end
 
   pipeline :ensure_auth do
@@ -24,11 +24,19 @@ defmodule QuizlineWeb.Router do
 
   scope "/", QuizlineWeb do
     pipe_through [:browser, :auth]
+
+    live "/auth", UserAuth.AuthLive
+
     live "/set-pw/:token", UserAuth.PasswordLive
+
+    get "/authenticate/:token", AuthController, :authenticate_user
+    get "/signout", AuthController, :sign_out_user
   end
 
   scope "/", QuizlineWeb do
     pipe_through [:browser, :auth, :ensure_auth]
+
+    live "/", UserAuth.UserSession
   end
 
   # Other scopes may use custom stacks.

@@ -17,6 +17,11 @@ defmodule QuizlineWeb.AdminAuth.AdminSession do
   end
 
   @impl Phoenix.LiveView
+  def handle_event("signout", _params, socket) do
+    {:noreply, socket |> redirect(to: "/signout")}
+  end
+
+  @impl Phoenix.LiveView
   def handle_event("validate", _params, socket) do
     {:noreply, socket}
   end

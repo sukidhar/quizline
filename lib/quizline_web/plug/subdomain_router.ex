@@ -27,8 +27,9 @@ defmodule QuizlineWeb.SubdomainRouter do
 
     live "/auth", AdminAuth.AuthLive
 
-    get "/verify/:token", AdminAuthController, :verify
-    get "/authenticate/:token", AdminAuthController, :authenticate
+    get "/verify/:token", AuthController, :verify_admin
+    get "/authenticate/:token", AuthController, :authenticate_admin
+    get "/signout", AuthController, :sign_out_admin
 
     live "/forgot-password/:token", AdminAuth.FPLive
   end

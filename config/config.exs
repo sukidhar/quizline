@@ -13,7 +13,7 @@ config :quizline, Quizline.AdminManager.Guardian,
 
 config :quizline, Quizline.UserManager.Guardian,
   issuer: "quizline",
-  secret_key: "rb93/rK7qaN4iH/JUzHdMxAD5vMuy2ANzKyhQtxbS7F43D1n5qQeSLSb9otxMRm9"
+  secret_key: "AqbchZHVvzTKwlrpFeQr0lm1OcTUyPZZCx1db3vzu4mF5nSvLO8Ozw/vS2/8Nbnt"
 
 # email validator
 config :email_checker,

@@ -1,0 +1,22 @@
+<div class="font-sans">
+    <div class="absolute navbar bg-white z-30">
+        <button class="btn btn-ghost normal-case text-xl">Quizline</button>
+    </div>
+    <div class="flex flex-col absolute justify-center items-start h-screen w-2/3 p-20">
+        <p class="text-5xl font-bold text-base-content mb-5">
+            Sign in to your account
+        </p>
+        <.form let = {f} for={@login_changeset} id="signin_form", class="w-3/5 space-y-10" phx-change="sign-in-validate" phx-submit="sign-in-submit">
+            <%= floating_input f, :email, wrapper: ["relative"] %>
+            <%= floating_input f, :password, wrapper: ["relative"] %>
+            <div class="flex flex-row-reverse">
+                <button type="button" class="text-sm btn btn-link" phx-click="forgot-password">Forgot password?</button>
+            </div>
+            <button type="submit" class="btn btn-outline btn-primary">Continue</button>
+            <div class="flex flex-row">
+                <p class="text-sm py-3">Are you new here?</p>
+                <button type="button" class="text-sm btn btn-link" phx-click="toggle-form">Create account</button>
+            </div>
+        </.form>
+    </div>
+</div>

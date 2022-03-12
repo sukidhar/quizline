@@ -191,6 +191,18 @@ defmodule Necto do
     end
   end
 
+  def get_user(:email, email) do
+    query = "MATCH (n : User)<-[r]-(:Admin) WHERE n.email='#{email}' RETURN n,r"
+
+    try do
+      conn = Sips.conn()
+      %Bolt.Sips.Response{results: [data | _]} = Sips.query!(conn, query)
+      structify_response(data, :user, "no such node found")
+    rescue
+      e -> {:error, reason: e.message}
+    end
+  end
+
   def update_user_password(id, password) do
     query =
       "MATCH (n: User) WHERE n.id = '#{id}' SET n += { hashed_password: '#{password}' } RETURN true"

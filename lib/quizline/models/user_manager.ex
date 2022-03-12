@@ -4,6 +4,8 @@ defmodule Quizline.UserManager do
   alias Quizline.UserManager.Guardian
   import Necto
 
+  alias Ecto.Changeset
+
   def create_accounts(account_data, id) do
     [data | _] = account_data
 
@@ -35,6 +37,10 @@ defmodule Quizline.UserManager do
     User.changeset(user, params)
   end
 
+  def login_user_set(%User{} = user, params \\ %{}) do
+    User.login_changeset(user, params)
+  end
+
   def password_user_set(%User{} = user, params \\ %{}) do
     User.password_changeset(user, params)
   end
@@ -44,6 +50,38 @@ defmodule Quizline.UserManager do
       {:ok, user}
     else
       {:error, _} -> {:error, reason: "email not registered"}
+    end
+  end
+
+  def get_user_by_email(email) do
+    with {:ok, %User{} = user} <- get_user(:email, email) do
+      {:ok, user}
+    else
+      {:error, _} -> {:error, reason: "email not registered"}
+    end
+  end
+
+  def authenticate_user(user_params) do
+    changeset =
+      %User{}
+      |> login_user_set(user_params)
+      |> Map.put(:action, :validate)
+
+    case changeset do
+      %Changeset{valid?: true, changes: %{email: email, password: password}} ->
+        with {:ok, %User{hashed_password: hash} = user} <- get_user(:email, email) do
+          if Argon2.verify_pass(password, hash) do
+            {:access, user}
+          else
+            {:error, %{changeset: changeset, reason: "Invalid email or password"}}
+          end
+        else
+          {:error, _} ->
+            {:error, reason: "email not registered"}
+        end
+
+      %Changeset{valid?: false} ->
+        {:error, %{changeset: changeset}}
     end
   end
 
