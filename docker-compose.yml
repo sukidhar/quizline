@@ -1,0 +1,28 @@
+version: '3'
+
+services:
+  phoenix:
+    build: 
+      context: .
+    ports:
+      - "4000:4000"
+    depends_on:
+      - neo4j
+  neo4j: 
+    image: neo4j:latest
+    ports:
+    - "7474:7474"
+    - "7687:7687"
+    volumes:
+      - ./neo4j/conf:/conf
+      - ./neo4j/data:/data
+      - ./neo4j/import:/import
+      - ./neo4j/logs:/logs
+      - ./neo4j/plugins:/plugins
+    environment:
+      - NEO4J_AUTH=neo4j/letmein
+      - NEO4J_ACCEPT_LICENSE_AGREEMENT=yes
+      - NEO4JLABS_PLUGINS=["apoc"]
+      - NEO4J_dbms_security_procedures_allowlist=apoc.*
+    
+
