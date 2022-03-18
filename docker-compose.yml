@@ -4,6 +4,7 @@ services:
   phoenix:
     build: 
       context: .
+      dockerfile: docker/phoenix/Dockerfile
     volumes:
       - .:/app
     ports:
@@ -12,9 +13,11 @@ services:
       - "lvh.me:127.0.0.1"
     depends_on:
       - neo4j
-    entrypoint: container/init.sh
+    entrypoint: docker/phoenix/init.sh
   neo4j: 
-    image: neo4j:latest
+    build: ./docker/neo4j/
+    stdin_open: true
+    tty: true  
     ports:
     - "7474:7474"
     - "7687:7687"
