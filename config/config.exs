@@ -31,8 +31,8 @@ config :quizline, Necto,
 
 # configures neo4j database connection
 config :bolt_sips, Bolt,
-  url: "bolt://localhost:7687",
-  basic_auth: [username: "neo4j", password: "Suki1329"],
+  url: "bolt://neo4j:7687",
+  basic_auth: [username: "neo4j", password: "letmein"],
   pool_size: 10
 
 # Configures the endpoint
