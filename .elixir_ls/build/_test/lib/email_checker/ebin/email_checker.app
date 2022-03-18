@@ -1,0 +1,12 @@
+{application,email_checker,
+             [{applications,[kernel,stdlib,elixir,logger]},
+              {description,"Simple library checking the validity of an email. Checks are performed in the following order:\n\n- REGEX: validate the emails has a good looking format\n\n- MX: validate the domain sever contains MX records\n\n- SMTP: validate the SMTP behind the MX records knows this email address (no email sent)\n"},
+              {modules,['Elixir.EmailChecker','Elixir.EmailChecker.Check',
+                        'Elixir.EmailChecker.Check.Format',
+                        'Elixir.EmailChecker.Check.MX',
+                        'Elixir.EmailChecker.Check.SMTP',
+                        'Elixir.EmailChecker.Loader',
+                        'Elixir.EmailChecker.Tools']},
+              {registered,[]},
+              {vsn,"0.2.4"},
+              {mod,{'Elixir.EmailChecker.Loader',[]}}]}.

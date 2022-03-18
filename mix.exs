@@ -52,7 +52,9 @@ defmodule Quizline.MixProject do
       {:guardian, "~> 2.0"},
       {:argon2_elixir, "~> 3.0"},
       {:email_checker, "~> 0.2.4"},
-      {:csv, "~> 2.4"}
+      {:csv, "~> 2.4"},
+      {:membrane_rtc_engine, github: "membraneframework/membrane_rtc_engine"},
+      {:membrane_webrtc_plugin, github: "membraneframework/membrane_webrtc_plugin"}
     ]
   end
 
