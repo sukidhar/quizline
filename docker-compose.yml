@@ -14,6 +14,8 @@ services:
     depends_on:
       - neo4j
     entrypoint: docker/phoenix/init.sh
+    environment:
+      - SENDGRID_KEY=${SENDGRID_KEY}
   neo4j: 
     build: ./docker/neo4j/
     stdin_open: true
