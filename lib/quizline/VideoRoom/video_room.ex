@@ -57,11 +57,11 @@ defmodule Quizline.VideoRoom do
     ]
 
     if use_integrated_turn do
-      tcp_turn_port = Application.get_env(:membrane_videoroom_demo, :integrated_tcp_turn_port)
+      tcp_turn_port = Application.get_env(:quizline, :integrated_tcp_turn_port)
       TURNManager.ensure_tcp_turn_launched(integrated_turn_options, port: tcp_turn_port)
 
       if turn_cert_file do
-        tls_turn_port = Application.get_env(:membrane_videoroom_demo, :integrated_tls_turn_port)
+        tls_turn_port = Application.get_env(:quizline, :integrated_tls_turn_port)
         TURNManager.ensure_tls_turn_launched(integrated_turn_options, port: tls_turn_port)
       end
     end
@@ -145,6 +145,7 @@ defmodule Quizline.VideoRoom do
       end
 
     endpoint = %WebRTC{
+      rtc_engine: rtc_engine,
       ice_name: peer.id,
       owner: self(),
       stun_servers: state.network_options[:stun_servers] || [],

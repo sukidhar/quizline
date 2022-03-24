@@ -5,6 +5,7 @@ defmodule Quizline.UserManager.User do
   alias Ecto.Changeset
 
   embedded_schema do
+    field(:reg_no, :string)
     field(:first_name, :string)
     field(:last_name, :string)
     field(:email, :string)
@@ -17,8 +18,8 @@ defmodule Quizline.UserManager.User do
 
   def changeset(user, params) do
     user
-    |> cast(params, [:first_name, :last_name, :email, :account_type])
-    |> validate_required([:first_name, :last_name, :email, :account_type])
+    |> cast(params, [:reg_no, :first_name, :last_name, :email, :account_type])
+    |> validate_required([:reg_no, :first_name, :last_name, :email, :account_type])
     |> put_change(:id, Ecto.UUID.generate())
   end
 

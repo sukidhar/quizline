@@ -32,4 +32,9 @@ defmodule QuizlineWeb.UserAuth.AuthLive do
         {:noreply, socket |> put_flash(:error, reason)}
     end
   end
+
+  def handle_event("forgot-password", %{"user" => user_params}, socket) do
+    IO.inspect("implement this asap")
+    {:noreply, socket}
+  end
 end

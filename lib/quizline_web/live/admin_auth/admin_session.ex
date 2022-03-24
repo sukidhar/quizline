@@ -5,6 +5,8 @@ defmodule QuizlineWeb.AdminAuth.AdminSession do
   alias Quizline.AdminManager.Admin
   alias Quizline.UserManager
 
+  @ignore_list ["and"]
+
   @impl true
   def mount(_params, %{"guardian_default_token" => token}, socket) do
     {:ok, %Admin{} = admin, _claims} = Quizline.AdminManager.Guardian.resource_from_token(token)
@@ -36,19 +38,30 @@ defmodule QuizlineWeb.AdminAuth.AdminSession do
           data
           |> Enum.map(fn k ->
             {:ok, row} = k
-            [_, fname, lname, email, acc_type | _] = row
+            [_, fname, lname, reg_no, email, acc_type, department, dep_email, branch | _] = row
 
             %{
-              first_name: fname,
-              last_name: lname,
-              email: email,
-              account_type: String.downcase(acc_type)
+              user: %{
+                reg_no: reg_no,
+                first_name: fname,
+                last_name: lname,
+                email: String.downcase(email),
+                account_type: String.downcase(acc_type)
+              },
+              department: %{
+                account_type: String.downcase(acc_type),
+                branch: capitalise_each(branch || ""),
+                title: capitalise_each(department),
+                email: String.downcase(dep_email)
+              }
             }
           end)
 
         {:ok, rows}
       end)
       |> UserManager.create_accounts(socket.assigns.admin.id)
+
+    IO.inspect(res)
 
     case res do
       {:ok, users} ->
@@ -61,5 +74,14 @@ defmodule QuizlineWeb.AdminAuth.AdminSession do
     end
 
     {:noreply, socket}
+  end
+
+  defp capitalise_each(string) do
+    string
+    |> String.split()
+    |> Enum.map(fn k ->
+      if k not in @ignore_list, do: String.capitalize(k), else: k
+    end)
+    |> Enum.join(" ")
   end
 end

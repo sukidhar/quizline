@@ -147,52 +147,78 @@ defmodule Necto do
   def create_user_accounts(changesets, id) do
     query = """
     UNWIND $batch as row
-    CALL apoc.do.when(row.account_type = 'invigilator', 'MATCH (admin:Admin) WHERE admin.id = $id CREATE (n: Invigilator:User $row) <-[r:has_invigilator {created_at: datetime().epochSeconds}]-(admin) RETURN n,r', 'MATCH (admin:Admin) WHERE admin.id = $id CREATE (n: Student:User $row) <-[r:has_student {created_at: datetime().epochSeconds}]-(admin) RETURN n,r', {row: apoc.map.removeKey(row,"account_type"), id: $id}) YIELD value
-    WITH value as results
-    RETURN results
+    WITH row.user as userData, row.department as depData
+    call apoc.do.when(
+      userData.account_type="invigilator",
+      "MERGE (n:Invigilator:User {email: user.email, first_name: user.first_name, last_name: user.last_name, reg_no: user.reg_no})
+      ON CREATE SET n.id = user.id
+      RETURN n",
+      "MERGE (n:Student:User {email: user.email, first_name: user.first_name, last_name: user.last_name, reg_no: user.reg_no})
+      ON CREATE SET n.id = user.id
+      RETURN n",
+      {user: apoc.map.removeKey(userData, "account_type")}
+    ) YIELD value
+    with value.n as user,userData, depData
+    MATCH (admin:Admin {id: $id})
+    MERGE (admin)-[r1:has_department]->(dep:Department {email: depData.email, title: depData.title})
+    ON CREATE SET r1.created = datetime().epochSeconds
+    ON MATCH SET r1.updated = datetime().epochSeconds
+    with user, dep,userData, depData
+    CALL apoc.do.when(
+      userData.account_type = "invigilator",
+      "MERGE (dep)-[r2:has_invigilator]->(user) ON CREATE SET r2.created = datetime().epochSeconds ON MATCH SET r2.updated = datetime().epochSeconds RETURN r2 as r",
+      "MERGE (dep)-[r2:has_branch]->(branch:Branch {title: br.title}) ON CREATE SET r2.created = datetime().epochSeconds ON MATCH SET r2.updated = datetime().epochSeconds
+      MERGE (branch)-[r3:has_student]->(user) ON CREATE SET r3.created = datetime().epochSeconds ON MATCH SET r3.updated = datetime().epochSeconds RETURN r3 as r",
+    {dep: dep, user: user, br: {title: depData.branch}}) YIELD value
+    return user as n,value.r as r
     """
 
     batch =
-      Enum.filter(changesets, fn set ->
-        %Changeset{valid?: value} = set
-        value
-      end)
-      |> Enum.map(fn set ->
-        %Changeset{changes: changes} = set
-        changes
+      Enum.filter(
+        changesets,
+        fn %{
+             user: %Changeset{valid?: b1},
+             department: %Changeset{valid?: b2}
+           } ->
+          b1 && b2
+        end
+      )
+      |> Enum.map(fn %{
+                       user: %Changeset{changes: user},
+                       department: %Changeset{changes: department}
+                     } ->
+        %{user: user, department: department}
       end)
 
     conn = Sips.conn()
 
-    try do
-      %Bolt.Sips.Response{results: data} = Sips.query!(conn, query, %{batch: batch, id: id})
+    %Bolt.Sips.Response{results: data} = Sips.query!(conn, query, %{batch: batch, id: id})
 
-      users =
-        Enum.map(data, fn %{"results" => res} ->
-          {:ok, user} = structify_response(res, :user, "no such node found")
-          user
-        end)
+    users =
+      Enum.map(data, fn k ->
+        {:ok, user} = structify_response(k, :user, "no such node found")
+        user
+      end)
 
-      {:ok, users}
-    rescue
-      e -> {:error, e}
-    end
+    {:ok, users}
+  rescue
+    e ->
+      IO.inspect(e)
+      {:error, e}
   end
 
   def get_user(:id, id) do
-    query = "MATCH (n : User)<-[r]-(:Admin) WHERE n.id='#{id}' RETURN n,r"
+    query = "MATCH (n : User)<-[r]-() WHERE n.id='#{id}' RETURN n,r"
 
-    try do
-      conn = Sips.conn()
-      %Bolt.Sips.Response{results: [data | _]} = Sips.query!(conn, query)
-      structify_response(data, :user, "no such node found")
-    rescue
-      e -> {:error, reason: e.message}
-    end
+    conn = Sips.conn()
+    %Bolt.Sips.Response{results: [data | _]} = Sips.query!(conn, query)
+    structify_response(data, :user, "no such node found")
+  rescue
+    e -> {:error, reason: e.message}
   end
 
   def get_user(:email, email) do
-    query = "MATCH (n : User)<-[r]-(:Admin) WHERE n.email='#{email}' RETURN n,r"
+    query = "MATCH (n : User)<-[r]-() WHERE n.email='#{email}' RETURN n,r"
 
     try do
       conn = Sips.conn()

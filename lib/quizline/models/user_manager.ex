@@ -1,6 +1,7 @@
 defmodule Quizline.UserManager do
   alias Quizline.UserManager.UserMailer
   alias Quizline.UserManager.User
+  alias Quizline.UserManager.Department
   alias Quizline.UserManager.Guardian
   import Necto
 
@@ -11,9 +12,14 @@ defmodule Quizline.UserManager do
 
     res =
       Enum.map(data, fn account ->
-        registration_user_set(%User{}, account)
+        %{
+          user: registration_user_set(%User{}, account.user),
+          department: registration_department_set(%Department{}, account.department)
+        }
       end)
       |> Necto.create_user_accounts(id)
+
+    IO.inspect(res)
 
     case res do
       {:ok, users} ->
@@ -35,6 +41,10 @@ defmodule Quizline.UserManager do
 
   def registration_user_set(%User{} = user, params \\ %{}) do
     User.changeset(user, params)
+  end
+
+  def registration_department_set(%Department{} = dep, params \\ %{}) do
+    Department.changeset(dep, params)
   end
 
   def login_user_set(%User{} = user, params \\ %{}) do
