@@ -1,15 +1,3 @@
-#!/bin/sh
-
-set -m
-
-echo "starting neo4j process"
-
-/docker-entrypoint.sh neo4j &
-
-
-
-while ! nc -z neo4j 7687 ; do sleep 1 ; done
-
 # $1 = name of constraint
 # $2 = label to be constrained
 # $3 = field of the label
@@ -59,7 +47,3 @@ create_unique_constraint "unique_department_email" "Department" "email"
 create_unique_constraint "unique_branch_title" "Branch" "title"
 create_required_constraint "mandatory_department_email" "Department" "email"
 create_required_constraint "mandatory_branch_title" "Branch" "title"
-
-
-# give control to main process
-fg %1

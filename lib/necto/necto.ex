@@ -160,8 +160,9 @@ defmodule Necto do
     ) YIELD value
     with value.n as user,userData, depData
     MATCH (admin:Admin {id: $id})
-    MERGE (admin)-[r1:has_department]->(dep:Department {email: depData.email, title: depData.title})
-    ON CREATE SET r1.created = datetime().epochSeconds
+    MERGE (admin)-[r1:has_department]->(dep:Department {email: depData.email})
+    ON CREATE SET r1.created = datetime().epochSeconds,
+    dep.title = depData.title
     ON MATCH SET r1.updated = datetime().epochSeconds
     with user, dep,userData, depData
     CALL apoc.do.when(
