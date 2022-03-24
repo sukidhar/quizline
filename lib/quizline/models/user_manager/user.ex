@@ -29,6 +29,13 @@ defmodule Quizline.UserManager.User do
     |> validate_required([:email, :password])
   end
 
+  def fp_changeset(user, attrs) do
+    user
+    |> cast(attrs, [:email])
+    |> validate_required([:email])
+    |> validate_email()
+  end
+
   def password_changeset(user, params) do
     user
     |> cast(params, [:password, :confirm_password])
@@ -43,6 +50,18 @@ defmodule Quizline.UserManager.User do
     )
     |> hash_password()
   end
+
+  defp validate_email(%Changeset{changes: %{email: email}} = changeset) do
+    case EmailChecker.valid?(email) do
+      true ->
+        changeset
+
+      false ->
+        changeset |> add_error(:email, "please, ensure if the entered email is invalid")
+    end
+  end
+
+  defp validate_email(changeset), do: changeset
 
   defp hash_password(
          %Changeset{

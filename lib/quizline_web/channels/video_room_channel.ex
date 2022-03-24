@@ -1,5 +1,6 @@
 defmodule QuizlineWeb.VideoRoomChannel do
   use QuizlineWeb, :channel
+  require Logger
 
   @impl true
   def join("video_room:" <> room_id, _payload, socket) do

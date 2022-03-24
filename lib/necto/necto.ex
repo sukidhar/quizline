@@ -192,19 +192,21 @@ defmodule Necto do
 
     conn = Sips.conn()
 
-    %Bolt.Sips.Response{results: data} = Sips.query!(conn, query, %{batch: batch, id: id})
+    try do
+      %Bolt.Sips.Response{results: data} = Sips.query!(conn, query, %{batch: batch, id: id})
 
-    users =
-      Enum.map(data, fn k ->
-        {:ok, user} = structify_response(k, :user, "no such node found")
-        user
-      end)
+      users =
+        Enum.map(data, fn k ->
+          {:ok, user} = structify_response(k, :user, "no such node found")
+          user
+        end)
 
-    {:ok, users}
-  rescue
-    e ->
-      IO.inspect(e)
-      {:error, e}
+      {:ok, users}
+    rescue
+      e ->
+        IO.inspect(e)
+        {:error, e}
+    end
   end
 
   def get_user(:id, id) do

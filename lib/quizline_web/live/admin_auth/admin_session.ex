@@ -61,15 +61,13 @@ defmodule QuizlineWeb.AdminAuth.AdminSession do
       end)
       |> UserManager.create_accounts(socket.assigns.admin.id)
 
-    IO.inspect(res)
-
     case res do
-      {:ok, users} ->
-        Enum.map(users, fn user ->
-          IO.inspect(user.email)
-        end)
+      {:ok, _users} ->
+        # TODO show successful message on website
+        IO.inspect("successfully created all accounts")
 
       {:error, reason} ->
+        # TODO show failure message on website
         IO.inspect(reason)
     end
 

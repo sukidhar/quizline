@@ -8,7 +8,9 @@ defmodule QuizlineWeb.UserAuth.AuthLive do
   def mount(_params, _session, socket) do
     {:ok,
      socket
-     |> assign(:login_changeset, UserManager.login_user_set(%User{}))}
+     |> assign(:show_forgot_password, false)
+     |> assign(:login_changeset, UserManager.login_user_set(%User{}))
+     |> assign(:fp_changeset, UserManager.fp_change_user(%User{}))}
   end
 
   def handle_event("sign-in-validate", %{"user" => user_params}, socket) do
@@ -33,8 +35,34 @@ defmodule QuizlineWeb.UserAuth.AuthLive do
     end
   end
 
-  def handle_event("forgot-password", %{"user" => user_params}, socket) do
-    IO.inspect("implement this asap")
-    {:noreply, socket}
+  def handle_event("forgot-password", _params, socket) do
+    {:noreply, socket |> assign(:show_forgot_password, true)}
+  end
+
+  def handle_event("hide-forgot-password", _params, socket) do
+    {:noreply, socket |> assign(:show_forgot_password, false)}
+  end
+
+  def handle_event("fp-change", %{"user" => user_params}, socket) do
+    changeset =
+      %User{}
+      |> UserManager.fp_change_user(user_params)
+      |> Map.put(:action, :insert)
+
+    {:noreply, socket |> assign(:fp_changeset, changeset)}
+  end
+
+  def handle_event("fp-submit", %{"user" => user_params}, socket) do
+    changeset =
+      %User{}
+      |> UserManager.fp_change_user(user_params)
+      |> Map.put(:action, :validate)
+
+    UserManager.send_fp_instructions(changeset)
+
+    {:noreply,
+     socket
+     |> assign(:fp_changeset, changeset)
+     |> assign(:show_forgot_password, !changeset.valid?)}
   end
 end
