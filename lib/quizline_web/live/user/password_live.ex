@@ -1,4 +1,4 @@
-defmodule QuizlineWeb.UserAuth.PasswordLive do
+defmodule QuizlineWeb.User.PasswordLive do
   use QuizlineWeb, :live_view
   import QuizlineWeb.InputHelpers
   alias Quizline.UserManager

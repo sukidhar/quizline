@@ -1,4 +1,4 @@
-defmodule QuizlineWeb.UserAuth.UserSession do
+defmodule QuizlineWeb.User.SessionLive do
   use QuizlineWeb, :live_view
 
   def handle_event("signout", _, socket) do

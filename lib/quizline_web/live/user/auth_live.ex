@@ -1,4 +1,4 @@
-defmodule QuizlineWeb.UserAuth.AuthLive do
+defmodule QuizlineWeb.User.AuthLive do
   use QuizlineWeb, :live_view
 
   import QuizlineWeb.InputHelpers

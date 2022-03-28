@@ -164,13 +164,18 @@ defmodule Necto do
     ON CREATE SET r1.created = datetime().epochSeconds,
     dep.title = depData.title
     ON MATCH SET r1.updated = datetime().epochSeconds
-    with user, dep,userData, depData
+    with admin, user, dep,userData, depData
     CALL apoc.do.when(
       userData.account_type = "invigilator",
       "MERGE (dep)-[r2:has_invigilator]->(user) ON CREATE SET r2.created = datetime().epochSeconds ON MATCH SET r2.updated = datetime().epochSeconds RETURN r2 as r",
-      "MERGE (dep)-[r2:has_branch]->(branch:Branch {title: br.title}) ON CREATE SET r2.created = datetime().epochSeconds ON MATCH SET r2.updated = datetime().epochSeconds
-      MERGE (branch)-[r3:has_student]->(user) ON CREATE SET r3.created = datetime().epochSeconds ON MATCH SET r3.updated = datetime().epochSeconds RETURN r3 as r",
-    {dep: dep, user: user, br: {title: depData.branch}}) YIELD value
+      "
+      MERGE (admin)-[k:has_semester]->(sem:Semester {title: br.semester}) ON CREATE SET k.created = datetime().epochSeconds ON MEATCH SET k.updated = datetime().epochSeconds
+      MERGE (dep)-[r2:has_branch]->(branch:Branch {title: br.title}) ON CREATE SET r2.created = datetime().epochSeconds ON MATCH SET r2.updated = datetime().epochSeconds
+      MERGE (branch)-[r3:has_student]->(user) ON CREATE SET r3.created = datetime().epochSeconds ON MATCH SET r3.updated = datetime().epochSeconds
+      MERGE (user)-[r4: is_studying]->(sem) ON CREATE SET r4.created = datetime().epochSeconds ON MATCH SET r4.updated = datetime().epochSeconds
+      RETURN r3 as r
+      ",
+    {dep: dep, user: user, br: {title: depData.branch, semester: userData.semester}, admin: admin}) YIELD value
     return user as n,value.r as r
     """
 

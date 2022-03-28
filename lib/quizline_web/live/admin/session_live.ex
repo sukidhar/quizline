@@ -1,4 +1,4 @@
-defmodule QuizlineWeb.AdminAuth.AdminSession do
+defmodule QuizlineWeb.Admin.SessionLive do
   use QuizlineWeb, :live_view
 
   # alias Quizline.AdminManager
@@ -38,21 +38,34 @@ defmodule QuizlineWeb.AdminAuth.AdminSession do
           data
           |> Enum.map(fn k ->
             {:ok, row} = k
-            [_, fname, lname, reg_no, email, acc_type, department, dep_email, branch | _] = row
+
+            [
+              _,
+              fname,
+              lname,
+              reg_no,
+              semester,
+              email,
+              acc_type,
+              department,
+              dep_email,
+              branch | _
+            ] = row
 
             %{
               user: %{
-                reg_no: reg_no,
-                first_name: fname,
-                last_name: lname,
-                email: String.downcase(email),
-                account_type: String.downcase(acc_type)
+                reg_no: reg_no |> String.trim(),
+                first_name: fname |> String.trim(),
+                last_name: lname |> String.trim(),
+                email: String.downcase(email) |> String.trim(),
+                account_type: String.downcase(acc_type) |> String.trim(),
+                semester: String.trim(semester || "")
               },
               department: %{
-                account_type: String.downcase(acc_type),
-                branch: capitalise_each(branch || ""),
-                title: capitalise_each(department),
-                email: String.downcase(dep_email)
+                account_type: String.downcase(acc_type) |> String.trim(),
+                branch: capitalise_each(branch || "") |> String.trim(),
+                title: capitalise_each(department) |> String.trim(),
+                email: String.downcase(dep_email) |> String.trim()
               }
             }
           end)
@@ -72,6 +85,22 @@ defmodule QuizlineWeb.AdminAuth.AdminSession do
     end
 
     {:noreply, socket}
+  end
+
+  def handle_event("show-dashboard", _, socket) do
+    {:noreply, socket |> assign(:view, :dashboard)}
+  end
+
+  def handle_event("show-events", _, socket) do
+    {:noreply, socket |> assign(:view, :events)}
+  end
+
+  def handle_event("show-departments", _, socket) do
+    {:noreply, socket |> assign(:view, :departments)}
+  end
+
+  def handle_event("show-users", _, socket) do
+    {:noreply, socket |> assign(:view, :users)}
   end
 
   defp capitalise_each(string) do
