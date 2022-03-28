@@ -2,6 +2,8 @@ defmodule Quizline.ChangesetHelper do
   import Ecto.Changeset
   alias Ecto.Changeset
 
+  @ignore_list ["and"]
+
   def hash_password(
         %Changeset{
           changes: %{password: password, confirm_password: confirm_password}
@@ -29,4 +31,15 @@ defmodule Quizline.ChangesetHelper do
   end
 
   def validate_email(changeset), do: changeset
+
+  def initalised_string(string) do
+    string
+    |> String.split()
+    |> Enum.map(fn k ->
+      if k not in @ignore_list, do: String.first(k), else: nil
+    end)
+    |> Enum.reject(&is_nil/1)
+    |> Enum.join()
+    |> String.upcase()
+  end
 end

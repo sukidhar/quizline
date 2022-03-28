@@ -66,6 +66,23 @@ defmodule Necto do
             {:ok, Kernel.struct!(struct, props)}
         end
 
+      %{label: :department, modules: %{department: struct}} ->
+        case response do
+          %{"n" => node, "r" => r} ->
+            props =
+              convert_to_klist(node.properties)
+              |> Keyword.put(
+                :created,
+                "#{r.properties["created"] || DateTime.to_unix(DateTime.utc_now())}"
+              )
+              |> Keyword.put(
+                :updated,
+                "#{r.properties["updated"]}"
+              )
+
+            {:ok, Kernel.struct!(struct, props)}
+        end
+
       _ ->
         {:error, "Struct Module not mentioned in config.exs"}
     end
@@ -248,6 +265,28 @@ defmodule Necto do
       {:ok, true}
     rescue
       e -> {:error, e}
+    end
+  end
+
+  def create_department(%{title: title, dep: dep, email: email}, id) do
+    query = """
+    MATCH (admin:Admin) WHERE admin.id='#{id}'
+    MERGE (admin)-[r:has_department]->(dep:Department{title:"#{title}", dep: "#{dep}", email: "#{email}"})
+    ON CREATE SET r.created = datetime().epochSeconds
+    ON MATCH SET r.updated = datetime().epochSeconds
+    RETURN dep as n, r
+    """
+
+    conn = Sips.conn()
+
+    try do
+      %Bolt.Sips.Response{results: [data | _]} = Sips.query!(conn, query)
+      {:ok, department} = structify_response(data, :department, "failed to create")
+      IO.inspect(department)
+      {:ok, department}
+    rescue
+      e ->
+        IO.inspect(e)
     end
   end
 end

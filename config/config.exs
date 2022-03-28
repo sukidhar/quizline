@@ -26,7 +26,8 @@ config :email_checker,
 config :quizline, Necto,
   modules: %{
     admin: Quizline.AdminManager.Admin,
-    user: Quizline.UserManager.User
+    user: Quizline.UserManager.User,
+    department: Quizline.DepartmentManager.Department
   }
 
 # configures neo4j database connection

@@ -9,7 +9,7 @@
         <% :events -> %>
             <p> I am events</p>
         <% :departments -> %>
-            <.live_component module={QuizlineWeb.Admin.SessionLive.DepartmentsComponent} id="departments" />
+            <.live_component module={QuizlineWeb.Admin.SessionLive.DepartmentsComponent} id="departments" admin={@admin} />
         <% :users -> %>
             <p> I am users</p>
         <% end %>
@@ -17,7 +17,7 @@
     </div> 
     <div class="drawer-side">
       <label for="my-drawer" class="drawer-overlay"></label>
-      <ul class="menu overflow-y-auto w-16 bg-base-100 text-base-content">
+      <ul class="menu overflow-y-auto w-16 bg-white text-base-content border-r-[1px]">
         <!-- Sidebar content here -->
         <li class="flex items-center pt-2">
             <a class="text-base hover:bg-inherit hover:text-primary-focus fill-base hover:fill-primary-focus" phx-click="show-dashboard">

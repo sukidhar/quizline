@@ -4,6 +4,7 @@ defmodule QuizlineWeb.InputHelpers do
 
   def floating_input(form, field, opts \\ []) do
     type = Phoenix.HTML.Form.input_type(form, field)
+    placeholder = Keyword.get(opts, :placeholder, humanize(field))
 
     input_opts =
       [
@@ -45,8 +46,8 @@ defmodule QuizlineWeb.InputHelpers do
     input_opts =
       [
         class: Enum.join(input_opts, " "),
-        placeholder: humanize(field),
-        phx_debounce: "blur",
+        placeholder: placeholder,
+        phx_debounce: Keyword.get(opts, :phx_debounce, "blur"),
         id: "DOM-input-#{field}"
       ] ++
         if field == :password,
@@ -66,7 +67,7 @@ defmodule QuizlineWeb.InputHelpers do
     content_tag :div, wrapper_opts do
       [
         apply(Phoenix.HTML.Form, type, [form, field, input_opts]),
-        label(form, field, humanize(field), label_opts),
+        label(form, field, placeholder, label_opts),
         error_tag
       ]
     end
