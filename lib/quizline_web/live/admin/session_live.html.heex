@@ -9,7 +9,9 @@
         <% :events -> %>
             <p> I am events</p>
         <% :departments -> %>
-            <.live_component module={QuizlineWeb.Admin.SessionLive.DepartmentsComponent} id="departments" admin={@admin} />
+            <div class="relative h-full w-full">
+                <.live_component module={QuizlineWeb.Admin.SessionLive.DepartmentsComponent} id="departments" admin={@admin} />
+            </div>
         <% :users -> %>
             <p> I am users</p>
         <% end %>

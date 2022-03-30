@@ -1,6 +1,6 @@
 defmodule Quizline.DepartmentManager do
   alias Necto
-  alias Quizline.DepartmentManager.Branch
+  # alias Quizline.DepartmentManager.Branch
   alias Quizline.DepartmentManager.Department
   alias Ecto.Changeset
 
@@ -17,7 +17,12 @@ defmodule Quizline.DepartmentManager do
     Department.changeset(department, params)
   end
 
-  def branch_changeset(%Branch{} = branch, params \\ %{}) do
-    Branch.changeset(branch, params)
+  # def branch_changeset(%Branch{} = branch, params \\ %{}) do
+  #   Branch.changeset(branch, params)
+  # end
+
+  def get_departments(page \\ 0, id) do
+    {:ok, departments} = Necto.get_departments(page, id)
+    {:ok, departments}
   end
 end

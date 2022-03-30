@@ -1,33 +1,100 @@
-<div class="flex flex-col h-screen">
-    <div class="navbar bg-white border-b-[1px]">
+<div class="flex flex-col h-full w-full">
+    <div class="navbar bg-white border-b-[1px] z-50">
         <div class="navbar-start">
           <a class="btn btn-ghost normal-case text-xl">Departments</a>
         </div>
-        <div class="navbar-end">
-          <button class="btn btn-outline gap-2 scale-90" phx-target={@myself} phx-click="show-add-department-form">
-            <p class="translate-y-[0.45px]">
-                ADD
-            </p>
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" class="scale-90" xmlns="http://www.w3.org/2000/svg">
-                <path d="M12 2C10.0222 2 8.08879 2.58649 6.4443 3.6853C4.79981 4.78412 3.51809 6.3459 2.76121 8.17317C2.00433 10.0004 1.8063 12.0111 2.19215 13.9509C2.578 15.8907 3.53041 17.6725 4.92894 19.0711C6.32746 20.4696 8.10929 21.422 10.0491 21.8079C11.9889 22.1937 13.9996 21.9957 15.8268 21.2388C17.6541 20.4819 19.2159 19.2002 20.3147 17.5557C21.4135 15.9112 22 13.9778 22 12C22 10.6868 21.7413 9.38642 21.2388 8.17317C20.7363 6.95991 19.9997 5.85752 19.0711 4.92893C18.1425 4.00035 17.0401 3.26375 15.8268 2.7612C14.6136 2.25866 13.3132 2 12 2ZM12 20C10.4178 20 8.87104 19.5308 7.55544 18.6518C6.23985 17.7727 5.21447 16.5233 4.60897 15.0615C4.00347 13.5997 3.84504 11.9911 4.15372 10.4393C4.4624 8.88743 5.22433 7.46197 6.34315 6.34315C7.46197 5.22433 8.88743 4.4624 10.4393 4.15372C11.9911 3.84504 13.5997 4.00346 15.0615 4.60896C16.5233 5.21447 17.7727 6.23984 18.6518 7.55544C19.5308 8.87103 20 10.4177 20 12C20 14.1217 19.1572 16.1566 17.6569 17.6569C16.1566 19.1571 14.1217 20 12 20ZM16 11H13V8C13 7.73478 12.8946 7.48043 12.7071 7.29289C12.5196 7.10536 12.2652 7 12 7C11.7348 7 11.4804 7.10536 11.2929 7.29289C11.1054 7.48043 11 7.73478 11 8V11H8C7.73479 11 7.48043 11.1054 7.2929 11.2929C7.10536 11.4804 7 11.7348 7 12C7 12.2652 7.10536 12.5196 7.2929 12.7071C7.48043 12.8946 7.73479 13 8 13H11V16C11 16.2652 11.1054 16.5196 11.2929 16.7071C11.4804 16.8946 11.7348 17 12 17C12.2652 17 12.5196 16.8946 12.7071 16.7071C12.8946 16.5196 13 16.2652 13 16V13H16C16.2652 13 16.5196 12.8946 16.7071 12.7071C16.8946 12.5196 17 12.2652 17 12C17 11.7348 16.8946 11.4804 16.7071 11.2929C16.5196 11.1054 16.2652 11 16 11Z"/>
-            </svg>
-          </button>
-        </div>
-    </div>
-    <%= if @should_show_add_form do %>
-        <div class="flex glass flex-grow w-full items-center justify-center">
-            <div class="flex card h-fit p-5 w-3/6 items-center bg-white">
-                <p class="text-3xl w-full pt-5 px-5">Add New Department</p>
-                <.form let = {f} for={@changeset} id="department_form", class="w-full space-y-10 pb-5 px-5" phx-target={@myself} phx-change="dep-change" phx-submit="dep-submit">
-                    <%= floating_input f, :title, wrapper: ["relative"], placeholder: "Department Title", phx_debounce: 0%>
-                    <%= floating_input f, :email, wrapper: ["relative"], placeholder: "Email Address"%>
-                    <div class="flex gap-2">
-                        <p class="font-semibold"><%= "Department Label: "  %> </p>
-                        <p><%= "#{Map.get(@changeset.changes, :dep, "")}"  %> </p>
-                    </div>
-                    <button phx-target={@myself} type="submit" class="btn btn-outline btn-primary">Create</button>
-                </.form>
+        <%= if !@should_show_add_form  do %> 
+            <div class="navbar-end">
+                <button class="btn btn-outline gap-2 scale-90" phx-target={@myself} phx-click="show-add-department-form">
+                <p class="translate-y-[0.45px]">
+                    ADD
+                </p>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" class="scale-90" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 2C10.0222 2 8.08879 2.58649 6.4443 3.6853C4.79981 4.78412 3.51809 6.3459 2.76121 8.17317C2.00433 10.0004 1.8063 12.0111 2.19215 13.9509C2.578 15.8907 3.53041 17.6725 4.92894 19.0711C6.32746 20.4696 8.10929 21.422 10.0491 21.8079C11.9889 22.1937 13.9996 21.9957 15.8268 21.2388C17.6541 20.4819 19.2159 19.2002 20.3147 17.5557C21.4135 15.9112 22 13.9778 22 12C22 10.6868 21.7413 9.38642 21.2388 8.17317C20.7363 6.95991 19.9997 5.85752 19.0711 4.92893C18.1425 4.00035 17.0401 3.26375 15.8268 2.7612C14.6136 2.25866 13.3132 2 12 2ZM12 20C10.4178 20 8.87104 19.5308 7.55544 18.6518C6.23985 17.7727 5.21447 16.5233 4.60897 15.0615C4.00347 13.5997 3.84504 11.9911 4.15372 10.4393C4.4624 8.88743 5.22433 7.46197 6.34315 6.34315C7.46197 5.22433 8.88743 4.4624 10.4393 4.15372C11.9911 3.84504 13.5997 4.00346 15.0615 4.60896C16.5233 5.21447 17.7727 6.23984 18.6518 7.55544C19.5308 8.87103 20 10.4177 20 12C20 14.1217 19.1572 16.1566 17.6569 17.6569C16.1566 19.1571 14.1217 20 12 20ZM16 11H13V8C13 7.73478 12.8946 7.48043 12.7071 7.29289C12.5196 7.10536 12.2652 7 12 7C11.7348 7 11.4804 7.10536 11.2929 7.29289C11.1054 7.48043 11 7.73478 11 8V11H8C7.73479 11 7.48043 11.1054 7.2929 11.2929C7.10536 11.4804 7 11.7348 7 12C7 12.2652 7.10536 12.5196 7.2929 12.7071C7.48043 12.8946 7.73479 13 8 13H11V16C11 16.2652 11.1054 16.5196 11.2929 16.7071C11.4804 16.8946 11.7348 17 12 17C12.2652 17 12.5196 16.8946 12.7071 16.7071C12.8946 16.5196 13 16.2652 13 16V13H16C16.2652 13 16.5196 12.8946 16.7071 12.7071C16.8946 12.5196 17 12.2652 17 12C17 11.7348 16.8946 11.4804 16.7071 11.2929C16.5196 11.1054 16.2652 11 16 11Z"/>
+                </svg>
+                </button>
             </div>
-        </div>
-    <% end %> 
+        <% end %> 
+    </div>
+    <div class="flex-1">
+        <%= cond do  %> 
+            <% @should_show_add_form -> %> 
+                <div class="flex glass h-full w-full max-h-full items-center justify-center z-20">
+                    <div id="add-new-department-card" class="flex card max-h-3/4 p-5 w-2/5 items-center bg-white overflow-y-auto">
+                        <p class="text-3xl w-full pt-5 px-5">Add New Department</p>
+                        <.form let = {f} for={@changeset} id="department_form", class="w-full space-y-10 pb-5 px-5" phx-target={@myself} phx-change="dep-change" phx-submit="dep-submit">
+                            <%= floating_input f, :title, wrapper: ["relative"], placeholder: "Department Title", phx_debounce: 0%>
+                            <%= floating_input f, :email, wrapper: ["relative"], placeholder: "Email Address"%>
+                            <%= if Map.has_key?(@changeset.changes, :dep) do %>
+                                <div class="flex gap-2">
+                                    <p class="font-semibold"><%= "Department Label: "  %> </p>
+                                    <p><%= "#{Map.get(@changeset.changes, :dep, "")}"  %> </p>
+                                </div>
+                            <% end %>
+                            <div class="flex">
+                                <p>Branches</p>
+                                <div class="flex-grow"></div>
+                                <button type="button" class="flex gap-2 hover:fill-primary-focus hover:text-primary-focus text-black fill-black" phx-target={@myself} phx-click="add-branch">
+                                    <p class="translate-y-[0.45px]">
+                                        Add Branch
+                                    </p>
+                                    <svg width="24" height="24" viewBox="0 0 24 24" class="scale-90" xmlns="http://www.w3.org/2000/svg">
+                                        <path d="M12 2C10.0222 2 8.08879 2.58649 6.4443 3.6853C4.79981 4.78412 3.51809 6.3459 2.76121 8.17317C2.00433 10.0004 1.8063 12.0111 2.19215 13.9509C2.578 15.8907 3.53041 17.6725 4.92894 19.0711C6.32746 20.4696 8.10929 21.422 10.0491 21.8079C11.9889 22.1937 13.9996 21.9957 15.8268 21.2388C17.6541 20.4819 19.2159 19.2002 20.3147 17.5557C21.4135 15.9112 22 13.9778 22 12C22 10.6868 21.7413 9.38642 21.2388 8.17317C20.7363 6.95991 19.9997 5.85752 19.0711 4.92893C18.1425 4.00035 17.0401 3.26375 15.8268 2.7612C14.6136 2.25866 13.3132 2 12 2ZM12 20C10.4178 20 8.87104 19.5308 7.55544 18.6518C6.23985 17.7727 5.21447 16.5233 4.60897 15.0615C4.00347 13.5997 3.84504 11.9911 4.15372 10.4393C4.4624 8.88743 5.22433 7.46197 6.34315 6.34315C7.46197 5.22433 8.88743 4.4624 10.4393 4.15372C11.9911 3.84504 13.5997 4.00346 15.0615 4.60896C16.5233 5.21447 17.7727 6.23984 18.6518 7.55544C19.5308 8.87103 20 10.4177 20 12C20 14.1217 19.1572 16.1566 17.6569 17.6569C16.1566 19.1571 14.1217 20 12 20ZM16 11H13V8C13 7.73478 12.8946 7.48043 12.7071 7.29289C12.5196 7.10536 12.2652 7 12 7C11.7348 7 11.4804 7.10536 11.2929 7.29289C11.1054 7.48043 11 7.73478 11 8V11H8C7.73479 11 7.48043 11.1054 7.2929 11.2929C7.10536 11.4804 7 11.7348 7 12C7 12.2652 7.10536 12.5196 7.2929 12.7071C7.48043 12.8946 7.73479 13 8 13H11V16C11 16.2652 11.1054 16.5196 11.2929 16.7071C11.4804 16.8946 11.7348 17 12 17C12.2652 17 12.5196 16.8946 12.7071 16.7071C12.8946 16.5196 13 16.2652 13 16V13H16C16.2652 13 16.5196 12.8946 16.7071 12.7071C16.8946 12.5196 17 12.2652 17 12C17 11.7348 16.8946 11.4804 16.7071 11.2929C16.5196 11.1054 16.2652 11 16 11Z"/>
+                                    </svg>
+                                </button>
+                            </div>
+                            <%= if (Map.get(@changeset.changes, :branches, [])) |> Enum.count() > 0 do%>
+                                <div class="w-full h-full">
+                                    <div class="flex">
+                                        <div class="w-3/5">
+                                        </div>
+                                        <p class="w-1/5 text-base text-center">Label</p>
+                                        <div class="w-1/5"></div>
+                                    </div>
+                                    <%= inputs_for f, :branches, fn branch -> %>
+                                        <div class="flex w-full py-3 max-h-96 overflow-y-auto">
+                                            <div class="w-3/5">
+                                                <%= floating_input branch, :title, wrapper: ["relative"], placeholder: "Branch Title", phx_debounce: 0 %>
+                                            </div>
+                                            <div class="w-1/5 flex items-center justify-center text-center">
+                                                <p><%= "#{Map.get(branch.source.changes, :branch_id, "")}"  %> </p>
+                                            </div>
+                                            <div class="w-1/5 flex justify-center items-center">
+                                                <button type="button" class="hover:fill-primary-focus fill-black" phx-target={@myself} phx-click="remove-branch" phx-value-branch_id={branch.source.changes.id} >
+                                                    <svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                                        <path d="M10 18C10.2652 18 10.5196 17.8946 10.7071 17.7071C10.8946 17.5196 11 17.2652 11 17V11C11 10.7348 10.8946 10.4804 10.7071 10.2929C10.5196 10.1054 10.2652 10 10 10C9.73478 10 9.48043 10.1054 9.29289 10.2929C9.10536 10.4804 9 10.7348 9 11V17C9 17.2652 9.10536 17.5196 9.29289 17.7071C9.48043 17.8946 9.73478 18 10 18ZM20 6H16V5C16 4.20435 15.6839 3.44129 15.1213 2.87868C14.5587 2.31607 13.7956 2 13 2H11C10.2044 2 9.44129 2.31607 8.87868 2.87868C8.31607 3.44129 8 4.20435 8 5V6H4C3.73478 6 3.48043 6.10536 3.29289 6.29289C3.10536 6.48043 3 6.73478 3 7C3 7.26522 3.10536 7.51957 3.29289 7.70711C3.48043 7.89464 3.73478 8 4 8H5V19C5 19.7956 5.31607 20.5587 5.87868 21.1213C6.44129 21.6839 7.20435 22 8 22H16C16.7956 22 17.5587 21.6839 18.1213 21.1213C18.6839 20.5587 19 19.7956 19 19V8H20C20.2652 8 20.5196 7.89464 20.7071 7.70711C20.8946 7.51957 21 7.26522 21 7C21 6.73478 20.8946 6.48043 20.7071 6.29289C20.5196 6.10536 20.2652 6 20 6ZM10 5C10 4.73478 10.1054 4.48043 10.2929 4.29289C10.4804 4.10536 10.7348 4 11 4H13C13.2652 4 13.5196 4.10536 13.7071 4.29289C13.8946 4.48043 14 4.73478 14 5V6H10V5ZM17 19C17 19.2652 16.8946 19.5196 16.7071 19.7071C16.5196 19.8946 16.2652 20 16 20H8C7.73478 20 7.48043 19.8946 7.29289 19.7071C7.10536 19.5196 7 19.2652 7 19V8H17V19ZM14 18C14.2652 18 14.5196 17.8946 14.7071 17.7071C14.8946 17.5196 15 17.2652 15 17V11C15 10.7348 14.8946 10.4804 14.7071 10.2929C14.5196 10.1054 14.2652 10 14 10C13.7348 10 13.4804 10.1054 13.2929 10.2929C13.1054 10.4804 13 10.7348 13 11V17C13 17.2652 13.1054 17.5196 13.2929 17.7071C13.4804 17.8946 13.7348 18 14 18Z"/>
+                                                    </svg>   
+                                                </button>
+                                            </div>
+                                        </div>
+                                    <% end %> 
+                                </div>
+                            <% end %> 
+                        <div class="flex gap-5">
+                            <button phx-target={@myself} type="button" phx-click="hide-add-form" class="btn btn-outline btn-error">Cancel</button>
+                            <button phx-target={@myself} type="submit" class="btn btn-outline btn-primary">Create</button>
+                        </div>
+                    </.form>
+                </div>
+            </div>
+            <% @selected_department != nil -> %>
+                <div class="p-2 w-full">
+                    <div class="text-sm breadcrumbs">
+                        <ul>
+                        <li><a phx-click="deselect-department" phx-target={@myself}>Departments</a></li> 
+                        <li><a phx-click="refresh-current-department" phx-target={@myself}><%= @selected_department.dep %></a></li>
+                        </ul>
+                    </div>
+                </div>
+                <p><%= @selected_department.title %> </p>
+            <% true -> %> 
+                <div class="flex-grow w-full z-10 grid grid-cols-4 gap-4 p-5">
+                    <%= for {department, index} <- @departments |> Enum.with_index() do %> 
+                        <button phx-click="department-pressed" phx-target={@myself} phx-value-department_email={department.email} phx-value-index={index} class="card bg-white shadow-md h-44 w-full flex items-center justify-end p-2">
+                            <p><%= department.title %></p> 
+                        </button>
+                    <% end %> 
+                </div>
+        <% end %> 
+    </div>
 </div>

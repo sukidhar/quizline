@@ -88,6 +88,15 @@ Hooks.error = {
   },
 };
 
+Hooks.scrollTracker = {
+  mounted() {
+    this.el.addEventListener("scroll", (event) => {
+      console.log(this.el.scrollTop);
+      console.log(this.el.clientHeight);
+    });
+  },
+};
+
 function getFieldTypeFromError(id) {
   return id.replace("DOM-error-", "");
 }
