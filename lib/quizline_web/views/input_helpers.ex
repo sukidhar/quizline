@@ -4,6 +4,7 @@ defmodule QuizlineWeb.InputHelpers do
 
   def floating_input(form, field, opts \\ []) do
     type = Phoenix.HTML.Form.input_type(form, field)
+    placeholder = Keyword.get(opts, :placeholder, humanize(field))
 
     input_opts =
       [
@@ -41,13 +42,15 @@ defmodule QuizlineWeb.InputHelpers do
     ]
 
     error_tag = error_tag(form, field)
+    value = Keyword.get(opts, :value)
+    name = Keyword.get(opts, :name)
 
     input_opts =
       [
         class: Enum.join(input_opts, " "),
-        placeholder: humanize(field),
-        phx_debounce: "blur",
-        id: "DOM-input-#{field}"
+        placeholder: placeholder,
+        phx_debounce: Keyword.get(opts, :phx_debounce, "blur"),
+        id: Keyword.get(opts, :id, "DOM-input-#{field}")
       ] ++
         if field == :password,
           do: [value: Phoenix.HTML.Form.input_value(form, :password)],
@@ -56,7 +59,9 @@ defmodule QuizlineWeb.InputHelpers do
               if(field == :confirm_password,
                 do: [value: Phoenix.HTML.Form.input_value(form, :confirm_password)],
                 else: []
-              )
+              ) ++
+              if(value != nil, do: [value: value], else: []) ++
+              if(name != nil, do: [name: name], else: [])
 
     label_opts = [
       class: Enum.join(label_opts, " "),
@@ -66,9 +71,71 @@ defmodule QuizlineWeb.InputHelpers do
     content_tag :div, wrapper_opts do
       [
         apply(Phoenix.HTML.Form, type, [form, field, input_opts]),
-        label(form, field, humanize(field), label_opts),
+        label(form, field, placeholder, label_opts),
         error_tag
       ]
     end
+  end
+
+  def array_input(form, field, attr \\ []) do
+    values = Phoenix.HTML.Form.input_value(form, field) || [""]
+    id = Phoenix.HTML.Form.input_id(form, field)
+
+    content_tag :ul, id: container_id(id), data: [index: Enum.count(values)] do
+      values
+      |> Enum.with_index()
+      |> Enum.map(fn {k, v} ->
+        form_elements(form, field, k, v)
+      end)
+    end
+  end
+
+  def array_add_button(form, field) do
+    id = Phoenix.HTML.Form.input_id(form, field)
+    # {:safe, content}
+    content =
+      form_elements(form, field, "", "__name__")
+      |> safe_to_string
+
+    # |> html_escape
+    data = [
+      prototype: content,
+      container: container_id(id)
+    ]
+
+    link("Add", to: "#", data: data, class: "add-form-field")
+  end
+
+  defp form_elements(form, field, k, v) do
+    type = :string
+
+    try do
+      ^type = Phoenix.HTML.Form.input_type(form, field)
+    rescue
+      e ->
+        IO.inspect(e)
+    end
+
+    id = Phoenix.HTML.Form.input_id(form, field)
+    new_id = id <> "_#{v}"
+
+    input_opts = [
+      name: new_field_name(form, field),
+      value: k,
+      id: new_id
+    ]
+
+    content_tag :li do
+      [
+        apply(Phoenix.HTML.Form, type, [form, field, input_opts]),
+        link("Remove", to: "#", data: [id: new_id], class: "remove-form-field")
+      ]
+    end
+  end
+
+  defp container_id(id), do: id <> "_container"
+
+  defp new_field_name(form, field) do
+    Phoenix.HTML.Form.input_name(form, field) <> "[]"
   end
 end

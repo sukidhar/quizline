@@ -2,42 +2,42 @@ defmodule QuizlineWeb.SubdomainRouter do
   use QuizlineWeb, :router
 
   pipeline :browser do
-    plug :accepts, ["html"]
-    plug :fetch_session
-    plug :fetch_live_flash
-    plug :put_root_layout, {QuizlineWeb.LayoutView, :root}
-    plug :protect_from_forgery
-    plug :put_secure_browser_headers
+    plug(:accepts, ["html"])
+    plug(:fetch_session)
+    plug(:fetch_live_flash)
+    plug(:put_root_layout, {QuizlineWeb.LayoutView, :root})
+    plug(:protect_from_forgery)
+    plug(:put_secure_browser_headers)
   end
 
   pipeline :api do
-    plug :accepts, ["json"]
+    plug(:accepts, ["json"])
   end
 
   pipeline :auth do
-    plug Quizline.AdminManager.Pipeline
+    plug(Quizline.AdminManager.Pipeline)
   end
 
   pipeline :ensure_auth do
-    plug Guardian.Plug.EnsureAuthenticated
+    plug(Guardian.Plug.EnsureAuthenticated)
   end
 
   scope "/", QuizlineWeb do
-    pipe_through [:browser, :auth]
+    pipe_through([:browser, :auth])
 
-    live "/auth", AdminAuth.AuthLive
+    live("/auth", Admin.AuthLive)
 
-    get "/verify/:token", AuthController, :verify_admin
-    get "/authenticate/:token", AuthController, :authenticate_admin
-    get "/signout", AuthController, :sign_out_admin
+    get("/verify/:token", AuthController, :verify_admin)
+    get("/authenticate/:token", AuthController, :authenticate_admin)
+    get("/signout", AuthController, :sign_out_admin)
 
-    live "/forgot-password/:token", AdminAuth.FPLive
+    live("/forgot-password/:token", Admin.FPLive)
   end
 
   scope "/", QuizlineWeb do
-    pipe_through [:browser, :auth, :ensure_auth]
+    pipe_through([:browser, :auth, :ensure_auth])
 
-    live "/", AdminAuth.AdminSession
+    live("/", Admin.SessionLive)
   end
 
   # Other scopes may use custom stacks.

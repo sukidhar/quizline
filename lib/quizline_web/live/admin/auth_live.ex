@@ -1,4 +1,4 @@
-defmodule QuizlineWeb.AdminAuth.AuthLive do
+defmodule QuizlineWeb.Admin.AuthLive do
   use QuizlineWeb, :live_view
   require Logger
 
@@ -62,6 +62,7 @@ defmodule QuizlineWeb.AdminAuth.AuthLive do
         {:noreply, socket |> assign(login_changeset: changeset)}
 
       {:error, reason: reason} ->
+        IO.inspect(reason)
         {:noreply, socket |> put_flash(:error, reason)}
     end
   end

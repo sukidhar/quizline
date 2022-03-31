@@ -1,8 +1,11 @@
 defmodule Quizline.UserManager do
   alias Quizline.UserManager.UserMailer
   alias Quizline.UserManager.User
+  alias Quizline.UserManager.Department
   alias Quizline.UserManager.Guardian
   import Necto
+
+  require Logger
 
   alias Ecto.Changeset
 
@@ -11,9 +14,14 @@ defmodule Quizline.UserManager do
 
     res =
       Enum.map(data, fn account ->
-        registration_user_set(%User{}, account)
+        %{
+          user: registration_user_set(%User{}, account.user),
+          department: registration_department_set(%Department{}, account.department)
+        }
       end)
       |> Necto.create_user_accounts(id)
+
+    IO.inspect(res)
 
     case res do
       {:ok, users} ->
@@ -35,6 +43,14 @@ defmodule Quizline.UserManager do
 
   def registration_user_set(%User{} = user, params \\ %{}) do
     User.changeset(user, params)
+  end
+
+  def registration_department_set(%Department{} = department, params \\ %{}) do
+    Department.changeset(department, params)
+  end
+
+  def fp_change_user(%User{} = user, attrs \\ %{}) do
+    User.fp_changeset(user, attrs)
   end
 
   def login_user_set(%User{} = user, params \\ %{}) do
@@ -92,5 +108,21 @@ defmodule Quizline.UserManager do
 
   def update_password(id, password) do
     update_user_password(id, password)
+  end
+
+  def send_fp_instructions(%Ecto.Changeset{valid?: true, changes: %{email: email}}) do
+    with {:ok, user} <-
+           get_user(:email, email) do
+      UserMailer.deliver_reset_instructions(
+        user,
+        "http://lvh.me:4000/set-pw/#{tokenise_user(user)}"
+      )
+    else
+      _ -> Logger.info("No such email exists")
+    end
+  end
+
+  def send_fp_instructions(%Ecto.Changeset{valid?: false}) do
+    Logger.info("Invalid data")
   end
 end

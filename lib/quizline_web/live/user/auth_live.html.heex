@@ -1,0 +1,34 @@
+<div class="font-sans">
+    <div class="absolute navbar bg-white z-30">
+        <button class="btn btn-ghost normal-case text-xl">Quizline</button>
+    </div>
+    <div class="flex flex-col absolute justify-center items-start h-screen w-2/3 p-20">
+        <p class="text-5xl font-bold text-base-content mb-5">
+            Sign in to your account
+        </p>
+        <.form let = {f} for={@login_changeset} id="signin_form", class="w-3/5 space-y-10" phx-change="sign-in-validate" phx-submit="sign-in-submit">
+            <%= floating_input f, :email, wrapper: ["relative"] %>
+            <%= floating_input f, :password, wrapper: ["relative"] %>
+            <div class="flex flex-row-reverse">
+                <button type="button" class="text-sm btn btn-link" phx-click="forgot-password">Forgot password?</button>
+            </div>
+            <button type="submit" class="btn btn-outline btn-primary">Continue</button>
+        </.form>
+    </div>
+    <%= if @show_forgot_password do  %> 
+        <div class="absolute h-screen w-screen z-20 bg-white">
+            <button class="absolute my-32 mx-10 btn btn-circle btn-outline" phx-click="hide-forgot-password">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+            </button>
+            <div class="flex flex-col justify-center items-start h-screen p-20 mb-10">
+                <p class="text-5xl font-bold text-base-content">
+                    Recover your account
+                </p>
+                <.form let = {f} for={@fp_changeset} id="forgot_password", class="w-1/2 space-y-10" phx-change="fp-change" phx-submit="fp-submit">
+                    <%= floating_input f, :email, wrapper: ["relative"] %>
+                    <button type="submit" class="btn btn-outline btn-primary">Submit</button>
+                </.form>
+            </div>
+        </div>
+    <% end %> 
+</div>

@@ -1,8 +1,7 @@
 defmodule Quizline.AdminManager.Admin do
   use Ecto.Schema
   import Ecto.Changeset
-
-  alias Ecto.Changeset
+  import Quizline.ChangesetHelper
 
   embedded_schema do
     field(:first_name, :string)
@@ -68,32 +67,4 @@ defmodule Quizline.AdminManager.Admin do
     )
     |> hash_password()
   end
-
-  defp validate_email(%Changeset{changes: %{email: email}} = changeset) do
-    case EmailChecker.valid?(email) do
-      true ->
-        changeset
-
-      false ->
-        changeset |> add_error(:email, "please, ensure if the entered email is invalid")
-    end
-  end
-
-  defp validate_email(changeset), do: changeset
-
-  defp hash_password(
-         %Changeset{
-           changes: %{password: password, confirm_password: confirm_password}
-         } = changeset
-       ) do
-    if password === confirm_password do
-      changeset
-      |> put_change(:hashed_password, Argon2.hash_pwd_salt(password))
-    else
-      changeset
-      |> add_error(:confirm_password, "passwords entered doesn't match")
-    end
-  end
-
-  defp hash_password(changeset), do: changeset
 end

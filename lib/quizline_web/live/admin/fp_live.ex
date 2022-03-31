@@ -1,4 +1,4 @@
-defmodule QuizlineWeb.AdminAuth.FPLive do
+defmodule QuizlineWeb.Admin.FPLive do
   use QuizlineWeb, :live_view
 
   alias Quizline.AdminManager

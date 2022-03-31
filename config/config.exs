@@ -26,7 +26,8 @@ config :email_checker,
 config :quizline, Necto,
   modules: %{
     admin: Quizline.AdminManager.Admin,
-    user: Quizline.UserManager.User
+    user: Quizline.UserManager.User,
+    department: Quizline.DepartmentManager.Department
   }
 
 # configures neo4j database connection
@@ -69,10 +70,19 @@ config :esbuild,
 # Configures Elixir's Logger
 config :logger, :console,
   format: "$time $metadata[$level] $message\n",
-  metadata: [:request_id]
+  metadata: [:request_id, :room, :peer]
+
+config :logger,
+  compile_time_purge_matching: [
+    [level_lower_than: :info],
+    # Silence irrelevant warnings caused by resending handshake events
+    [module: Membrane.SRTP.Encryptor, function: "handle_event/4", level_lower_than: :error]
+  ]
 
 # Use Jason for JSON parsing in Phoenix
 config :phoenix, :json_library, Jason
+
+config :ex_libnice, impl: NIF
 
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.

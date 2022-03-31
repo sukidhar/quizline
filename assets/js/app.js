@@ -25,6 +25,7 @@ import "phoenix_html";
 import { Socket } from "phoenix";
 import { LiveSocket } from "phoenix_live_view";
 import topbar from "../vendor/topbar";
+import "./user_socket.js";
 
 let Hooks = {};
 
@@ -84,6 +85,15 @@ Hooks.error = {
   },
   updated() {
     console.log(this.el);
+  },
+};
+
+Hooks.scrollTracker = {
+  mounted() {
+    this.el.addEventListener("scroll", (event) => {
+      console.log(this.el.scrollTop);
+      console.log(this.el.clientHeight);
+    });
   },
 };
 

@@ -28,4 +28,15 @@ defmodule Quizline.UserManager.UserMailer do
     ==============================
     """)
   end
+
+  def deliver_reset_instructions(user, url) do
+    deliver(user.email, "Password recovery instructions", """
+    ==============================
+    Hi #{user.email},
+    You can reset your account password by visiting the URL below:
+    #{url}
+    If you didn't require this instructions, please ignore this.
+    ==============================
+    """)
+  end
 end
