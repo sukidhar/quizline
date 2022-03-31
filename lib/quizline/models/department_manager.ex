@@ -21,7 +21,7 @@ defmodule Quizline.DepartmentManager do
   #   Branch.changeset(branch, params)
   # end
 
-  def get_departments(page \\ 0, id) do
+  def get_departments_with_branches(page \\ 0, id) do
     {:ok, departments} = Necto.get_departments(page, id)
     {:ok, departments}
   end

@@ -3,7 +3,7 @@
         <div class="navbar-start">
           <a class="btn btn-ghost normal-case text-xl">Departments</a>
         </div>
-        <%= if !@should_show_add_form  do %> 
+        <%= if !(@should_show_add_form || @selected_department != nil)  do %> 
             <div class="navbar-end">
                 <button class="btn btn-outline gap-2 scale-90" phx-target={@myself} phx-click="show-add-department-form">
                 <p class="translate-y-[0.45px]">
@@ -86,7 +86,18 @@
                         </ul>
                     </div>
                 </div>
-                <p><%= @selected_department.title %> </p>
+                <p class="p-2 text-lg font-semibold"><%= @selected_department.title %> </p>
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-5 md:grid-cols-2 sm:grid-cols-1 md:h-full sm:h-full lg:h-4/5 w-full h-full p-5">
+                    <div class="h-96 w-full bg-white card shadow-lg">
+
+                    </div>
+                    <div class="h-96  w-full bg-white card shadow-lg">
+
+                    </div>
+                    <div class="h-96  w-full bg-white card shadow-lg">
+
+                    </div>
+                </div>
             <% true -> %> 
                 <div class="flex-grow w-full z-10 grid grid-cols-4 gap-4 p-5">
                     <%= for {department, index} <- @departments |> Enum.with_index() do %> 

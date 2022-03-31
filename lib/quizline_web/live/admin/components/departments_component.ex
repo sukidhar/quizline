@@ -9,7 +9,7 @@ defmodule QuizlineWeb.Admin.SessionLive.DepartmentsComponent do
   alias Quizline.AdminManager.Admin
 
   def update(%{admin: %Admin{id: id}} = assigns, socket) do
-    {:ok, deps} = DepartmentManager.get_departments(id)
+    {:ok, deps} = DepartmentManager.get_departments_with_branches(id)
 
     departments =
       deps
@@ -20,7 +20,6 @@ defmodule QuizlineWeb.Admin.SessionLive.DepartmentsComponent do
     {:ok,
      socket
      |> assign(assigns)
-     |> assign(:breadcrumbs, ["Departments"])
      |> assign(:selected_department, nil)
      |> assign(:should_show_add_form, false)
      |> assign(:departments, departments)
