@@ -367,4 +367,49 @@ defmodule Necto do
         {:error, e}
     end
   end
+
+  def create_branch(params) do
+    query = """
+    MATCH (dep:Department{email:$email})
+    OPTIONAL MATCH (dep)-[:has_branch]-(branch:Branch{branch_id:$branch_id})
+    CALL {
+        with dep, branch
+        with dep, branch
+        where branch is null
+        CREATE (dep)-[:has_branch]->(b:Branch{title:$title, branch_id:$branch_id, id: $id})
+        return True as result
+        UNION
+        with dep, branch
+        with dep, branch
+        where branch is not null
+        return False as result
+    }
+    RETURN dep, branch, result
+    """
+
+    conn = Sips.conn()
+
+    %Bolt.Sips.Response{results: [%{"result" => result} | _]} = Sips.query!(conn, query, params)
+
+    if result do
+      {:ok, "branch created successfully"}
+    else
+      {:error, "branch already exists!"}
+    end
+  end
+
+  def delete_branch(id) do
+    query = """
+    MATCH (b:Branch{id: $id}) DETACH DELETE b
+    """
+
+    conn = Sips.conn()
+
+    try do
+      _ = Sips.query!(conn, query, %{id: id})
+      {:ok, true}
+    rescue
+      e -> {:error, "Failed to delete branch due to ", e}
+    end
+  end
 end

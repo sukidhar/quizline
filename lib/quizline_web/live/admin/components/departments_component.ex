@@ -23,6 +23,9 @@ defmodule QuizlineWeb.Admin.SessionLive.DepartmentsComponent do
      |> assign(:selected_department, nil)
      |> assign(:should_show_add_form, false)
      |> assign(:departments, departments)
+     |> assign(:selected_tab, :tab_branches)
+     |> assign(:show_add_branch_form?, false)
+     |> assign(:new_branch_changeset, DepartmentManager.branch_changeset(%Department.Branch{}))
      |> assign(:changeset, DepartmentManager.department_changeset(%Department{}))}
   end
 
@@ -117,5 +120,86 @@ defmodule QuizlineWeb.Admin.SessionLive.DepartmentsComponent do
 
   def handle_event("refresh-current-department", _, socket) do
     {:noreply, socket}
+  end
+
+  def handle_event("select-tab", %{"tab" => tab}, socket) do
+    {:noreply, socket |> assign(:selected_tab, String.to_atom("tab_" <> tab))}
+  end
+
+  def handle_event("show-add-branch-form", _, socket) do
+    {:noreply, socket |> assign(:show_add_branch_form?, true)}
+  end
+
+  def handle_event("hide-add-branch-form", _, socket) do
+    {:noreply, socket |> assign(:show_add_branch_form?, false)}
+  end
+
+  def handle_event("new-branch-change", %{"branch" => branch_params}, socket) do
+    changeset =
+      %Department.Branch{}
+      |> DepartmentManager.branch_changeset(branch_params)
+      |> Map.put(:action, :insert)
+
+    {:noreply, socket |> assign(:new_branch_changeset, changeset)}
+  end
+
+  def handle_event("new-branch-submit", %{"branch" => branch_params}, socket) do
+    changeset =
+      %Department.Branch{}
+      |> DepartmentManager.branch_changeset(branch_params)
+      |> Map.put(:action, :insert)
+
+    department = socket.assigns.selected_department
+
+    case DepartmentManager.create_branch(changeset, department.email) do
+      {:ok, response} ->
+        IO.inspect(response)
+
+        new_branches =
+          department.branches ++
+            [
+              %Department.Branch{
+                id: changeset.changes.id,
+                title: changeset.changes.title,
+                branch_id: changeset.changes.branch_id
+              }
+            ]
+
+        {:noreply,
+         socket
+         |> assign(:selected_department, Map.put(department, :branches, new_branches))
+         |> assign(:show_add_branch_form?, false)
+         |> assign(
+           :new_branch_changeset,
+           DepartmentManager.branch_changeset(%Department.Branch{})
+         )}
+
+      {:error, error} ->
+        IO.inspect(error)
+        {:noreply, socket}
+    end
+  end
+
+  def handle_event("delete-branch", %{"id" => id}, socket) do
+    department = socket.assigns.selected_department
+
+    case DepartmentManager.delete_branch(id) do
+      {:ok, flash} ->
+        IO.inspect(flash)
+
+        new_branches =
+          (department.branches || [])
+          |> Enum.reject(fn k ->
+            k.id == id
+          end)
+
+        {:noreply,
+         socket
+         |> assign(:selected_department, Map.put(department, :branches, new_branches))}
+
+      {:error, flash} ->
+        IO.inspect(flash)
+        {:noreply, socket}
+    end
   end
 end

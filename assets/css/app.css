@@ -20,3 +20,11 @@
 .phx-no-feedback.invalid-feedback, .phx-no-feedback .invalid-feedback {
   display: none;
 }
+
+.card-parent:hover>.hidden-child{
+  visibility: visible;
+}
+
+.card-parent>.hidden-child{
+  visibility: hidden;
+}

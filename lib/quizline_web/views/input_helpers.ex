@@ -47,6 +47,7 @@ defmodule QuizlineWeb.InputHelpers do
 
     input_opts =
       [
+        disabled: Keyword.get(opts, :disabled, false),
         class: Enum.join(input_opts, " "),
         placeholder: placeholder,
         phx_debounce: Keyword.get(opts, :phx_debounce, "blur"),
