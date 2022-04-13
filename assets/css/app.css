@@ -28,3 +28,7 @@
 .card-parent>.hidden-child{
   visibility: hidden;
 }
+
+.no-scroll{
+  overflow: hidden;
+}

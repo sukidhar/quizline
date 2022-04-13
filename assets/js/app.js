@@ -26,6 +26,7 @@ import { Socket } from "phoenix";
 import { LiveSocket } from "phoenix_live_view";
 import topbar from "../vendor/topbar";
 import "./user_socket.js";
+import { NIL } from "uuid";
 
 let Hooks = {};
 
@@ -94,6 +95,16 @@ Hooks.scrollTracker = {
       console.log(this.el.scrollTop);
       console.log(this.el.clientHeight);
     });
+  },
+};
+
+Hooks.scrollLock = {
+  mounted() {
+    this.parent = this.el.parentElement;
+    this.parent.classList.add("no-scroll");
+  },
+  destroyed() {
+    this.parent.classList.remove("no-scroll");
   },
 };
 

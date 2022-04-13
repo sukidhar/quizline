@@ -14,7 +14,7 @@ defmodule QuizlineWeb.Admin.SessionLive do
     {:ok,
      socket
      |> assign(:admin, admin)
-     |> assign(:view, :departments)
+     |> assign(:view, :semesters)
      |> allow_upload(:form_sheet, accept: ~w(.csv), max_entries: 1)}
   end
 
@@ -89,6 +89,10 @@ defmodule QuizlineWeb.Admin.SessionLive do
 
   def handle_event("show-dashboard", _, socket) do
     {:noreply, socket |> assign(:view, :dashboard)}
+  end
+
+  def handle_event("show-semesters", _, socket) do
+    {:noreply, socket |> assign(:view, :semesters)}
   end
 
   def handle_event("show-events", _, socket) do

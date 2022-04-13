@@ -105,6 +105,22 @@ defmodule Necto do
             {:ok, Kernel.struct!(struct, props)}
         end
 
+      %{label: :semester, modules: %{semester: struct}} ->
+        response
+        |> Enum.map(fn %{
+                         "semester" => %Bolt.Sips.Types.Node{properties: properties},
+                         "r" => %Bolt.Sips.Types.Relationship{properties: rel_props}
+                       } ->
+          props =
+            convert_to_klist(properties)
+            |> Keyword.put(
+              :created,
+              "#{rel_props["created"] || DateTime.to_unix(DateTime.utc_now())}"
+            )
+
+          Kernel.struct!(struct, props)
+        end)
+
       _ ->
         {:error, "Struct Module not mentioned in config.exs"}
     end
@@ -410,6 +426,43 @@ defmodule Necto do
       {:ok, true}
     rescue
       e -> {:error, "Failed to delete branch due to ", e}
+    end
+  end
+
+  def create_semester(params, id) do
+    query = """
+    MATCH (admin:Admin) WHERE admin.id=$id
+    CREATE (admin)-[r:has_semester{created: datetime().epochSeconds}]->(semester:Semester $params)
+    RETURN semester, r
+    """
+
+    conn = Sips.conn()
+
+    try do
+      %Bolt.Sips.Response{results: response} = Sips.query!(conn, query, %{id: id, params: params})
+      semsters = structify_response(response, :semester, "unable to structify to semester")
+      {:ok, semsters}
+    rescue
+      e -> {:error, "Failed to create semester due to ", e}
+    end
+  end
+
+  def get_semesters(id) do
+    query = """
+    MATCH (admin:Admin) WHERE admin.id = $id
+    MATCH (admin)-[r:has_semester]->(semester:Semester)
+    return semester, r
+    """
+
+    conn = Sips.conn()
+
+    try do
+      %Bolt.Sips.Response{results: response} = Sips.query!(conn, query, %{id: id})
+
+      semsters = structify_response(response, :semester, "unable to structify to semester")
+      {:ok, semsters}
+    rescue
+      e -> {:error, "Failed to create semester due to ", e}
     end
   end
 end

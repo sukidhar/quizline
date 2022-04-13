@@ -20,9 +20,16 @@ defmodule QuizlineWeb.Admin.SessionLive.DepartmentsComponent do
     {:ok,
      socket
      |> assign(assigns)
+     |> assign(:confirmation_type, :none)
+     |> assign(:deletion_branch_id, "")
+     |> assign(:confirmation_title, "")
+     |> assign(:confirmation_text, "")
+     |> assign(:show_confirmation?, false)
      |> assign(:selected_department, nil)
      |> assign(:should_show_add_form, false)
      |> assign(:departments, departments)
+     |> assign(:invigilators, [])
+     |> assign(:selected_invigilator, [])
      |> assign(:selected_tab, :tab_branches)
      |> assign(:show_add_branch_form?, false)
      |> assign(:new_branch_changeset, DepartmentManager.branch_changeset(%Department.Branch{}))
@@ -181,25 +188,55 @@ defmodule QuizlineWeb.Admin.SessionLive.DepartmentsComponent do
   end
 
   def handle_event("delete-branch", %{"id" => id}, socket) do
+    {:noreply,
+     socket
+     |> assign(:deletion_branch_id, id)
+     |> assign(:confirmation_type, :branch_deletion)
+     |> assign(:confirmation_title, "Delete Branch?")
+     |> assign(
+       :confirmation_text,
+       "Are you sure to delete this branch? Kindly note this action is irreversible."
+     )
+     |> assign(:show_confirmation?, true)}
+  end
+
+  def handle_event("cancel", _, socket) do
+    {:noreply, socket |> assign(:show_confirmation?, false)}
+  end
+
+  def handle_event("confirm", _, socket) do
     department = socket.assigns.selected_department
 
-    case DepartmentManager.delete_branch(id) do
-      {:ok, flash} ->
-        IO.inspect(flash)
+    case socket.assigns.confirmation_type || :none do
+      :none ->
+        {:noreply, socket |> assign(:show_confirmation?, false)}
 
-        new_branches =
-          (department.branches || [])
-          |> Enum.reject(fn k ->
-            k.id == id
-          end)
+      :branch_deletion ->
+        case Map.get(socket.assigns, :deletion_branch_id) do
+          nil ->
+            {:noreply, socket |> assign(:show_confirmation?, false)}
 
-        {:noreply,
-         socket
-         |> assign(:selected_department, Map.put(department, :branches, new_branches))}
+          id ->
+            case DepartmentManager.delete_branch(id) do
+              {:ok, flash} ->
+                IO.inspect(flash)
 
-      {:error, flash} ->
-        IO.inspect(flash)
-        {:noreply, socket}
+                new_branches =
+                  (department.branches || [])
+                  |> Enum.reject(fn k ->
+                    k.id == id
+                  end)
+
+                {:noreply,
+                 socket
+                 |> assign(:show_confirmation?, false)
+                 |> assign(:selected_department, Map.put(department, :branches, new_branches))}
+
+              {:error, flash} ->
+                IO.inspect(flash)
+                {:noreply, socket |> assign(:show_confirmation?, false)}
+            end
+        end
     end
   end
 end
