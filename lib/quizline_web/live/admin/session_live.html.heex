@@ -1,8 +1,6 @@
-<div class="drawer drawer-mobile bg-current h-screen">
+<div class="drawer drawer-mobile bg-current h-screen w-screen">
     <input id="my-drawer" type="checkbox" class="drawer-toggle">
-    <div class="drawer-content">
-      <!-- Page content here -->
-      <div class="w-full h-screen bg-white">
+    <div class="drawer-content flex flex-col h-full w-full">
         <%= case @view do %>
         <% :dashboard -> %>
             <p> I am dashboard</p>
@@ -13,13 +11,10 @@
                 <.live_component module={QuizlineWeb.Admin.SessionLive.SemestersComponent} id="semesters" admin={@admin} />
             </div>
         <% :departments -> %>
-            <div class="relative h-full w-full">
-                <.live_component module={QuizlineWeb.Admin.SessionLive.DepartmentsComponent} id="departments" admin={@admin} />
-            </div>
+            <.live_component module={QuizlineWeb.Admin.SessionLive.DepartmentsComponent} id="departments" admin={@admin} />
         <% :users -> %>
             <p> I am users</p>
         <% end %>
-      </div>
     </div> 
     <div class="drawer-side">
         <label for="my-drawer" class="drawer-overlay"></label>

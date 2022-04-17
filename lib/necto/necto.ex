@@ -121,6 +121,13 @@ defmodule Necto do
           Kernel.struct!(struct, props)
         end)
 
+      %{label: :subject, modules: %{subject: struct}} ->
+        response
+        |> Enum.map(fn %{"subject" => %Bolt.Sips.Types.Node{properties: properties}} ->
+          props = convert_to_klist(properties)
+          Kernel.struct!(struct, props)
+        end)
+
       _ ->
         {:error, "Struct Module not mentioned in config.exs"}
     end
@@ -463,6 +470,41 @@ defmodule Necto do
       {:ok, semsters}
     rescue
       e -> {:error, "Failed to create semester due to ", e}
+    end
+  end
+
+  def create_subject(params, dep_email) do
+    query = """
+    MATCH (dep:Department{email: $email})
+    CREATE (dep)-[r:has_subject]->(subject:Subject $params)
+    """
+
+    conn = Sips.conn()
+
+    try do
+      %Bolt.Sips.Response{results: response} =
+        Sips.query!(conn, query, %{email: dep_email, params: params})
+
+      semsters = structify_response(response, :subject, "unable to structify to semester")
+      {:ok, semsters}
+    rescue
+      e -> {:error, "Failed to create subject due to ", e}
+    end
+  end
+
+  def get_subjects(dep_email) do
+    query = """
+    MATCH (dep:Department {email: $email})-[has_subject]->(subject:Subject)
+    RETURN subject
+    """
+
+    conn = Sips.conn()
+
+    try do
+      %Bolt.Sips.Response{results: response} = Sips.query!(conn, query, %{email: dep_email})
+      {:ok, structify_response(response, :subject, "unable to structify to semester")}
+    rescue
+      e -> {:error, "Failed to fetch subjects due to ", e}
     end
   end
 end

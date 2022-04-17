@@ -12,6 +12,13 @@ module.exports = {
       "1/2": "50%",
       "3/4": "75%",
     },
+    width: {
+      "fill-available":
+        "-moz-available" /* WebKit-based browsers will ignore this. */,
+      "fill-available":
+        "-webkit-fill-available" /* Mozilla-based browsers will ignore this. */,
+      "fill-available": "fill-available",
+    },
   },
   plugins: [require("daisyui")],
 };

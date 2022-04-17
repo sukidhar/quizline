@@ -16,10 +16,7 @@ defmodule Quizline.DepartmentManager.Department do
       field(:branch_id, :string)
     end
 
-    embeds_many :subjects, Subject do
-      field(:title, :string)
-      field(:subject_code, :string)
-    end
+    embeds_many(:subjects, Quizline.SubjectManager.Subject)
   end
 
   def changeset(department, params) do

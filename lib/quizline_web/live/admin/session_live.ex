@@ -14,7 +14,7 @@ defmodule QuizlineWeb.Admin.SessionLive do
     {:ok,
      socket
      |> assign(:admin, admin)
-     |> assign(:view, :semesters)
+     |> assign(:view, :departments)
      |> allow_upload(:form_sheet, accept: ~w(.csv), max_entries: 1)}
   end
 
