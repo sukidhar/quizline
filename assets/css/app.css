@@ -32,3 +32,42 @@
 .no-scroll{
   overflow: hidden;
 }
+
+.sidebar-button{
+  display: flex;
+  gap: 12px;
+  padding: 12px;
+  border-radius: 10px;
+}
+
+.sidebar-button>span{
+  transform: translateY(1px)
+}
+
+.sidebar-button:hover{
+  background: #c0c0aa;  /* fallback for old browsers */
+  background: -webkit-linear-gradient(to right, #1cf0ff51, #b3efec55);  /* Chrome 10-25, Safari 5.1-6 */
+  background: linear-gradient(to right,#1cf0ff51, #b3efec6f);
+  fill: rgb(0, 101, 101);
+  color: rgb(0, 101, 101);
+}
+
+.sidebar-button-active{
+  display: flex;
+  gap: 12px;
+  padding: 12px;
+  border-radius: 10px;
+  fill: rgba(20, 125, 125, 0.831);
+  color: rgba(20, 125, 125, 0.831);
+  background: #c0c0aa;  /* fallback for old browsers */
+  background: -webkit-linear-gradient(to right, #1cefff, #b3efec);  /* Chrome 10-25, Safari 5.1-6 */
+  background: linear-gradient(to right, #1cefff, #b3efec); /* W3C, IE 10+/ Edge, Firefox 16+, Chrome 26+, Opera 12+, Safari 7+ */
+}
+
+.sidebar-button-active:hover{
+  fill: rgb(0, 101, 101);
+  color: rgb(0, 101, 101);
+  background: #c0c0aa;  /* fallback for old browsers */
+  background: -webkit-linear-gradient(to right, #0decfc, #8efcf7);  /* Chrome 10-25, Safari 5.1-6 */
+  background: linear-gradient(to right, #0decfc, #8efcf7);
+}

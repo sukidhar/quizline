@@ -32,6 +32,8 @@ defmodule QuizlineWeb.SubdomainRouter do
     get("/signout", AuthController, :sign_out_admin)
 
     live("/forgot-password/:token", Admin.FPLive)
+
+    get("/file/departments_template", SessionController, :get_departments_sample)
   end
 
   scope "/", QuizlineWeb do

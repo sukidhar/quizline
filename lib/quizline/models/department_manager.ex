@@ -1,16 +1,40 @@
 defmodule Quizline.DepartmentManager do
   alias Necto
   # alias Quizline.DepartmentManager.Branch
+  import Necto.ErrorHandler
   alias Quizline.DepartmentManager.Department
   alias Ecto.Changeset
 
   def create_department(%Changeset{valid?: true, changes: data}, id) do
-    {:ok, dep} = Necto.create_department(data, id)
-    {:ok, dep}
+    case Necto.create_department(data, id) do
+      {:ok, dep} ->
+        {:ok, dep}
+
+      {:error, %Bolt.Sips.Exception{} = neoex} ->
+        handle_exception(neoex)
+
+      {:error, reason} ->
+        IO.inspect(reason)
+        {:error, "unknown error occured"}
+    end
   end
 
   def create_department(%Changeset{valid?: false}, _id) do
     {:error, "please make sure valid fields are filled"}
+  end
+
+  def create_departments(data, id) do
+    data
+    |> Enum.map(fn [title, email] ->
+      department_changeset(%Department{}, %{title: title, email: email})
+    end)
+    |> Enum.reject(fn %Changeset{valid?: valid} ->
+      not valid
+    end)
+    |> Enum.map(fn %Changeset{changes: data} ->
+      data
+    end)
+    |> Necto.create_departments(id)
   end
 
   def department_changeset(%Department{} = department, params \\ %{}) do

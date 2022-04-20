@@ -22,6 +22,9 @@ defmodule QuizlineWeb.Admin.SessionLive.DepartmentsComponent do
     {:ok,
      socket
      |> assign(assigns)
+     # form settings
+     |> assign(:form_mode, :file)
+     |> allow_upload(:department_file, accept: ~w(.csv), max_entries: 1)
      # confirmation alert params
      |> assign(:confirmation_type, :none)
      |> assign(:deletion_branch_id, "")
@@ -44,6 +47,35 @@ defmodule QuizlineWeb.Admin.SessionLive.DepartmentsComponent do
      |> assign(:new_subject_changeset, SubjectManager.subject_changeset(%Subject{}))
      |> assign(:show_add_subject_form?, true)
      |> assign(:subjects, [])}
+  end
+
+  def handle_event("department-file-uploaded", _, socket) do
+    consume_uploaded_entries(socket, :department_file, fn %{path: path}, _entry ->
+      data =
+        File.stream!(path)
+        |> CSV.decode()
+        |> Enum.to_list()
+        |> Enum.map(fn {:ok, row} ->
+          row
+        end)
+
+      {:ok, data}
+    end)
+    |> case do
+      [[["Department Title", "Department Email"] | data]] ->
+        data
+        |> DepartmentManager.create_departments(socket.assigns.admin.id)
+
+        {:noreply, socket}
+
+      _ ->
+        IO.inspect("sorry the format is not matching")
+        {:noreply, socket}
+    end
+  end
+
+  def handle_event("department-file-changed", _, socket) do
+    {:noreply, socket}
   end
 
   def handle_event("show-add-department-form", _, socket) do
@@ -74,6 +106,19 @@ defmodule QuizlineWeb.Admin.SessionLive.DepartmentsComponent do
        :changeset,
        changeset
      )}
+  end
+
+  def handle_event("set-form-mode", %{"type" => type}, socket) do
+    case type do
+      "form" ->
+        {:noreply, socket |> assign(:form_mode, :form)}
+
+      "file" ->
+        {:noreply, socket |> assign(:form_mode, :file)}
+
+      _ ->
+        {:noreply, socket |> assign(:form_mode, :form)}
+    end
   end
 
   def handle_event("remove-branch", %{"branch_id" => id}, socket) do

@@ -67,43 +67,46 @@ defmodule Necto do
         end
 
       %{label: :department, modules: %{department: struct}} ->
-        case response do
-          %{"n" => node, "r" => r, "branches" => branch_nodes} ->
-            branches =
-              branch_nodes
-              |> Enum.map(fn k ->
-                props = convert_to_klist(k.properties)
-                Kernel.struct!(Module.concat([struct, Branch]), props)
-              end)
+        response
+        |> Enum.map(fn data ->
+          case data do
+            %{"n" => node, "r" => r, "branches" => branch_nodes} ->
+              branches =
+                branch_nodes
+                |> Enum.map(fn k ->
+                  props = convert_to_klist(k.properties)
+                  Kernel.struct!(Module.concat([struct, Branch]), props)
+                end)
 
-            props =
-              convert_to_klist(node.properties)
-              |> Keyword.put(
-                :created,
-                "#{r.properties["created"] || DateTime.to_unix(DateTime.utc_now())}"
-              )
-              |> Keyword.put(
-                :updated,
-                "#{r.properties["updated"]}"
-              )
-              |> Keyword.put(:branches, branches)
+              props =
+                convert_to_klist(node.properties)
+                |> Keyword.put(
+                  :created,
+                  "#{r.properties["created"] || DateTime.to_unix(DateTime.utc_now())}"
+                )
+                |> Keyword.put(
+                  :updated,
+                  "#{r.properties["updated"]}"
+                )
+                |> Keyword.put(:branches, branches)
 
-            {:ok, Kernel.struct!(struct, props)}
+              {:ok, Kernel.struct!(struct, props)}
 
-          %{"n" => node, "r" => r} ->
-            props =
-              convert_to_klist(node.properties)
-              |> Keyword.put(
-                :created,
-                "#{r.properties["created"] || DateTime.to_unix(DateTime.utc_now())}"
-              )
-              |> Keyword.put(
-                :updated,
-                "#{r.properties["updated"]}"
-              )
+            %{"n" => node, "r" => r} ->
+              props =
+                convert_to_klist(node.properties)
+                |> Keyword.put(
+                  :created,
+                  "#{r.properties["created"] || DateTime.to_unix(DateTime.utc_now())}"
+                )
+                |> Keyword.put(
+                  :updated,
+                  "#{r.properties["updated"]}"
+                )
 
-            {:ok, Kernel.struct!(struct, props)}
-        end
+              {:ok, Kernel.struct!(struct, props)}
+          end
+        end)
 
       %{label: :semester, modules: %{semester: struct}} ->
         response
@@ -129,7 +132,7 @@ defmodule Necto do
         end)
 
       _ ->
-        {:error, "Struct Module not mentioned in config.exs"}
+        throw("Struct Module not mentioned in config.exs")
     end
   end
 
@@ -326,27 +329,19 @@ defmodule Necto do
           []
       end
 
-    IO.inspect(branches)
-
     query =
       if Enum.count(branches) <= 0,
         do: """
         MATCH (admin:Admin) WHERE admin.id='#{id}'
-        MERGE (admin)-[r:has_department]->(dep:Department{title:"#{title}", dep: "#{dep}", email: "#{email}"})
-        ON CREATE SET r.created = datetime().epochSeconds
-        ON MATCH SET r.updated = datetime().epochSeconds
+        CREATE (admin)-[r:has_department{created: datetime().epochSeconds}]->(dep:Department{title:"#{title}", dep: "#{dep}", email: "#{email}"})
         RETURN dep as n, r
         """,
         else: """
         MATCH (admin:Admin) WHERE admin.id='#{id}'
-        MERGE (admin)-[r:has_department]->(dep:Department{title:"#{title}", dep: "#{dep}", email: "#{email}"})
-        ON CREATE SET r.created = datetime().epochSeconds
-        ON MATCH SET r.updated = datetime().epochSeconds
+        CREATE (admin)-[r:has_department{created: datetime().epochSeconds}]->(dep:Department{title:"#{title}", dep: "#{dep}", email: "#{email}"})
         with dep, r
         UNWIND $branches_data as row
-        MERGE (dep)-[r2:has_branch]->(b:Branch{title: row.title, branch_id: row.branch_id})
-        ON CREATE SET r2.created = datetime().epochSeconds
-        ON MATCH SET r2.updated = datetime().epochSeconds
+        CREATE (dep)-[r2:has_branch{created: datetime().epochSeconds}]->(b:Branch{title: row.title, branch_id: row.branch_id})
         WITH COLLECT (b) as branches, dep, r
         RETURN dep as n, r, branches
         """
@@ -354,14 +349,38 @@ defmodule Necto do
     conn = Sips.conn()
 
     try do
-      %Bolt.Sips.Response{results: [data | _]} =
-        Sips.query!(conn, query, %{branches_data: branches})
+      %Bolt.Sips.Response{results: results} = Sips.query!(conn, query, %{branches_data: branches})
+
+      [{:ok, department} | _] = structify_response(results, :department, "failed to create")
+
+      {:ok, department}
+    rescue
+      e ->
+        {:error, e}
+    end
+  end
+
+  def create_departments(data, id) do
+    query = """
+    MATCH (admin:Admin {id: $id})
+    with admin
+    UNWIND $data as row
+    MERGE (admin)-[r:has_department]->(dep:Department $row)
+    ON CREATE SET r.created = datetime().epochSeconds
+    ON MATCH SET r.updated = datetime().epochSeconds
+    RETURN dep, r
+    """
+
+    conn = Sips.conn()
+
+    try do
+      %Bolt.Sips.Response{results: [data | _]} = Sips.query!(conn, query, %{data: data, id: id})
 
       {:ok, department} = structify_response(data, :department, "failed to create")
       {:ok, department}
     rescue
       e ->
-        IO.inspect(e)
+        {:error, e}
     end
   end
 
@@ -378,11 +397,7 @@ defmodule Necto do
     try do
       %Bolt.Sips.Response{results: res} = Sips.query!(conn, query)
 
-      deps =
-        Enum.map(res, fn data ->
-          structify_response(data, :department, "unable to structify")
-        end)
-
+      deps = structify_response(res, :department, "unable to structify")
       {:ok, deps}
     rescue
       e ->
