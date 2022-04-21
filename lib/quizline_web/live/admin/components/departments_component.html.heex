@@ -1,8 +1,14 @@
 <div class="relative h-screen overflow-y-hidden">
     <%= if @should_show_add_form do %>
         <div class="absolute flex bg-black/20 h-full w-full items-center justify-center z-20" phx-hook="scrollLock">
-            <div id="add-new-department-card" class="flex card max-h-3/4 p-5 w-2/5 items-center bg-white overflow-y-auto">
-                <p class="text-3xl w-full pt-5 px-5">Add New Department</p>
+            <div id="add-new-department-card" class="flex card h-fit max-h-3/4 p-5 w-2/5 items-center bg-white">                
+                <div class="flex w-full justify-center items-center m-3">
+                    <p class="text-2xl w-full px-5">Add New Department</p>
+                    <button phx-click="hide-add-form" phx-target={@myself} class="btn bg-white btn-sm btn-square btn-outline m-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                    </button>
+                </div>
+                <div class="realtive w-full overflow-y-auto">
                     <div class="flex justify-center items-center w-full p-5">
                         <p class="text-xl font-semibold">Create using</p>
                         <div class="flex-1"></div>
@@ -61,7 +67,6 @@
                                 </div>
                             <% end %> 
                             <div class="flex gap-5">
-                                <button phx-target={@myself} type="button" phx-click="hide-add-form" class="btn btn-outline btn-error">Cancel</button>
                                 <button phx-target={@myself} type="submit" class="btn btn-outline btn-primary">Create</button>
                             </div>
                         </.form>
@@ -81,9 +86,10 @@
                                 </button>
                             </form>
                         </div>
-                    <% end %>  
-                </div>
+                    <% end %> 
+                </div> 
             </div>
+        </div>
     <% end %> 
     <%= if @show_confirmation? do %> 
         <div class="absolute h-full bg-gray-600/20 w-full z-50 flex justify-center items-center" phx-hook="scrollLock" id="confirmation-alert">

@@ -13,12 +13,6 @@ defmodule QuizlineWeb.Admin.SessionLive.DepartmentsComponent do
   def update(%{admin: %Admin{id: id}} = assigns, socket) do
     {:ok, deps} = DepartmentManager.get_departments_with_branches(id)
 
-    departments =
-      deps
-      |> Enum.map(fn {:ok, dep} ->
-        dep
-      end)
-
     {:ok,
      socket
      |> assign(assigns)
@@ -34,7 +28,7 @@ defmodule QuizlineWeb.Admin.SessionLive.DepartmentsComponent do
      # department
      |> assign(:selected_department, nil)
      |> assign(:should_show_add_form, false)
-     |> assign(:departments, departments)
+     |> assign(:departments, deps)
      |> assign(:selected_tab, :tab_subjects)
      |> assign(:changeset, DepartmentManager.department_changeset(%Department{}))
      # invigilators
@@ -65,8 +59,23 @@ defmodule QuizlineWeb.Admin.SessionLive.DepartmentsComponent do
       [[["Department Title", "Department Email"] | data]] ->
         data
         |> DepartmentManager.create_departments(socket.assigns.admin.id)
+        |> case do
+          {:ok, deps} ->
+            {:noreply,
+             socket
+             |> assign(:should_show_add_form, false)
+             |> assign(
+               :departments,
+               socket.assigns.departments ++ deps
+             )}
 
-        {:noreply, socket}
+          {:error, reason} ->
+            IO.inspect(reason)
+
+            {:noreply,
+             socket
+             |> assign(:should_show_add_form, false)}
+        end
 
       _ ->
         IO.inspect("sorry the format is not matching")

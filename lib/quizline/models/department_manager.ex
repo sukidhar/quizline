@@ -14,7 +14,6 @@ defmodule Quizline.DepartmentManager do
         handle_exception(neoex)
 
       {:error, reason} ->
-        IO.inspect(reason)
         {:error, "unknown error occured"}
     end
   end
@@ -35,6 +34,16 @@ defmodule Quizline.DepartmentManager do
       data
     end)
     |> Necto.create_departments(id)
+    |> case do
+      {:ok, deps} ->
+        {:ok, deps}
+
+      {:error, %Bolt.Sips.Exception{} = neoex} ->
+        handle_exception(neoex)
+
+      {:error, reason} ->
+        {:error, "unknown error occured"}
+    end
   end
 
   def department_changeset(%Department{} = department, params \\ %{}) do

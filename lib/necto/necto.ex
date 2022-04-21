@@ -90,7 +90,7 @@ defmodule Necto do
                 )
                 |> Keyword.put(:branches, branches)
 
-              {:ok, Kernel.struct!(struct, props)}
+              Kernel.struct!(struct, props)
 
             %{"n" => node, "r" => r} ->
               props =
@@ -104,7 +104,7 @@ defmodule Necto do
                   "#{r.properties["updated"]}"
                 )
 
-              {:ok, Kernel.struct!(struct, props)}
+              Kernel.struct!(struct, props)
           end
         end)
 
@@ -351,7 +351,7 @@ defmodule Necto do
     try do
       %Bolt.Sips.Response{results: results} = Sips.query!(conn, query, %{branches_data: branches})
 
-      [{:ok, department} | _] = structify_response(results, :department, "failed to create")
+      [department | _] = structify_response(results, :department, "failed to create")
 
       {:ok, department}
     rescue
@@ -361,29 +361,33 @@ defmodule Necto do
   end
 
   def create_departments(data, id) do
+    IO.inspect(data)
+
     query = """
     MATCH (admin:Admin {id: $id})
     with admin
     UNWIND $data as row
-    MERGE (admin)-[r:has_department]->(dep:Department $row)
+    MERGE (admin)-[r:has_department]->(dep:Department {title:row.title, dep: row.dep, email: row.email})
     ON CREATE SET r.created = datetime().epochSeconds
     ON MATCH SET r.updated = datetime().epochSeconds
-    RETURN dep, r
+    RETURN dep as n, r
     """
 
     conn = Sips.conn()
 
     try do
-      %Bolt.Sips.Response{results: [data | _]} = Sips.query!(conn, query, %{data: data, id: id})
-
-      {:ok, department} = structify_response(data, :department, "failed to create")
-      {:ok, department}
+      %Bolt.Sips.Response{results: data} = Sips.query!(conn, query, %{data: data, id: id})
+      deps = structify_response(data, :department, "failed to create")
+      {:ok, deps}
     rescue
       e ->
         {:error, e}
     end
   end
 
+  @spec get_departments(any, any) ::
+          {:error, %{:__exception__ => true, :__struct__ => atom, optional(atom) => any}}
+          | {:ok, list | {:error, <<_::64, _::_*8>>} | {:ok, any}}
   def get_departments(_page, id) do
     query = """
     MATCH (admin:Admin {id: '#{id}'})-[r:has_department]->(dep:Department)

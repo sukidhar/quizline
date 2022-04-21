@@ -12,6 +12,12 @@ defmodule QuizlineWeb.Plug.Subdomain do
         |> router.call(router.init({}))
         |> halt
 
+      "a99a-203-192-226-250.ngrok.io" ->
+        conn
+        |> put_private(:subdomain, "admin")
+        |> router.call(router.init({}))
+        |> halt
+
       domain ->
         IO.inspect(domain)
         conn
