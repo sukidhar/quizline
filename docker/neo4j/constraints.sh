@@ -22,7 +22,25 @@ create_unique_constraint(){
     echo "created unique constraint : $1 on label $2 for field $3"
 }
 
+drop_schema(){
+    until cypher-shell -u "neo4j" -p "letmein" "CALL apoc.schema.assert({}, {})";
+     do
+        echo "failed to create index"
+	    sleep 2s
+    done
+    echo "dropped schema"
+}
 
+create_index(){
+    until cypher-shell -u "neo4j" -p "letmein" "CREATE INDEX $1 IF NOT EXISTS FOR (t:$2) ON (t.$3)"
+    do
+        echo "failed to create index"
+	    sleep 2s
+    done
+    echo "created index : $1 on label $2 for field $3"
+}
+
+drop_schema
 create_unique_constraint "unique_admin_id" "Admin" "id"
 create_unique_constraint "unique_admin_email" "Admin" "email"
 create_required_constraint "mandatory_admin_id" "Admin" "id"
@@ -44,6 +62,9 @@ create_required_constraint "mandatory_invigilator_id" "Invigilator" "id"
 create_required_constraint "mandatory_invigilator_email" "Invigilator" "email"
 
 create_unique_constraint "unique_department_email" "Department" "email"
-create_unique_constraint "unique_branch_title" "Branch" "title"
 create_required_constraint "mandatory_department_email" "Department" "email"
-create_required_constraint "mandatory_branch_title" "Branch" "title"
+create_unique_constraint "unique_branch_id" "Branch" "id"
+create_required_constraint "mandatory_branch_id" "Branch" "id"
+
+create_unique_constraint "unique_subject_code" "Subject" "subject_code"
+create_required_constraint "mandatory_subject_code" "Subject" "subject_code"
