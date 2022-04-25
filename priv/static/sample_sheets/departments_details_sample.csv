@@ -1,0 +1,13 @@
+#,"The following table is to create Branches. If you want to link any subjects to the branch. You can use the format provided. If you don’t  want to link any subjects, leave it blank"
+##,Branches Table,Make sure semester is a symbol which is already created in semesters tab,You can assign as many as subjects using this format. Making sure subject already exists or u can mention the subject in the below table
+Branch Title,Subject Code,Semester,Subject Code,Semester
+Example,,
+Subjects Example,ICT4040,IV,ICT4350,V
+,,,,
+,,,,
+,,,,
+#,"The following table is to create subjects. In case the cross department subject which is added is not already created and you would like to create it now, provide the department email. if left unfilled, we assume the subject belongs to same department. "
+##,Subjects Table
+Subject Title,Subject Code, Department Email
+Information Security, ICT4350
+VLSI, ECE4020, ece@manipal.edu

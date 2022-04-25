@@ -28,6 +28,7 @@ config :quizline, Necto,
     admin: Quizline.AdminManager.Admin,
     user: Quizline.UserManager.User,
     department: Quizline.DepartmentManager.Department,
+    branch: Quizline.DepartmentManager.Department.Branch,
     semester: Quizline.SemesterManager.Semester,
     subject: Quizline.SubjectManager.Subject
   }

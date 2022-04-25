@@ -1,22 +1,22 @@
 <div class="relative h-screen overflow-y-hidden">
-    <%= if @should_show_add_form do %>
+    <%= if @show_dep_form? do %>
         <div class="absolute flex bg-black/20 h-full w-full items-center justify-center z-20" phx-hook="scrollLock">
             <div id="add-new-department-card" class="flex card h-fit max-h-3/4 p-5 w-2/5 items-center bg-white">                
-                <div class="flex w-full justify-center items-center m-3">
+                <div class="flex w-full justify-center items-center mb-3">
                     <p class="text-2xl w-full px-5">Add New Department</p>
-                    <button phx-click="hide-add-form" phx-target={@myself} class="btn bg-white btn-sm btn-square btn-outline m-2">
+                    <button phx-click="hide-add-form" phx-value-type="department" phx-target={@myself} class="btn bg-white btn-sm btn-square btn-outline m-2">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
                     </button>
                 </div>
-                <div class="realtive w-full overflow-y-auto">
-                    <div class="flex justify-center items-center w-full p-5">
-                        <p class="text-xl font-semibold">Create using</p>
-                        <div class="flex-1"></div>
-                        <div class="tabs tabs-boxed bg-inherit border-[0.5px]">
-                            <a class={if @form_mode == :file, do: "tab-active tab font-semibold", else: "tab font-semibold"} phx-click="set-form-mode" phx-value-type="file" phx-target={@myself}>File</a> 
-                            <a class={if @form_mode == :form, do: "tab-active tab font-semibold", else: "tab font-semibold"} phx-click="set-form-mode"  phx-value-type="form" phx-target={@myself}>Form</a> 
-                        </div>
+                <div class="flex justify-center items-center w-full p-5">
+                    <p class="text-xl font-semibold">Create using</p>
+                    <div class="flex-1"></div>
+                    <div class="tabs tabs-boxed bg-inherit border-[0.5px]">
+                        <a class={if @form_mode == :file, do: "tab-active tab font-semibold", else: "tab font-semibold"} phx-click="set-form-mode" phx-value-type="file" phx-target={@myself}>File</a> 
+                        <a class={if @form_mode == :form, do: "tab-active tab font-semibold", else: "tab font-semibold"} phx-click="set-form-mode"  phx-value-type="form" phx-target={@myself}>Form</a> 
                     </div>
+                </div>
+                <div class="realtive w-full overflow-y-auto">
                     <%= if @form_mode == :form do  %>
                         <.form let = {f} for={@changeset} id="department_form", class="flex flex-col w-full gap-y-10 pb-5 px-5" phx-target={@myself} phx-change="dep-change" phx-submit="dep-submit">
                             <%= floating_input f, :title, wrapper: ["relative"], placeholder: "Department Title", phx_debounce: 0%>
@@ -111,7 +111,7 @@
         <div class="navbar-start">
           <a class="btn btn-ghost normal-case text-xl">Departments</a>
         </div>
-        <%= if !(@should_show_add_form || @selected_department != nil)  do %> 
+        <%= if !(@show_dep_form? || @selected_department != nil)  do %> 
             <div class="navbar-end">
                 <button class="btn btn-outline gap-2 scale-90" phx-target={@myself} phx-click="show-add-department-form">
                     <p class="translate-y-[0.45px]">
@@ -133,7 +133,7 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
                 </svg>
             </button>
-            <div class="flex space-x-4">
+            <div class="flex items-center space-x-4">
                 <!--search bar -->
                 <div hidden class="md:block">
                     <div class="relative flex items-center text-gray-400 focus-within:text-cyan-400">
@@ -151,6 +151,16 @@
                         <path id="Icon_awesome-search" data-name="search" d="M35.508,31.127l-7.01-7.01a1.686,1.686,0,0,0-1.2-.492H26.156a14.618,14.618,0,1,0-2.531,2.531V27.3a1.686,1.686,0,0,0,.492,1.2l7.01,7.01a1.681,1.681,0,0,0,2.384,0l1.99-1.99a1.7,1.7,0,0,0,.007-2.391Zm-20.883-7.5a9,9,0,1,1,9-9A8.995,8.995,0,0,1,14.625,23.625Z"></path>
                     </svg>
                 </button>
+                <%= if !(@show_dep_form? || @selected_department != nil)  do %> 
+                    <button class="btn btn-outline gap-2 scale-90" phx-target={@myself} phx-value-type="department" phx-click="show-add-form">
+                        <p class="translate-y-[0.45px]">
+                            ADD
+                        </p>
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" class="scale-90" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12 2C10.0222 2 8.08879 2.58649 6.4443 3.6853C4.79981 4.78412 3.51809 6.3459 2.76121 8.17317C2.00433 10.0004 1.8063 12.0111 2.19215 13.9509C2.578 15.8907 3.53041 17.6725 4.92894 19.0711C6.32746 20.4696 8.10929 21.422 10.0491 21.8079C11.9889 22.1937 13.9996 21.9957 15.8268 21.2388C17.6541 20.4819 19.2159 19.2002 20.3147 17.5557C21.4135 15.9112 22 13.9778 22 12C22 10.6868 21.7413 9.38642 21.2388 8.17317C20.7363 6.95991 19.9997 5.85752 19.0711 4.92893C18.1425 4.00035 17.0401 3.26375 15.8268 2.7612C14.6136 2.25866 13.3132 2 12 2ZM12 20C10.4178 20 8.87104 19.5308 7.55544 18.6518C6.23985 17.7727 5.21447 16.5233 4.60897 15.0615C4.00347 13.5997 3.84504 11.9911 4.15372 10.4393C4.4624 8.88743 5.22433 7.46197 6.34315 6.34315C7.46197 5.22433 8.88743 4.4624 10.4393 4.15372C11.9911 3.84504 13.5997 4.00346 15.0615 4.60896C16.5233 5.21447 17.7727 6.23984 18.6518 7.55544C19.5308 8.87103 20 10.4177 20 12C20 14.1217 19.1572 16.1566 17.6569 17.6569C16.1566 19.1571 14.1217 20 12 20ZM16 11H13V8C13 7.73478 12.8946 7.48043 12.7071 7.29289C12.5196 7.10536 12.2652 7 12 7C11.7348 7 11.4804 7.10536 11.2929 7.29289C11.1054 7.48043 11 7.73478 11 8V11H8C7.73479 11 7.48043 11.1054 7.2929 11.2929C7.10536 11.4804 7 11.7348 7 12C7 12.2652 7.10536 12.5196 7.2929 12.7071C7.48043 12.8946 7.73479 13 8 13H11V16C11 16.2652 11.1054 16.5196 11.2929 16.7071C11.4804 16.8946 11.7348 17 12 17C12.2652 17 12.5196 16.8946 12.7071 16.7071C12.8946 16.5196 13 16.2652 13 16V13H16C16.2652 13 16.5196 12.8946 16.7071 12.7071C16.8946 12.5196 17 12.2652 17 12C17 11.7348 16.8946 11.4804 16.7071 11.2929C16.5196 11.1054 16.2652 11 16 11Z"/>
+                        </svg>
+                    </button>
+                <% end %> 
                <!--
                  <button aria-label="chat" class="w-10 h-10 rounded-xl border bg-gray-100 focus:bg-gray-100 active:bg-gray-200">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 m-auto text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -166,10 +176,10 @@
             </div>
         </div>
     </div>
-    <div class="flex-1 mb-5 h-[calc(100%-theme(spacing.16))] overflow-y-scroll bg-white">
+    <div class="flex-1 mb-5 h-[calc(100%-theme(spacing.16))]  bg-white">
         <%= cond do  %>     
             <% @selected_department != nil -> %>
-                <div class="p-2 w-full border-b-[1px]">
+                <div class="flex items-center p-5 w-full h-10 border-b-[1px]">
                     <div class="text-sm breadcrumbs">
                         <ul>
                         <li><a phx-click="deselect-department" phx-target={@myself}>Departments</a></li> 
@@ -177,100 +187,138 @@
                         </ul>
                     </div>
                 </div>    
-                <div class="flex justify-start w-full border-b-[1px]">
-                    <div class="w-fit tabs tabs-boxed bg-inherit py-2">
+                <div class="flex justify-center items-center w-full h-14 border-b-[1px] z-20 pr-5">
+                    <div class="w-fit tabs tabs-boxed bg-inherit">
                         <a phx-target={@myself} phx-click="select-tab" phx-value-tab="branches" class={"tab #{if @selected_tab == :tab_branches, do: 'tab-active'}"}>Branches</a> 
                         <a phx-target={@myself} phx-click="select-tab" phx-value-tab="invigilators" class={"tab #{if @selected_tab == :tab_invigilators, do: 'tab-active'}"}>Invigilators</a> 
                         <a phx-target={@myself} phx-click="select-tab" phx-value-tab="subjects" class={"tab #{if @selected_tab == :tab_subjects, do: 'tab-active'}"}>Subjects</a>
                     </div>
+                    <div class="flex grow"></div>
+                    <button class="btn btn-outline gap-2 btn-sm text-sm" phx-target={@myself} phx-value-type={tab_to_type(@selected_tab)} phx-click="show-add-form">
+                        <p class="text-sm translate-y-[0.45px]">
+                            New
+                        </p>
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" class="scale-75" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12 2C10.0222 2 8.08879 2.58649 6.4443 3.6853C4.79981 4.78412 3.51809 6.3459 2.76121 8.17317C2.00433 10.0004 1.8063 12.0111 2.19215 13.9509C2.578 15.8907 3.53041 17.6725 4.92894 19.0711C6.32746 20.4696 8.10929 21.422 10.0491 21.8079C11.9889 22.1937 13.9996 21.9957 15.8268 21.2388C17.6541 20.4819 19.2159 19.2002 20.3147 17.5557C21.4135 15.9112 22 13.9778 22 12C22 10.6868 21.7413 9.38642 21.2388 8.17317C20.7363 6.95991 19.9997 5.85752 19.0711 4.92893C18.1425 4.00035 17.0401 3.26375 15.8268 2.7612C14.6136 2.25866 13.3132 2 12 2ZM12 20C10.4178 20 8.87104 19.5308 7.55544 18.6518C6.23985 17.7727 5.21447 16.5233 4.60897 15.0615C4.00347 13.5997 3.84504 11.9911 4.15372 10.4393C4.4624 8.88743 5.22433 7.46197 6.34315 6.34315C7.46197 5.22433 8.88743 4.4624 10.4393 4.15372C11.9911 3.84504 13.5997 4.00346 15.0615 4.60896C16.5233 5.21447 17.7727 6.23984 18.6518 7.55544C19.5308 8.87103 20 10.4177 20 12C20 14.1217 19.1572 16.1566 17.6569 17.6569C16.1566 19.1571 14.1217 20 12 20ZM16 11H13V8C13 7.73478 12.8946 7.48043 12.7071 7.29289C12.5196 7.10536 12.2652 7 12 7C11.7348 7 11.4804 7.10536 11.2929 7.29289C11.1054 7.48043 11 7.73478 11 8V11H8C7.73479 11 7.48043 11.1054 7.2929 11.2929C7.10536 11.4804 7 11.7348 7 12C7 12.2652 7.10536 12.5196 7.2929 12.7071C7.48043 12.8946 7.73479 13 8 13H11V16C11 16.2652 11.1054 16.5196 11.2929 16.7071C11.4804 16.8946 11.7348 17 12 17C12.2652 17 12.5196 16.8946 12.7071 16.7071C12.8946 16.5196 13 16.2652 13 16V13H16C16.2652 13 16.5196 12.8946 16.7071 12.7071C16.8946 12.5196 17 12.2652 17 12C17 11.7348 16.8946 11.4804 16.7071 11.2929C16.5196 11.1054 16.2652 11 16 11Z"/>
+                        </svg>
+                    </button>
                 </div>
                 <%= case @selected_tab do  %>   
                     <% :tab_branches -> %> 
-                        <%= if !(@show_add_branch_form? || false) do %> 
-                            <div class="w-full flex justify-end  p-2">
-                                <button class="btn btn-outline gap-2 scale-90" phx-target={@myself} phx-click="show-add-branch-form">
-                                    <p class="translate-y-[0.45px]">
-                                        ADD
-                                    </p>
-                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" class="scale-90" xmlns="http://www.w3.org/2000/svg">
-                                        <path d="M12 2C10.0222 2 8.08879 2.58649 6.4443 3.6853C4.79981 4.78412 3.51809 6.3459 2.76121 8.17317C2.00433 10.0004 1.8063 12.0111 2.19215 13.9509C2.578 15.8907 3.53041 17.6725 4.92894 19.0711C6.32746 20.4696 8.10929 21.422 10.0491 21.8079C11.9889 22.1937 13.9996 21.9957 15.8268 21.2388C17.6541 20.4819 19.2159 19.2002 20.3147 17.5557C21.4135 15.9112 22 13.9778 22 12C22 10.6868 21.7413 9.38642 21.2388 8.17317C20.7363 6.95991 19.9997 5.85752 19.0711 4.92893C18.1425 4.00035 17.0401 3.26375 15.8268 2.7612C14.6136 2.25866 13.3132 2 12 2ZM12 20C10.4178 20 8.87104 19.5308 7.55544 18.6518C6.23985 17.7727 5.21447 16.5233 4.60897 15.0615C4.00347 13.5997 3.84504 11.9911 4.15372 10.4393C4.4624 8.88743 5.22433 7.46197 6.34315 6.34315C7.46197 5.22433 8.88743 4.4624 10.4393 4.15372C11.9911 3.84504 13.5997 4.00346 15.0615 4.60896C16.5233 5.21447 17.7727 6.23984 18.6518 7.55544C19.5308 8.87103 20 10.4177 20 12C20 14.1217 19.1572 16.1566 17.6569 17.6569C16.1566 19.1571 14.1217 20 12 20ZM16 11H13V8C13 7.73478 12.8946 7.48043 12.7071 7.29289C12.5196 7.10536 12.2652 7 12 7C11.7348 7 11.4804 7.10536 11.2929 7.29289C11.1054 7.48043 11 7.73478 11 8V11H8C7.73479 11 7.48043 11.1054 7.2929 11.2929C7.10536 11.4804 7 11.7348 7 12C7 12.2652 7.10536 12.5196 7.2929 12.7071C7.48043 12.8946 7.73479 13 8 13H11V16C11 16.2652 11.1054 16.5196 11.2929 16.7071C11.4804 16.8946 11.7348 17 12 17C12.2652 17 12.5196 16.8946 12.7071 16.7071C12.8946 16.5196 13 16.2652 13 16V13H16C16.2652 13 16.5196 12.8946 16.7071 12.7071C16.8946 12.5196 17 12.2652 17 12C17 11.7348 16.8946 11.4804 16.7071 11.2929C16.5196 11.1054 16.2652 11 16 11Z"/>
-                                    </svg>
-                                </button>
-                            </div>
-                            <div class="flex-grow w-full z-10 grid grid-cols-4 gap-4 p-5">
-                                <%= for branch <- @selected_department.branches do%> 
-                                    <div class="relative card-parent">
-                                        <button phx-click="branch-pressed" phx-target={@myself} class="absolute card bg-white shadow-md h-52 w-full flex items-center justify-end p-2">
-                                            <p><%= branch.title %></p> 
-                                        </button>
-                                        <button type="button" phx-target={@myself} phx-click="delete-branch" phx-value-id={branch.id} class="absolute hidden-child -top-3 -right-3 h-6 w-6 card bg-white shadow-md btn-circle flex items-center justify-center">x</button>
-                                    </div>
-                                <% end %> 
-                            </div>
-                        <% else %> 
-                            <div class="flex flex-col justify-center items-center">
-                                <div class="flex items-center justify-center w-2/3">
-                                    <p class="text-3xl font-semibold pt-20 pb-10">Create new branch</p>
+                        <div class="absolute flex-grow w-full grid grid-cols-4 h-[calc(100%-theme(spacing.40))] overflow-y-scroll gap-4 p-5">
+                            <%= for branch <- @selected_department.branches do%> 
+                                <div class="relative card-parent h-52 w-full mb-5">
+                                    <button phx-click="branch-pressed" phx-target={@myself} class="card bg-white shadow-md h-full w-full flex items-center justify-end p-2">
+                                        <p><%= branch.title %></p> 
+                                    </button>
+                                    <button type="button" phx-target={@myself} phx-click="delete-branch" phx-value-id={branch.id} class="absolute hidden-child -top-3 -right-3 hidden-child h-6 w-6 card bg-white shadow-md btn-circle flex items-center justify-center">x</button>
                                 </div>
-                                <.form let = {f} for={@new_branch_changeset}, class="w-2/3 space-y-10 pb-5 px-5" phx-target={@myself} phx-change="new-branch-change" phx-submit="new-branch-submit">
-                                    <%= floating_input f, :title, wrapper: ["relative"], placeholder: "Branch Title", phx_debounce: 0%>
-                                    <%= floating_input f, :branch_id, wrapper: ["relative"], placeholder: "Branch Label", disabled: true%>
-                                    <div class="flex gap-3">
-                                        <button phx-target={@myself} type="button" phx-click="hide-add-branch-form" class="btn btn-outline btn-error">Cancel</button>
-                                        <button phx-target={@myself} type="submit" class="btn btn-outline btn-success">Submit</button>
+                            <% end %>
+                        </div>
+                        <%= if (@show_branch_form? || false) do %> 
+                            <div class="absolute h-[calc(100%-theme(spacing.40))] w-full flex items-center justify-center bg-black/[5%] p-5">
+                                <div class="card relative bg-white flex flex-col justify-center items-center h-fit max-h-4/5 w-2/5 p-5">
+                                    <div class="flex w-full justify-center items-center mb-3">
+                                        <p class="text-2xl w-full px-5">Create new branch</p>
+                                        <button phx-click="hide-add-form" phx-value-type="branch" phx-target={@myself} class="btn bg-white btn-sm btn-square btn-outline m-2">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                                        </button>
                                     </div>
-                                </.form>
+                                    <div class="flex justify-center items-center w-full p-5">
+                                        <p class="text-xl font-semibold">Create using</p>
+                                        <div class="flex-1"></div>
+                                        <div class="tabs tabs-boxed bg-inherit border-[0.5px]">
+                                            <a class={if @form_mode == :file, do: "tab-active tab font-semibold", else: "tab font-semibold"} phx-click="set-form-mode" phx-value-type="file" phx-target={@myself}>File</a> 
+                                            <a class={if @form_mode == :form, do: "tab-active tab font-semibold", else: "tab font-semibold"} phx-click="set-form-mode"  phx-value-type="form" phx-target={@myself}>Form</a> 
+                                        </div>
+                                    </div>
+                                    <%= if @form_mode == :form do  %>
+                                        <.form let = {f} for={@new_branch_changeset}, class="w-full space-y-10 pb-5 px-5 overflow-y-auto" phx-target={@myself} phx-change="new-branch-change" phx-submit="new-branch-submit">
+                                            <%= floating_input f, :title, wrapper: ["relative"], placeholder: "Branch Title", phx_debounce: 0%>
+                                            <%= floating_input f, :branch_id, wrapper: ["relative"], placeholder: "Branch Label", disabled: true%>
+                                            <div class="flex gap-3">
+                                                <button phx-target={@myself} type="submit" class="btn btn-outline btn-success">Submit</button>
+                                            </div>
+                                        </.form>
+                                    <% else %> 
+                                        <div class="flex flex-col gap-5 p-5">
+                                            <p class="text-md font-medium"> The ideal appraoch to create multiple branches with one click is to upload the details via a file and leave the job to us</p>
+                                            <a href="/file/department_details_template" class="btn btn-block btn-info">
+                                                download the sample sheet
+                                            </a>
+                                            <p class="text-md font-medium">
+                                                If you have filled the file, let us fasten the process by kindly uploading it here
+                                            </p>
+                                            <form class="flex gap-2 w-full justify-center items-center" id="upload-form" phx-target={@myself} phx-submit="department-details-file-uploaded" phx-change="department-details-file-changed">
+                                                <%= live_file_input @uploads.department_details_file, class: "focus:outline-none block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100" %>
+                                                <button type="submit" class={if (@uploads.department_details_file.entries |> Enum.count() == 0), do: "btn text-sm font-normal btn-sm btn-disabled", else: "btn text-sm font-normal btn-sm btn-outline"}>
+                                                    submit
+                                                </button>
+                                            </form>
+                                        </div>
+                                    <% end %> 
+                                </div>
                             </div>
                         <% end %> 
                     <% :tab_invigilators -> %> 
                         Show invigilators
                     <% :tab_subjects -> %>
-                        
-                        <%= if !@show_add_subject_form? do %> 
-                            <div class="w-full flex justify-end  p-2">
-                                <button class="btn btn-outline gap-2 scale-90" phx-target={@myself} phx-click="show-add-subject-form">
-                                    <p class="translate-y-[0.45px]">
-                                        ADD
-                                    </p>
-                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" class="scale-90" xmlns="http://www.w3.org/2000/svg">
-                                        <path d="M12 2C10.0222 2 8.08879 2.58649 6.4443 3.6853C4.79981 4.78412 3.51809 6.3459 2.76121 8.17317C2.00433 10.0004 1.8063 12.0111 2.19215 13.9509C2.578 15.8907 3.53041 17.6725 4.92894 19.0711C6.32746 20.4696 8.10929 21.422 10.0491 21.8079C11.9889 22.1937 13.9996 21.9957 15.8268 21.2388C17.6541 20.4819 19.2159 19.2002 20.3147 17.5557C21.4135 15.9112 22 13.9778 22 12C22 10.6868 21.7413 9.38642 21.2388 8.17317C20.7363 6.95991 19.9997 5.85752 19.0711 4.92893C18.1425 4.00035 17.0401 3.26375 15.8268 2.7612C14.6136 2.25866 13.3132 2 12 2ZM12 20C10.4178 20 8.87104 19.5308 7.55544 18.6518C6.23985 17.7727 5.21447 16.5233 4.60897 15.0615C4.00347 13.5997 3.84504 11.9911 4.15372 10.4393C4.4624 8.88743 5.22433 7.46197 6.34315 6.34315C7.46197 5.22433 8.88743 4.4624 10.4393 4.15372C11.9911 3.84504 13.5997 4.00346 15.0615 4.60896C16.5233 5.21447 17.7727 6.23984 18.6518 7.55544C19.5308 8.87103 20 10.4177 20 12C20 14.1217 19.1572 16.1566 17.6569 17.6569C16.1566 19.1571 14.1217 20 12 20ZM16 11H13V8C13 7.73478 12.8946 7.48043 12.7071 7.29289C12.5196 7.10536 12.2652 7 12 7C11.7348 7 11.4804 7.10536 11.2929 7.29289C11.1054 7.48043 11 7.73478 11 8V11H8C7.73479 11 7.48043 11.1054 7.2929 11.2929C7.10536 11.4804 7 11.7348 7 12C7 12.2652 7.10536 12.5196 7.2929 12.7071C7.48043 12.8946 7.73479 13 8 13H11V16C11 16.2652 11.1054 16.5196 11.2929 16.7071C11.4804 16.8946 11.7348 17 12 17C12.2652 17 12.5196 16.8946 12.7071 16.7071C12.8946 16.5196 13 16.2652 13 16V13H16C16.2652 13 16.5196 12.8946 16.7071 12.7071C16.8946 12.5196 17 12.2652 17 12C17 11.7348 16.8946 11.4804 16.7071 11.2929C16.5196 11.1054 16.2652 11 16 11Z"/>
-                                    </svg>
-                                </button>
-                            </div> 
-                            <div class="flex-grow w-full z-10 grid grid-cols-5 gap-4 p-5">
-                                <%= for {subject, index} <- @subjects |> Enum.with_index() do %> 
-                                    <button phx-click="subject-pressed" phx-target={@myself} phx-value-subject_code={subject.subject_code} phx-value-index={index} class="card bg-white shadow-md h-44 w-full flex items-center justify-end p-2">
+                        <div class="absolute flex-grow w-full grid grid-cols-4 h-[calc(100%-theme(spacing.40))] overflow-y-scroll gap-4 p-5">
+                            <%= for {subject, index} <- @subjects |> Enum.with_index() do %> 
+                                <div class="card-parent h-52 w-full mb-5">
+                                    <button phx-click="subject-pressed" phx-target={@myself} phx-value-subject_code={subject.subject_code} phx-value-index={index} class="card bg-white shadow-md h-full w-full flex items-center justify-end p-2">
                                         <p><%= subject.title %></p> 
                                     </button>
-                                <% end %> 
-                            </div>
-                        <% else %> 
-                            <div class="flex-grow flex flex-col items-center justify-center">
-                                <div class="flex flex-1 items-center justify-center w-2/3">
-                                    <p class="text-3xl font-semibold pt-20 pb-10">Create new subject</p>
                                 </div>
-                                <.form let = {f} for={@new_subject_changeset}, class="w-2/3 space-y-10 pb-5 px-5" phx-target={@myself} phx-change="new-subject-change" phx-submit="new-subject-submit">
-                                    <%= floating_input f, :title, wrapper: ["relative"], placeholder: "Subject Title", phx_debounce: 0%>
-                                    <%= floating_input f, :subject_code, wrapper: ["relative"], placeholder: "Subject Code", phx_debounce: 0%>
-                                    <div class="flex gap-3">
-                                        <button phx-target={@myself} type="button" phx-click="hide-add-subject-form" class="btn btn-outline btn-error">Cancel</button>
-                                        <button phx-target={@myself} type="submit" class="btn btn-outline btn-success">Submit</button>
+                            <% end %> 
+                        </div>
+                        <%= if (@show_subject_form? || false) do %> 
+                            <div class="absolute h-[calc(100%-theme(spacing.40))] w-full flex items-center justify-center bg-black/[5%] p-5">
+                                <div class="card relative bg-white flex flex-col justify-center items-center h-fit max-h-4/5 w-2/5 p-5">
+                                    <div class="flex w-full justify-center items-center mb-3">
+                                        <p class="text-2xl w-full px-5">Create new branch</p>
+                                        <button phx-click="hide-add-form" phx-value-type="subject" phx-target={@myself} class="btn bg-white btn-sm btn-square btn-outline m-2">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                                        </button>
                                     </div>
-                                </.form>
+                                    <div class="flex justify-center items-center w-full p-5">
+                                        <p class="text-xl font-semibold">Create using</p>
+                                        <div class="flex-1"></div>
+                                        <div class="tabs tabs-boxed bg-inherit border-[0.5px]">
+                                            <a class={if @form_mode == :file, do: "tab-active tab font-semibold", else: "tab font-semibold"} phx-click="set-form-mode" phx-value-type="file" phx-target={@myself}>File</a> 
+                                            <a class={if @form_mode == :form, do: "tab-active tab font-semibold", else: "tab font-semibold"} phx-click="set-form-mode"  phx-value-type="form" phx-target={@myself}>Form</a> 
+                                        </div>
+                                    </div>
+                                    <%= if @form_mode == :form do  %>
+                                    <.form let = {f} for={@new_subject_changeset}, class="w-full space-y-10 pb-5 px-5 overflow-y-auto" phx-target={@myself} phx-change="new-subject-change" phx-submit="new-subject-submit">
+                                        <%= floating_input f, :title, wrapper: ["relative"], placeholder: "Subject Title", phx_debounce: 0%>
+                                        <%= floating_input f, :subject_code, wrapper: ["relative"], placeholder: "Subject Code", phx_debounce: 0%>
+                                        <div class="flex gap-3">
+                                            <button phx-target={@myself} type="submit" class="btn btn-outline btn-success">Submit</button>
+                                        </div>
+                                    </.form>
+                                    <% else %> 
+                                        <div class="flex flex-col gap-5 p-5">
+                                            <p class="text-md font-medium"> The ideal appraoch to create multiple branches with one click is to upload the details via a file and leave the job to us</p>
+                                            <a href="/file/department_details_template" class="btn btn-block btn-info">
+                                                download the sample sheet
+                                            </a>
+                                            <p class="text-md font-medium">
+                                                If you have filled the file, let us fasten the process by kindly uploading it here
+                                            </p>
+                                            <form class="flex gap-2 w-full justify-center items-center" id="upload-form" phx-target={@myself} phx-submit="department-details-file-uploaded" phx-change="department-details-file-changed">
+                                                <%= live_file_input @uploads.department_details_file, class: "focus:outline-none block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100" %>
+                                                <button type="submit" class={if (@uploads.department_details_file.entries |> Enum.count() == 0), do: "btn text-sm font-normal btn-sm btn-disabled", else: "btn text-sm font-normal btn-sm btn-outline"}>
+                                                    submit
+                                                </button>
+                                            </form>
+                                        </div>
+                                    <% end %> 
+                                </div>
                             </div>
                         <% end %> 
                 <% end %> 
             <% true -> %> 
-                <div class="flex justify-end sticky top-0 p-5">
-                    <button class="btn btn-outline gap-2 scale-90" phx-target={@myself} phx-click="show-add-department-form">
-                        <p class="translate-y-[0.45px]">
-                            ADD
-                        </p>
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" class="scale-90" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M12 2C10.0222 2 8.08879 2.58649 6.4443 3.6853C4.79981 4.78412 3.51809 6.3459 2.76121 8.17317C2.00433 10.0004 1.8063 12.0111 2.19215 13.9509C2.578 15.8907 3.53041 17.6725 4.92894 19.0711C6.32746 20.4696 8.10929 21.422 10.0491 21.8079C11.9889 22.1937 13.9996 21.9957 15.8268 21.2388C17.6541 20.4819 19.2159 19.2002 20.3147 17.5557C21.4135 15.9112 22 13.9778 22 12C22 10.6868 21.7413 9.38642 21.2388 8.17317C20.7363 6.95991 19.9997 5.85752 19.0711 4.92893C18.1425 4.00035 17.0401 3.26375 15.8268 2.7612C14.6136 2.25866 13.3132 2 12 2ZM12 20C10.4178 20 8.87104 19.5308 7.55544 18.6518C6.23985 17.7727 5.21447 16.5233 4.60897 15.0615C4.00347 13.5997 3.84504 11.9911 4.15372 10.4393C4.4624 8.88743 5.22433 7.46197 6.34315 6.34315C7.46197 5.22433 8.88743 4.4624 10.4393 4.15372C11.9911 3.84504 13.5997 4.00346 15.0615 4.60896C16.5233 5.21447 17.7727 6.23984 18.6518 7.55544C19.5308 8.87103 20 10.4177 20 12C20 14.1217 19.1572 16.1566 17.6569 17.6569C16.1566 19.1571 14.1217 20 12 20ZM16 11H13V8C13 7.73478 12.8946 7.48043 12.7071 7.29289C12.5196 7.10536 12.2652 7 12 7C11.7348 7 11.4804 7.10536 11.2929 7.29289C11.1054 7.48043 11 7.73478 11 8V11H8C7.73479 11 7.48043 11.1054 7.2929 11.2929C7.10536 11.4804 7 11.7348 7 12C7 12.2652 7.10536 12.5196 7.2929 12.7071C7.48043 12.8946 7.73479 13 8 13H11V16C11 16.2652 11.1054 16.5196 11.2929 16.7071C11.4804 16.8946 11.7348 17 12 17C12.2652 17 12.5196 16.8946 12.7071 16.7071C12.8946 16.5196 13 16.2652 13 16V13H16C16.2652 13 16.5196 12.8946 16.7071 12.7071C16.8946 12.5196 17 12.2652 17 12C17 11.7348 16.8946 11.4804 16.7071 11.2929C16.5196 11.1054 16.2652 11 16 11Z"/>
-                        </svg>
-                    </button>
-                </div>
                 <div class="flex-grow w-full z-10 grid grid-cols-5 gap-4 p-5">
                     <%= for {department, index} <- @departments |> Enum.with_index() do %> 
                         <button phx-click="department-pressed" phx-target={@myself} phx-value-department_email={department.email} phx-value-index={index} class="card bg-white shadow-md h-52 w-full flex items-center justify-end p-2">

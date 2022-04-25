@@ -6,6 +6,8 @@ defmodule Quizline.SubjectManager.Subject do
   embedded_schema do
     field(:title, :string)
     field(:subject_code, :string)
+    field(:created, :string)
+    field(:updated, :string)
 
     embeds_many :associates, Associate do
       field(:semester_id, :string)

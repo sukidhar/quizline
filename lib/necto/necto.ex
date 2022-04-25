@@ -124,10 +124,37 @@ defmodule Necto do
           Kernel.struct!(struct, props)
         end)
 
+      %{label: :branch, modules: %{branch: struct}} ->
+        response
+        |> Enum.map(fn %{"new_branch" => %Bolt.Sips.Types.Node{properties: properties}} ->
+          props = convert_to_klist(properties)
+          [branch, id] = Keyword.get(props, :id, "unknown@id") |> String.split("@")
+
+          props =
+            props
+            |> Keyword.put(:id, id)
+            |> Keyword.put(:branch_id, branch)
+
+          Kernel.struct!(struct, props)
+        end)
+
       %{label: :subject, modules: %{subject: struct}} ->
         response
-        |> Enum.map(fn %{"subject" => %Bolt.Sips.Types.Node{properties: properties}} ->
-          props = convert_to_klist(properties)
+        |> Enum.map(fn %{
+                         "subject" => %Bolt.Sips.Types.Node{properties: properties},
+                         "r" => %Bolt.Sips.Types.Relationship{properties: rel_props}
+                       } ->
+          props =
+            convert_to_klist(properties)
+            |> Keyword.put(
+              :created,
+              "#{rel_props["created"] || DateTime.to_unix(DateTime.utc_now())}"
+            )
+            |> Keyword.put(
+              :updated,
+              "#{rel_props["updated"] || nil}"
+            )
+
           Kernel.struct!(struct, props)
         end)
 
@@ -385,9 +412,6 @@ defmodule Necto do
     end
   end
 
-  @spec get_departments(any, any) ::
-          {:error, %{:__exception__ => true, :__struct__ => atom, optional(atom) => any}}
-          | {:ok, list | {:error, <<_::64, _::_*8>>} | {:ok, any}}
   def get_departments(_page, id) do
     query = """
     MATCH (admin:Admin {id: '#{id}'})-[r:has_department]->(dep:Department)
@@ -410,34 +434,55 @@ defmodule Necto do
     end
   end
 
-  def create_branch(params) do
+  def create_branch(%{id: id} = params) do
+    [branch | _] = id |> String.split("@")
+    params = params |> Map.put(:prefix, branch <> "@")
+
     query = """
     MATCH (dep:Department{email:$email})
-    OPTIONAL MATCH (dep)-[:has_branch]-(branch:Branch{branch_id:$branch_id})
+    OPTIONAL MATCH (dep)-[:has_branch]-(branch:Branch)
+    WHERE branch.title STARTS WITH $prefix
     CALL {
         with dep, branch
         with dep, branch
         where branch is null
-        CREATE (dep)-[:has_branch]->(b:Branch{title:$title, branch_id:$branch_id, id: $id})
-        return True as result
+        CREATE (dep)-[:has_branch]->(b:Branch{title:$title, id:$id})
+        return True as result, b as new_branch
         UNION
         with dep, branch
         with dep, branch
         where branch is not null
-        return False as result
+        return False as result, branch as new_branch
     }
-    RETURN dep, branch, result
+    RETURN new_branch, result
     """
 
     conn = Sips.conn()
 
-    %Bolt.Sips.Response{results: [%{"result" => result} | _]} = Sips.query!(conn, query, params)
+    %Bolt.Sips.Response{results: res} = Sips.query!(conn, query, params)
 
-    if result do
-      {:ok, "branch created successfully"}
-    else
-      {:error, "branch already exists!"}
+    IO.inspect(res)
+
+    case res do
+      [%{"result" => true} | _] ->
+        {:ok, structify_response(res, :branch, "failed to create a branch")}
+
+      _ ->
+        raise("failed to branch because it already exists")
     end
+
+    # rescue
+    #   e -> {:error, "failed to create branch due to", e}
+  end
+
+  def create_branches(data, email) do
+    IO.inspect(data)
+
+    query = """
+    MATCH (dep:Department {email: $email})
+    UNWIND $data as row
+    MERGE (dep)-[r:has_branch]->(branch:Branch)
+    """
   end
 
   def delete_branch(id) do
@@ -495,7 +540,8 @@ defmodule Necto do
   def create_subject(params, dep_email) do
     query = """
     MATCH (dep:Department{email: $email})
-    CREATE (dep)-[r:has_subject]->(subject:Subject $params)
+    CREATE (dep)-[r:has_subject{created: datetime().epochSeconds}]->(subject:Subject $params)
+    RETURN subject, r
     """
 
     conn = Sips.conn()
@@ -511,17 +557,37 @@ defmodule Necto do
     end
   end
 
+  def create_subjects(data) do
+    query = """
+    UNWIND $batch as row
+    MATCH (dep:Department)
+    WHERE dep.email = row.email
+    MERGE (dep)-[r:has_subject]->(subject:Subject {title: row.sub.title, subject_code: row.sub.subject_code})
+    ON CREATE SET r.created = datetime().epochSeconds
+    ON MATCH SET r.updated = datetime().epochSeconds
+    """
+
+    conn = Sips.conn()
+
+    try do
+      _ = Sips.query!(conn, query, %{batch: data})
+      {:ok, "subjects are created successfully"}
+    rescue
+      e -> {:error, "Failed to fetch subjects due to ", e}
+    end
+  end
+
   def get_subjects(dep_email) do
     query = """
-    MATCH (dep:Department {email: $email})-[has_subject]->(subject:Subject)
-    RETURN subject
+    MATCH (dep:Department {email: $email})-[r:has_subject]->(subject:Subject)
+    RETURN subject,r
     """
 
     conn = Sips.conn()
 
     try do
       %Bolt.Sips.Response{results: response} = Sips.query!(conn, query, %{email: dep_email})
-      {:ok, structify_response(response, :subject, "unable to structify to semester")}
+      {:ok, structify_response(response, :subject, "unable to structify to subject")}
     rescue
       e -> {:error, "Failed to fetch subjects due to ", e}
     end

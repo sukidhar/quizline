@@ -19,6 +19,7 @@ defmodule QuizlineWeb.Admin.SessionLive.DepartmentsComponent do
      # form settings
      |> assign(:form_mode, :file)
      |> allow_upload(:department_file, accept: ~w(.csv), max_entries: 1)
+     |> allow_upload(:department_details_file, accept: ~w(.csv), max_entries: 1)
      # confirmation alert params
      |> assign(:confirmation_type, :none)
      |> assign(:deletion_branch_id, "")
@@ -27,27 +28,52 @@ defmodule QuizlineWeb.Admin.SessionLive.DepartmentsComponent do
      |> assign(:show_confirmation?, false)
      # department
      |> assign(:selected_department, nil)
-     |> assign(:should_show_add_form, false)
+     |> assign(:show_dep_form?, false)
      |> assign(:departments, deps)
-     |> assign(:selected_tab, :tab_subjects)
+     |> assign(:selected_tab, :tab_branches)
      |> assign(:changeset, DepartmentManager.department_changeset(%Department{}))
      # invigilators
      |> assign(:invigilators, [])
      |> assign(:selected_invigilator, [])
      # branch
-     |> assign(:show_add_branch_form?, false)
+     |> assign(:show_branch_form?, false)
      |> assign(:new_branch_changeset, DepartmentManager.branch_changeset(%Department.Branch{}))
      # subject
      |> assign(:new_subject_changeset, SubjectManager.subject_changeset(%Subject{}))
-     |> assign(:show_add_subject_form?, true)
+     |> assign(:show_subject_form?, false)
      |> assign(:subjects, [])}
+  end
+
+  def tab_to_type(tab) do
+    case tab do
+      :tab_branches -> "branch"
+      :tab_subjects -> "subject"
+      :tab_invigilators -> "invigilator"
+    end
+  end
+
+  defp load_subjects(socket, dep_email) do
+    subs =
+      SubjectManager.get_subjects(dep_email)
+      |> case do
+        {:ok, subs} ->
+          subs
+
+        {:error, reason, e} ->
+          IO.inspect(reason)
+          IO.inspect(e)
+          []
+      end
+
+    socket
+    |> assign(:subjects, subs)
   end
 
   def handle_event("department-file-uploaded", _, socket) do
     consume_uploaded_entries(socket, :department_file, fn %{path: path}, _entry ->
       data =
         File.stream!(path)
-        |> CSV.decode()
+        |> CSV.decode(strip_fields: true)
         |> Enum.to_list()
         |> Enum.map(fn {:ok, row} ->
           row
@@ -63,7 +89,7 @@ defmodule QuizlineWeb.Admin.SessionLive.DepartmentsComponent do
           {:ok, deps} ->
             {:noreply,
              socket
-             |> assign(:should_show_add_form, false)
+             |> assign(:show_dep_form?, false)
              |> assign(
                :departments,
                socket.assigns.departments ++ deps
@@ -74,7 +100,7 @@ defmodule QuizlineWeb.Admin.SessionLive.DepartmentsComponent do
 
             {:noreply,
              socket
-             |> assign(:should_show_add_form, false)}
+             |> assign(:show_dep_form?, false)}
         end
 
       _ ->
@@ -87,12 +113,108 @@ defmodule QuizlineWeb.Admin.SessionLive.DepartmentsComponent do
     {:noreply, socket}
   end
 
-  def handle_event("show-add-department-form", _, socket) do
-    {:noreply, socket |> assign(:should_show_add_form, true)}
+  def handle_event("department-details-file-changed", _, socket) do
+    {:noreply, socket}
   end
 
-  def handle_event("hide-add-form", _, socket) do
-    {:noreply, socket |> assign(:should_show_add_form, false)}
+  def handle_event("department-details-file-uploaded", _, socket) do
+    [data] =
+      consume_uploaded_entries(socket, :department_details_file, fn %{path: path}, _entry ->
+        data =
+          File.stream!(path)
+          |> CSV.decode(validate_row_length: false, strip_fields: true)
+          |> Enum.to_list()
+          |> Enum.map(fn {:ok, row} ->
+            row
+          end)
+          |> Enum.reject(fn [head | data] ->
+            head == "#" or
+              ([head] ++ data)
+              |> Enum.all?(fn x ->
+                x == ""
+              end)
+          end)
+
+        {:ok, data}
+      end)
+
+    {branches, subjects} =
+      split_before_next(data, "##")
+      |> case do
+        {:two, data} ->
+          {branches, subjects} =
+            case data do
+              {[["##", "Branches Table" | _] | d1], [["##", "Subjects Table" | _] | d2]} ->
+                {parse_branch_data(d1), parse_subject_data(d2)}
+
+              {[["##", "Subjects Table" | _] | d2], [["##", "Branches Table" | _] | d1]} ->
+                {parse_branch_data(d1), parse_subject_data(d2)}
+            end
+
+          {branches, subjects}
+
+        {:one, data} ->
+          case data do
+            [["##", "Branches Table" | _] | rows] ->
+              {parse_branch_data(rows), []}
+
+            [["##", "Subjects Table" | _] | rows] ->
+              {[], parse_subject_data(rows)}
+          end
+
+        {:invalid_format} ->
+          raise({:invalid_format, "please follow the given format strictly"})
+      end
+
+    socket =
+      SubjectManager.create_subjects(subjects, socket.assigns.selected_department.email)
+      |> case do
+        {:ok, _} ->
+          load_subjects(socket, socket.assigns.selected_department.email)
+
+        {:error, reason} ->
+          IO.inspect(reason)
+          socket
+      end
+
+    DepartmentManager.create_branches(branches, socket.assigns.selected_department.email)
+
+    {:noreply,
+     socket
+     |> assign(:show_subject_form?, false)
+     |> assign(:show_branch_form?, false)}
+  end
+
+  def handle_event("show-add-form", %{"type" => type}, socket) do
+    case type do
+      "department" ->
+        {:noreply, socket |> assign(:show_dep_form?, true)}
+
+      "branch" ->
+        {:noreply, socket |> assign(:show_branch_form?, true)}
+
+      "subject" ->
+        {:noreply, socket |> assign(:show_subject_form?, true)}
+
+      _ ->
+        {:noreply, socket}
+    end
+  end
+
+  def handle_event("hide-add-form", %{"type" => type}, socket) do
+    case type do
+      "department" ->
+        {:noreply, socket |> assign(:show_dep_form?, false)}
+
+      "branch" ->
+        {:noreply, socket |> assign(:show_branch_form?, false)}
+
+      "subject" ->
+        {:noreply, socket |> assign(:show_subject_form?, false)}
+
+      _ ->
+        {:noreply, socket}
+    end
   end
 
   def handle_event("add-branch", _, socket) do
@@ -164,7 +286,7 @@ defmodule QuizlineWeb.Admin.SessionLive.DepartmentsComponent do
         {:noreply,
          socket
          |> assign(:changeset, DepartmentManager.department_changeset(%Department{}))
-         |> assign(:should_show_add_form, false)
+         |> assign(:show_dep_form?, false)
          |> assign(:departments, socket.assigns.departments ++ [department])}
 
       {:error, reason} ->
@@ -199,15 +321,18 @@ defmodule QuizlineWeb.Admin.SessionLive.DepartmentsComponent do
   end
 
   def handle_event("select-tab", %{"tab" => tab}, socket) do
-    {:noreply, socket |> assign(:selected_tab, String.to_atom("tab_" <> tab))}
-  end
+    email = socket.assigns.selected_department.email
 
-  def handle_event("show-add-branch-form", _, socket) do
-    {:noreply, socket |> assign(:show_add_branch_form?, true)}
-  end
+    case tab do
+      "subjects" ->
+        {:noreply,
+         socket
+         |> load_subjects(email)
+         |> assign(:selected_tab, String.to_atom("tab_" <> tab))}
 
-  def handle_event("hide-add-branch-form", _, socket) do
-    {:noreply, socket |> assign(:show_add_branch_form?, false)}
+      _ ->
+        {:noreply, socket |> assign(:selected_tab, String.to_atom("tab_" <> tab))}
+    end
   end
 
   def handle_event("new-branch-change", %{"branch" => branch_params}, socket) do
@@ -228,23 +353,15 @@ defmodule QuizlineWeb.Admin.SessionLive.DepartmentsComponent do
     department = socket.assigns.selected_department
 
     case DepartmentManager.create_branch(changeset, department.email) do
-      {:ok, response} ->
-        IO.inspect(response)
+      {:ok, branch} ->
+        IO.inspect(branch)
 
-        new_branches =
-          department.branches ++
-            [
-              %Department.Branch{
-                id: changeset.changes.id,
-                title: changeset.changes.title,
-                branch_id: changeset.changes.branch_id
-              }
-            ]
+        new_branches = department.branches ++ branch
 
         {:noreply,
          socket
          |> assign(:selected_department, Map.put(department, :branches, new_branches))
-         |> assign(:show_add_branch_form?, false)
+         |> assign(:show_branch_form?, false)
          |> assign(
            :new_branch_changeset,
            DepartmentManager.branch_changeset(%Department.Branch{})
@@ -252,6 +369,10 @@ defmodule QuizlineWeb.Admin.SessionLive.DepartmentsComponent do
 
       {:error, error} ->
         IO.inspect(error)
+        {:noreply, socket}
+
+      {:error, _, e} ->
+        IO.inspect(e)
         {:noreply, socket}
     end
   end
@@ -309,14 +430,6 @@ defmodule QuizlineWeb.Admin.SessionLive.DepartmentsComponent do
     end
   end
 
-  def handle_event("show-add-subject-form", _, socket) do
-    {:noreply, socket |> assign(:show_add_subject_form?, true)}
-  end
-
-  def handle_event("hide-add-subject-form", _, socket) do
-    {:noreply, socket |> assign(:show_add_subject_form?, false)}
-  end
-
   def handle_event("add-subject-assoc", _, socket) do
     existing_assocs = Map.get(socket.assign.new_subject_changeset.changes.associates, [])
 
@@ -352,6 +465,7 @@ defmodule QuizlineWeb.Admin.SessionLive.DepartmentsComponent do
       {:ok, subjects} ->
         {:noreply,
          socket
+         |> assign(:show_subject_form?, false)
          |> assign(subjects: socket.assigns.subjects ++ subjects)
          |> assign(
            :new_subject_changeset,
@@ -365,5 +479,92 @@ defmodule QuizlineWeb.Admin.SessionLive.DepartmentsComponent do
         IO.inspect(reason)
         {:noreply, socket}
     end
+  end
+
+  defp split_before_next(data, string) do
+    data
+    |> Enum.with_index()
+    |> Enum.filter(fn k ->
+      {ele, _} = k
+
+      case ele do
+        [^string | _] -> true
+        _ -> false
+      end
+    end)
+    |> Enum.map(fn {_, index} ->
+      index
+    end)
+    |> case do
+      [_, index] ->
+        {:two, data |> Enum.split(index)}
+
+      [_] ->
+        {:one, data}
+
+      [] ->
+        {:invalid_format}
+    end
+  end
+
+  defp parse_branch_data(rows) do
+    rows
+    |> CSV.Encoding.Encoder.encode()
+    |> CSV.decode(headers: true, validate_row_length: false)
+    |> Enum.to_list()
+    |> Enum.map(fn k ->
+      case k do
+        {:ok,
+         %{
+           "Branch Title" => title,
+           "Semester" => semester,
+           "Subject Code" => subject
+         }}
+        when is_bitstring(semester) and is_bitstring(subject) ->
+          %{title: title, subjects: [%{subject: subject, semester: semester}]}
+
+        {:ok,
+         %{
+           "Branch Title" => title,
+           "Semester" => semesters,
+           "Subject Code" => subjects
+         }}
+        when is_list(semesters) and is_list(subjects) and
+               length(semesters) == length(subjects) ->
+          %{
+            title: title,
+            subjects:
+              Enum.zip(subjects, semesters)
+              |> Enum.map(fn {sub, sem} ->
+                %{subject: sub, semester: sem}
+              end)
+          }
+
+        {:ok, %{"Branch Title" => title}} ->
+          %{title: title}
+
+        _ ->
+          {:invalid_format}
+      end
+    end)
+  end
+
+  defp parse_subject_data(rows) do
+    rows
+    |> CSV.Encoding.Encoder.encode()
+    |> CSV.decode(headers: true, validate_row_length: false)
+    |> Enum.to_list()
+    |> Enum.map(fn k ->
+      case k do
+        {:ok, %{"Subject Title" => title, "Subject Code" => code, "Department Email" => email}} ->
+          %{title: title, code: code, email: email}
+
+        {:ok, %{"Subject Title" => title, "Subject Code" => code}} ->
+          %{title: title, code: code}
+
+        _ ->
+          {:invalid_format}
+      end
+    end)
   end
 end

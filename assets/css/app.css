@@ -71,18 +71,3 @@
   background: -webkit-linear-gradient(to right, #0decfc, #8efcf7);  /* Chrome 10-25, Safari 5.1-6 */
   background: linear-gradient(to right, #0decfc, #8efcf7);
 }
-
-
-
-.custom-scroll-bar::-webkit-scrollbar {
-  width: 8px;
-}
-
-.custom-scroll-bar::-webkit-scrollbar-thumb {
-  background: darkgrey;
-  border-radius: 40px;
-}
-
-.custom-scroll-bar::-webkit-scrollbar-track {
-  margin: 20px;
-}
