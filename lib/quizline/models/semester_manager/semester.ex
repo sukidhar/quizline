@@ -5,17 +5,17 @@ defmodule Quizline.SemesterManager.Semester do
 
   embedded_schema do
     field(:title, :string)
-    field(:symbol, :string)
+    field(:sid, :string)
     field(:common?, :boolean, default: false)
     field(:created, :string)
   end
 
   def changeset(semester, params) do
     semester
-    |> cast(params, [:title, :symbol, :common?])
-    |> validate_required([:title, :symbol, :common?])
+    |> cast(params, [:title, :sid, :common?])
+    |> validate_required([:title, :sid, :common?])
     |> update_change(:title, &String.trim/1)
-    |> update_change(:symbol, &String.trim/1)
+    |> update_change(:sid, &String.trim/1)
     |> add_id()
   end
 

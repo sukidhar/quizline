@@ -145,7 +145,7 @@ defmodule Quizline.DepartmentManager do
   end
 
   def modify_branch_id(%{title: title, branch_id: branch_id, id: id}) do
-    %{title: title, id: branch_id <> "@" <> id}
+    %{title: title, id: branch_id <> "@" <> id, prefix: branch_id <> "@"}
   end
 
   def get_departments_with_branches(page \\ 0, id) do

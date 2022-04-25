@@ -121,6 +121,11 @@ defmodule Necto do
               "#{rel_props["created"] || DateTime.to_unix(DateTime.utc_now())}"
             )
 
+          props =
+            props
+            |> Keyword.put(:common?, Keyword.get(props, :common, false))
+            |> Keyword.delete(:common)
+
           Kernel.struct!(struct, props)
         end)
 
@@ -479,10 +484,54 @@ defmodule Necto do
     IO.inspect(data)
 
     query = """
-    MATCH (dep:Department {email: $email})
     UNWIND $data as row
-    MERGE (dep)-[r:has_branch]->(branch:Branch)
+        MATCH (dep:Department{email: $email})
+        OPTIONAL MATCH (dep)-[:has_branch]-(branch:Branch)
+        WHERE branch.title STARTS WITH row.branch.prefix
+        CALL {
+            with dep, branch, row
+            with dep, branch, row
+            where branch is null
+            CREATE (dep)-[:has_branch]->(b:Branch{title: row.branch.title, id: row.branch.id})
+            return True as result, b as new_branch
+            UNION
+            with dep, branch, row
+            with dep, branch, row
+            where branch is not null
+            MERGE (dep)-[:has_branch]->(b:Branch {title: row.branch.title})
+            return False as result, branch as new_branch
+        }
+        WITH new_branch, dep, row
+        UNWIND (CASE row.links WHEN [] THEN [null] else row.links END) as link
+        CALL{
+          WITH new_branch, link
+          WITH new_branch, link
+          WHERE link is null
+          RETURN false as res
+
+          UNION
+
+          WITH new_branch, link
+          WITH new_branch, link
+          WHERE link is not null
+          MATCH (sem:Semester) WHERE sem.sid = link.semester
+          WITH new_branch, link, sem
+          MATCH (sub:Subject) WHERE sub.subject_code = link.subject
+          FOREACH (ig in case when true then [1] else [] end | create (hello:Hello))
+          FOREACH (ignoreMe in CASE WHEN sem.common THEN [1] ELSE [] END |  MERGE (sem)<-[:assigns]-(sub))
+          FOREACH (ignoreMe2 in CASE WHEN sem.common THEN [] ELSE [1] END |   MERGE (sem)<-[:assigns]-(sub)<-[:provides]-(new_branch))
+          RETURN true as res
+        }
+        RETURN new_branch, res, link
     """
+
+    conn = Sips.conn()
+
+    res = Sips.query!(conn, query, %{data: data, email: email})
+    IO.inspect(res)
+  rescue
+    e ->
+      IO.inspect(e)
   end
 
   def delete_branch(id) do
@@ -501,6 +550,8 @@ defmodule Necto do
   end
 
   def create_semester(params, id) do
+    params = params |> Map.put(:common, params.common?) |> Map.delete(:common?)
+
     query = """
     MATCH (admin:Admin) WHERE admin.id=$id
     CREATE (admin)-[r:has_semester{created: datetime().epochSeconds}]->(semester:Semester $params)

@@ -1,4 +1,4 @@
-<div class="flex flex-col h-full w-full">
+<div class="flex flex-col h-full w-full bg-white">
     <div class="navbar bg-white border-b-[1px] z-50">
         <div class="navbar-start">
           <a class="btn btn-ghost normal-case text-xl">Semesters</a>
@@ -22,7 +22,7 @@
                 </p>
                 <.form let = {f} for={@changeset}, class="space-y-10 pb-5" phx-target={@myself} phx-change="form-change" phx-submit="form-submit">
                     <%= floating_input f, :title, wrapper: ["relative"], placeholder: "Semseter Title", phx_debounce: 0%>
-                    <%= floating_input f, :symbol, wrapper: ["relative"], placeholder: "Semseter Symbol", phx_debounce: 0%>
+                    <%= floating_input f, :sid, wrapper: ["relative"], placeholder: "ID",label: ["truncate w-full"], phx_debounce: 0%>
                     <label class="label cursor-pointer">
                         <span class="label-text text-base">Is a common sememster</span> 
                         <%= checkbox f, :common?, class: "checkbox" %> 

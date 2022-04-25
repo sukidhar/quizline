@@ -65,6 +65,8 @@ create_unique_constraint "unique_department_email" "Department" "email"
 create_required_constraint "mandatory_department_email" "Department" "email"
 create_unique_constraint "unique_branch_id" "Branch" "id"
 create_required_constraint "mandatory_branch_id" "Branch" "id"
+create_unique_constraint "unique_semester_id" "Semester" "sid"
+create_required_constraint "mandatory_semester_id" "Semester" "sid"
 
 create_unique_constraint "unique_subject_code" "Subject" "subject_code"
 create_required_constraint "mandatory_subject_code" "Subject" "subject_code"

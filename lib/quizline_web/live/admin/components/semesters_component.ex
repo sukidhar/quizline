@@ -42,13 +42,13 @@ defmodule QuizlineWeb.Admin.SessionLive.SemestersComponent do
 
     changeset
     |> case do
-      %Ecto.Changeset{valid?: true, changes: %{title: title, symbol: symbol, id: id} = changes} ->
+      %Ecto.Changeset{valid?: true, changes: %{title: title, sid: sid, id: id} = changes} ->
         common? = Map.get(changes, :common?, false)
 
         case SemesterManager.create_semester(
                %Semester{
                  title: title,
-                 symbol: symbol,
+                 sid: sid,
                  id: id,
                  common?: common?
                },
