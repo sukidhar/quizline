@@ -149,7 +149,10 @@ defmodule Quizline.DepartmentManager do
   end
 
   def get_departments_with_branches(page \\ 0, id) do
-    {:ok, departments} = Necto.get_departments(page, id)
-    {:ok, departments}
+    Necto.get_departments(page, id)
+  end
+
+  def get_branches(dep_email) do
+    Necto.get_branches(dep_email)
   end
 end

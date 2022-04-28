@@ -206,12 +206,12 @@
                 <%= case @selected_tab do  %>   
                     <% :tab_branches -> %> 
                         <div class="absolute flex-grow w-full grid grid-cols-4 h-[calc(100%-theme(spacing.40))] overflow-y-scroll gap-4 p-5">
-                            <%= for branch <- @selected_department.branches do%> 
+                            <%= for branch <- @branches do%> 
                                 <div class="relative card-parent h-52 w-full mb-5">
                                     <button phx-click="branch-pressed" phx-target={@myself} class="card bg-white shadow-md h-full w-full flex items-center justify-end p-2">
                                         <p><%= branch.title %></p> 
                                     </button>
-                                    <button type="button" phx-target={@myself} phx-click="delete-branch" phx-value-id={branch.id} class="absolute hidden-child -top-3 -right-3 hidden-child h-6 w-6 card bg-white shadow-md btn-circle flex items-center justify-center">x</button>
+                                    <button type="button" phx-target={@myself} phx-click="delete-branch" phx-value-id={"#{branch.branch_id}@#{branch.id}"} class="absolute hidden-child -top-3 -right-3 hidden-child h-6 w-6 card bg-white shadow-md btn-circle flex items-center justify-center">x</button>
                                 </div>
                             <% end %>
                         </div>

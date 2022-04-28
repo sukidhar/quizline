@@ -475,14 +475,11 @@ defmodule Necto do
       _ ->
         raise("failed to branch because it already exists")
     end
-
-    # rescue
-    #   e -> {:error, "failed to create branch due to", e}
+  rescue
+    e -> {:error, e}
   end
 
   def create_branches(data, email) do
-    IO.inspect(data)
-
     query = """
     UNWIND $data as row
         MATCH (dep:Department{email: $email})
@@ -517,21 +514,35 @@ defmodule Necto do
           MATCH (sem:Semester) WHERE sem.sid = link.semester
           WITH new_branch, link, sem
           MATCH (sub:Subject) WHERE sub.subject_code = link.subject
-          FOREACH (ig in case when true then [1] else [] end | create (hello:Hello))
           FOREACH (ignoreMe in CASE WHEN sem.common THEN [1] ELSE [] END |  MERGE (sem)<-[:assigns]-(sub))
           FOREACH (ignoreMe2 in CASE WHEN sem.common THEN [] ELSE [1] END |   MERGE (sem)<-[:assigns]-(sub)<-[:provides]-(new_branch))
           RETURN true as res
         }
-        RETURN new_branch, res, link
+        RETURN new_branch, collect(link) as links
     """
 
     conn = Sips.conn()
 
-    res = Sips.query!(conn, query, %{data: data, email: email})
-    IO.inspect(res)
+    %Bolt.Sips.Response{results: res} = Sips.query!(conn, query, %{data: data, email: email})
+    {:ok, structify_response(res, :branch, "failed to create a branch")}
   rescue
     e ->
-      IO.inspect(e)
+      {:error, e}
+  end
+
+  def get_branches(email) do
+    query = """
+    MATCH (:Department{email: $email})-[has_branch]->(branch:Branch)
+    RETURN branch as new_branch
+    """
+
+    conn = Sips.conn()
+
+    %Bolt.Sips.Response{results: res} = Sips.query!(conn, query, %{email: email})
+    {:ok, structify_response(res, :branch, "failed to create a branch")}
+  rescue
+    e ->
+      {:error, e}
   end
 
   def delete_branch(id) do

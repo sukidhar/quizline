@@ -36,6 +36,7 @@ defmodule QuizlineWeb.Admin.SessionLive.DepartmentsComponent do
      |> assign(:invigilators, [])
      |> assign(:selected_invigilator, [])
      # branch
+     |> assign(:branches, [])
      |> assign(:show_branch_form?, false)
      |> assign(:new_branch_changeset, DepartmentManager.branch_changeset(%Department.Branch{}))
      # subject
@@ -52,9 +53,9 @@ defmodule QuizlineWeb.Admin.SessionLive.DepartmentsComponent do
     end
   end
 
-  defp load_subjects(socket, dep_email) do
+  defp load_subjects(socket) do
     subs =
-      SubjectManager.get_subjects(dep_email)
+      SubjectManager.get_subjects(socket.assigns.selected_department.email)
       |> case do
         {:ok, subs} ->
           subs
@@ -67,6 +68,22 @@ defmodule QuizlineWeb.Admin.SessionLive.DepartmentsComponent do
 
     socket
     |> assign(:subjects, subs)
+  end
+
+  defp load_branches(socket) do
+    branches =
+      DepartmentManager.get_branches(socket.assigns.selected_department.email)
+      |> case do
+        {:ok, branches} ->
+          branches
+
+        {:error, reason} ->
+          IO.inspect(reason)
+          []
+      end
+
+    socket
+    |> assign(:branches, branches)
   end
 
   def handle_event("department-file-uploaded", _, socket) do
@@ -170,14 +187,23 @@ defmodule QuizlineWeb.Admin.SessionLive.DepartmentsComponent do
       SubjectManager.create_subjects(subjects, socket.assigns.selected_department.email)
       |> case do
         {:ok, _} ->
-          load_subjects(socket, socket.assigns.selected_department.email)
+          load_subjects(socket)
 
         {:error, reason} ->
           IO.inspect(reason)
           socket
       end
 
-    DepartmentManager.create_branches(branches, socket.assigns.selected_department.email)
+    socket =
+      DepartmentManager.create_branches(branches, socket.assigns.selected_department.email)
+      |> case do
+        {:ok, _} ->
+          load_branches(socket)
+
+        {:error, reason} ->
+          IO.inspect(reason)
+          socket
+      end
 
     {:noreply,
      socket
@@ -304,12 +330,11 @@ defmodule QuizlineWeb.Admin.SessionLive.DepartmentsComponent do
         k.email == email
       end)
 
-    {:ok, subjects} = SubjectManager.get_subjects(department.email)
-
     {:noreply,
      socket
      |> assign(:selected_department, department)
-     |> assign(:subjects, subjects)}
+     |> load_branches()
+     |> load_subjects()}
   end
 
   def handle_event("deselect-department", _, socket) do
@@ -321,18 +346,7 @@ defmodule QuizlineWeb.Admin.SessionLive.DepartmentsComponent do
   end
 
   def handle_event("select-tab", %{"tab" => tab}, socket) do
-    email = socket.assigns.selected_department.email
-
-    case tab do
-      "subjects" ->
-        {:noreply,
-         socket
-         |> load_subjects(email)
-         |> assign(:selected_tab, String.to_atom("tab_" <> tab))}
-
-      _ ->
-        {:noreply, socket |> assign(:selected_tab, String.to_atom("tab_" <> tab))}
-    end
+    {:noreply, socket |> assign(:selected_tab, String.to_atom("tab_" <> tab))}
   end
 
   def handle_event("new-branch-change", %{"branch" => branch_params}, socket) do
@@ -395,8 +409,6 @@ defmodule QuizlineWeb.Admin.SessionLive.DepartmentsComponent do
   end
 
   def handle_event("confirm", _, socket) do
-    department = socket.assigns.selected_department
-
     case socket.assigns.confirmation_type || :none do
       :none ->
         {:noreply, socket |> assign(:show_confirmation?, false)}
@@ -412,15 +424,15 @@ defmodule QuizlineWeb.Admin.SessionLive.DepartmentsComponent do
                 IO.inspect(flash)
 
                 new_branches =
-                  (department.branches || [])
+                  (socket.assigns.branches || [])
                   |> Enum.reject(fn k ->
-                    k.id == id
+                    k.branch_id <> "@" <> k.id == id
                   end)
 
                 {:noreply,
                  socket
                  |> assign(:show_confirmation?, false)
-                 |> assign(:selected_department, Map.put(department, :branches, new_branches))}
+                 |> assign(:branches, new_branches)}
 
               {:error, flash} ->
                 IO.inspect(flash)
