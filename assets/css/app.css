@@ -17,6 +17,10 @@
   @apply opacity-75 scale-75 -translate-y-3 translate-x-1 text-primary-content; 
 }
 
+.calendar-button>p{
+  @apply text-gray-400
+}
+
 .phx-no-feedback.invalid-feedback, .phx-no-feedback .invalid-feedback {
   display: none;
 }

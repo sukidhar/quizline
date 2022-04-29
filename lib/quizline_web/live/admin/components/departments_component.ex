@@ -458,8 +458,6 @@ defmodule QuizlineWeb.Admin.SessionLive.DepartmentsComponent do
       |> SubjectManager.subject_changeset(subject_params)
       |> Map.put(:action, :insert)
 
-    IO.inspect(changeset)
-
     {:noreply, socket |> assign(:new_subject_changeset, changeset)}
   end
 

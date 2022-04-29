@@ -10,8 +10,8 @@ defmodule Quizline.SubjectManager.Subject do
     field(:updated, :string)
 
     embeds_many :associates, Associate do
-      field(:semester_id, :string)
-      field(:branch_id, :string)
+      embeds_one(:semester, Quizline.SemesterManager.Semester)
+      embeds_one(:branch, Quizline.DepartmentManager.Department.Branch)
     end
   end
 
@@ -24,8 +24,7 @@ defmodule Quizline.SubjectManager.Subject do
 
   def associate_changeset(association, params) do
     association
-    |> cast(params, [:semester_id, :branch_id])
-    |> validate_required([:semester_id])
+    |> cast(params, [:semester, :branch])
     |> add_id()
   end
 

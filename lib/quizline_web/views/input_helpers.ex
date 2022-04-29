@@ -3,7 +3,7 @@ defmodule QuizlineWeb.InputHelpers do
   import QuizlineWeb.ErrorHelpers
 
   def floating_input(form, field, opts \\ []) do
-    type = Phoenix.HTML.Form.input_type(form, field)
+    type = Keyword.get(opts, :type, Phoenix.HTML.Form.input_type(form, field))
     placeholder = Keyword.get(opts, :placeholder, humanize(field))
 
     input_opts =
@@ -63,6 +63,16 @@ defmodule QuizlineWeb.InputHelpers do
               ) ++
               if(value != nil, do: [value: value], else: []) ++
               if(name != nil, do: [name: name], else: [])
+
+    input_opts =
+      input_opts ++
+        case Keyword.has_key?(opts, :phx_hook) do
+          true ->
+            [phx_hook: Keyword.get(opts, :phx_hook, "")]
+
+          false ->
+            []
+        end
 
     label_opts = [
       class: Enum.join(label_opts, " "),

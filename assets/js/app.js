@@ -26,7 +26,7 @@ import { Socket } from "phoenix";
 import { LiveSocket } from "phoenix_live_view";
 import topbar from "../vendor/topbar";
 import "./user_socket.js";
-import { NIL } from "uuid";
+// import picker from "./calender";
 
 let Hooks = {};
 
@@ -45,6 +45,7 @@ window.addEventListener("phx:page-loading-stop", (info) => topbar.hide());
 
 // connect if there are any LiveViews on the page
 liveSocket.connect();
+liveSocket.enableDebug();
 
 // expose liveSocket on window for web console debug logs and latency simulation:
 // >> liveSocket.enableDebug()
@@ -105,6 +106,18 @@ Hooks.scrollLock = {
   },
   destroyed() {
     this.parent.classList.remove("no-scroll");
+  },
+};
+
+Hooks.date_button = {
+  mounted() {
+    this.el.addEventListener("click", () => {
+      console.log(this.el.dataset);
+      let input_el = document.getElementById(this.el.dataset.valueField);
+      console.log(input_el);
+      input_el.value = this.el.dataset.valueDate;
+      input_el.dispatchEvent(new Event("input", { bubbles: true }));
+    });
   },
 };
 
