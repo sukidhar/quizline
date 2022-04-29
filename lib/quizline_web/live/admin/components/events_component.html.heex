@@ -18,81 +18,90 @@
                 </div>
                 <div class="realtive w-full overflow-y-auto">
                     <%= if @form_mode == :form do  %>
-                        <.form let = {f} for={@primary_changeset} id="event_form", class="flex flex-col w-full gap-y-10 pb-5 px-5" phx-target={@myself} phx-change="primary-change" phx-submit="primary-submit">
-                            <%= floating_input f, :exam_group, wrapper: ["relative"], placeholder: "Exam Group", phx_debounce: 0 %>
-                            <%= hidden_input f, :date, id: "date-input"  %> 
-                            <div class="relative z-50">
-                                <div class="w-full border-[1px] rounded-md pb-1 px-2 calendar-button">
-                                    <p class="absolute text-sm py-2">Date</p>
-                                    <button class="text-sb-purple-700 focus:outline-none pt-8 text-sm" type="button" phx-click="toggle-calendar" phx-target={@myself}>
-                                        <%= "#{format_selected_date(@calendar.selected_day)}" %>
-                                    </button>
-                                </div>
-                                <%= if @calendar_open do  %>
-                                    <div class="bg-white rounded-lg p-4 shadow-lg absolute -top-24 left-64 w-fit border-[0.5px]" phx-click-away="toggle-calendar" phx-target={@myself}>
-                                        <button class="absolute top-5 left-7" phx-click="change_month" phx-value-month={@calendar.previous_month} phx-target={@myself}><svg width="5" height="8" viewBox="0 0 5 8" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4 7L1 4L4 1" stroke="#829AB1" stroke-width="1"/></svg></button>
-                                        <h3 class="text-center text-sb-gray-900 text-xs pb-2"><%= @calendar.selected_month %></h3>
-                                        <button class="absolute top-5 right-7" phx-click="change_month" phx-value-month={@calendar.next_month} phx-target={@myself}><svg width="5" height="8" viewBox="0 0 5 8" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M1 1L4 4L1 7" stroke="#829AB1" stroke-width="1"/></svg></button>
-                                        <ul class="text-xs text-sb-gray-500 grid grid-cols-7 gap-2">
-                                            <li class="block w-6 h-6 text-center">S</li>
-                                            <li class="block w-6 h-6 text-center">M</li>
-                                            <li class="block w-6 h-6 text-center">T</li>
-                                            <li class="block w-6 h-6 text-center">W</li>
-                                            <li class="block w-6 h-6 text-center">T</li>
-                                            <li class="block w-6 h-6 text-center">F</li>
-                                            <li class="block w-6 h-6 text-center">S</li>
-                                        </ul>
-                                        <%= for week <- @calendar.days_by_week do %>
-                                            <ul class="text-sm text-sb-gray-900 grid grid-cols-7 gap-2 h-fit">
-                                            <%= for date <- week do %>
-                                                <%= case %{date: date, selected_day: @calendar.selected_day} do  %> 
-                                                    <% %{date: nil} -> %>
-                                                        <li class="w-6 h-6 text-center rounded-sm flex items-center justify-center"></li> 
-                                                    <% %{date: date, selected_day: date} -> %>
-                                                        <li class="w-6 h-6 text-center rounded-sm bg-purple-500 flex items-center justify-center">
-                                                            <button disabled class="opacity-100">
-                                                                <%= "#{date.day}"  %> 
-                                                            </button>
-                                                        </li> 
-                                                    <% %{date: date} -> %>
-                                                        <li>
-                                                            <button id={"date-button-#{date.day}-#{date.month}-#{date.year}"}  class="form-control first-line:w-6 h-6 text-center rounded-sm hover:bg-purple-200 flex items-center justify-center" type="button" phx-target={@myself} phx-click="change_selected_day" phx-value-date={date} data-value-date={date} data-value-field="date-input" phx-hook="date_button">
-                                                                <%= "#{date.day}"  %> 
-                                                            </button>
-                                                        </li> 
-                                                <% end %> 
-                                            <% end %>
-                                            </ul>
-                                        <% end %>
+                        <%= case @form_step do %>
+                            <% :primary -> %>
+                                <.form let = {f} for={@primary_changeset} id="event_form", class="flex flex-col w-full gap-y-10 pb-5 px-5" phx-target={@myself} phx-change="primary-change" phx-submit="primary-submit">
+                                    <%= floating_input f, :exam_group, wrapper: ["relative"], placeholder: "Exam Group", phx_debounce: 0 %>
+                                    <%= hidden_input f, :date, id: "date-input", value: @calendar.selected_day  %> 
+                                    <div class="relative z-50">
+                                        <div class="w-full border-[1px] rounded-md pb-1 px-2 calendar-button">
+                                            <p class="absolute text-sm py-2">Date</p>
+                                            <button class="text-sb-purple-700 focus:outline-none pt-8 text-sm" type="button" phx-click="toggle-calendar" phx-target={@myself}>
+                                                <%= "#{format_selected_date(@calendar.selected_day)}" %>
+                                            </button>
+                                        </div>
+                                        <%= error_tag f, :date  %> 
+                                        <%= if @calendar_open do  %>
+                                            <div class="bg-white rounded-lg p-4 shadow-lg absolute -top-24 left-64 w-fit border-[0.5px]" phx-click-away="toggle-calendar" phx-target={@myself}>
+                                                <button class="absolute top-5 left-7" phx-click="change_month" phx-value-month={@calendar.previous_month} phx-target={@myself}><svg width="5" height="8" viewBox="0 0 5 8" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4 7L1 4L4 1" stroke="#829AB1" stroke-width="1"/></svg></button>
+                                                <h3 class="text-center text-sb-gray-900 text-xs pb-2"><%= @calendar.selected_month %></h3>
+                                                <button class="absolute top-5 right-7" phx-click="change_month" phx-value-month={@calendar.next_month} phx-target={@myself}><svg width="5" height="8" viewBox="0 0 5 8" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M1 1L4 4L1 7" stroke="#829AB1" stroke-width="1"/></svg></button>
+                                                <ul class="text-xs text-sb-gray-500 grid grid-cols-7 gap-2">
+                                                    <li class="block w-6 h-6 text-center">S</li>
+                                                    <li class="block w-6 h-6 text-center">M</li>
+                                                    <li class="block w-6 h-6 text-center">T</li>
+                                                    <li class="block w-6 h-6 text-center">W</li>
+                                                    <li class="block w-6 h-6 text-center">T</li>
+                                                    <li class="block w-6 h-6 text-center">F</li>
+                                                    <li class="block w-6 h-6 text-center">S</li>
+                                                </ul>
+                                                <%= for week <- @calendar.days_by_week do %>
+                                                    <ul class="text-sm text-sb-gray-900 grid grid-cols-7 gap-2 h-fit">
+                                                    <%= for date <- week do %>
+                                                        <%= case %{date: date, selected_day: @calendar.selected_day} do  %> 
+                                                            <% %{date: nil} -> %>
+                                                                <li class="w-6 h-6 text-center rounded-sm flex items-center justify-center"></li> 
+                                                            <% %{date: date, selected_day: date} -> %>
+                                                                <li class="w-6 h-6 text-center rounded-sm bg-purple-500 flex items-center justify-center">
+                                                                    <button disabled class="opacity-100">
+                                                                        <%= "#{date.day}"  %> 
+                                                                    </button>
+                                                                </li> 
+                                                            <% %{date: date} -> %>
+                                                                <li>
+                                                                    <button id={"date-button-#{date.day}-#{date.month}-#{date.year}"}  class="form-control first-line:w-6 h-6 text-center rounded-sm hover:bg-purple-200 flex items-center justify-center" type="button" phx-target={@myself} phx-click="change_selected_day" phx-value-date={date} data-value-date={date} data-value-field="date-input" phx-hook="date_button">
+                                                                        <%= "#{date.day}"  %> 
+                                                                    </button>
+                                                                </li> 
+                                                        <% end %> 
+                                                    <% end %>
+                                                    </ul>
+                                                <% end %>
+                                            </div>
+                                        <% end %>  
                                     </div>
-                                <% end %>  
-                            </div>
-                            <div class="flex gap-10 items-center">
-                                <div class="flex flex-col">
-                                    <p class="text-base font-medium px-2">
-                                        Start Time
-                                    </p>
-                                    <%= time_select f, :start_time, default: %{hour: 09, minute: 00} , builder: fn b -> %>
-                                        <div class="flex">
-                                            <%= b.(:hour, class: "select focus:outline-none") %>
-                                            <%= b.(:minute, class: "select focus:outline-none") %>
+                                    <div class="flex gap-10 items-center">
+                                        <div class="flex flex-col">
+                                            <p class="text-base font-medium px-2">
+                                                Start Time
+                                            </p>
+                                            <%= time_select f, :start_time, default: %{hour: 09, minute: 00} , builder: fn b -> %>
+                                                <div class="flex">
+                                                    <%= b.(:hour, class: "select focus:outline-none") %>
+                                                    <%= b.(:minute, class: "select focus:outline-none") %>
+                                                </div>
+                                            <% end %>
                                         </div>
-                                    <% end %>
-                                </div>
-                                <p class="font-bold text-lg">-</p>
-                                <div class="flex flex-col">
-                                    <p class="text-base font-medium px-2">
-                                        End Time
-                                    </p>
-                                    <%= time_select f, :end_time, default: %{hour: 12, minute: 00}, builder: fn b -> %>
-                                        <div class="flex">
-                                            <%= b.(:hour, class: "select focus:outline-none") %>
-                                            <%= b.(:minute, class: "select focus:outline-none") %>
+                                        <p class="font-bold text-lg">-</p>
+                                        <div class="flex flex-col">
+                                            <p class="text-base font-medium px-2">
+                                                End Time
+                                            </p>
+                                            <%= time_select f, :end_time, default: %{hour: 12, minute: 00}, builder: fn b -> %>
+                                                <div class="flex">
+                                                    <%= b.(:hour, class: "select focus:outline-none") %>
+                                                    <%= b.(:minute, class: "select focus:outline-none") %>
+                                                </div>
+                                            <% end %>
                                         </div>
-                                    <% end %>
-                                </div>
-                            </div>
-                        </.form>
+                                    </div>
+                                    <button class="btn btn-outline btn-success" type="submit">
+                                        Next
+                                    </button>
+                                </.form>
+                            <% :secondary -> %>
+                                "second step"
+                        <% end %>  
                     <% else %>
                     <% end %>  
                 </div>

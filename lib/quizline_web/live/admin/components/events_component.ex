@@ -54,13 +54,29 @@ defmodule QuizlineWeb.Admin.SessionLive.EventsComponent do
       |> EventManager.exam_primary_changeset(event_params)
       |> Map.put(:action, :insert)
 
-    IO.inspect(changeset)
-
     {:noreply, socket |> assign(:primary_changeset, changeset)}
   end
 
-  def handle_event("primary-submit", %{"exam" => _event_params}, socket) do
-    {:noreply, socket}
+  def handle_event("primary-submit", %{"exam" => event_params}, socket) do
+    changeset =
+      %Exam{}
+      |> EventManager.exam_primary_changeset(event_params)
+      |> Map.put(:action, :validate)
+
+    IO.inspect(changeset)
+
+    case changeset do
+      %Ecto.Changeset{valid?: true} ->
+        {:noreply,
+         socket
+         |> assign(:primary_changset, changeset)
+         |> assign(:form_step, :secondary)}
+
+      %Ecto.Changeset{valid?: false} ->
+        {:noreply,
+         socket
+         |> assign(:primary_changset, changeset)}
+    end
   end
 
   def handle_event("change_month", %{"month" => month}, socket) do
