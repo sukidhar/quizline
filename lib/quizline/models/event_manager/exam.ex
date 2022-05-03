@@ -10,6 +10,12 @@ defmodule Quizline.EventManager.Exam do
     field(:start_time, :time)
     field(:end_time, :time)
     embeds_one(:subject, Quizline.SubjectManager.Subject)
+
+    embeds_many :attendees, Attendee do
+      field(:branch, :string)
+      field(:semester, :string)
+      field(:assigned, :boolean, default: true)
+    end
   end
 
   def primary_changeset(exam, params) do
@@ -22,8 +28,8 @@ defmodule Quizline.EventManager.Exam do
   def secondary_changeset(exam, params) do
     exam
     |> cast(params, [])
-    |> cast_embed(:subject, changeset: &Quizline.SubjectManager.Subject.changeset/2)
-    |> validate_required([:subject])
+    |> cast_embed(:subject, with: &Quizline.SubjectManager.Subject.changeset/2, required: true)
+    |> cast_embed(:attendees, with: &attendee_changeset/2, required: true)
   end
 
   def validate_date(%Changeset{valid?: true, changes: %{date: date}} = changeset) do
@@ -39,5 +45,11 @@ defmodule Quizline.EventManager.Exam do
 
   def validate_date(%Changeset{valid?: false} = changeset) do
     changeset
+  end
+
+  def attendee_changeset(attendee, params) do
+    attendee
+    |> cast(params, [:branch, :semester, :assigned])
+    |> validate_required([:branch, :semester, :assigned])
   end
 end

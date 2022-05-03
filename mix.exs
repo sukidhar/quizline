@@ -10,7 +10,8 @@ defmodule Quizline.MixProject do
       compilers: [:gettext] ++ Mix.compilers(),
       start_permanent: Mix.env() == :prod,
       aliases: aliases(),
-      deps: deps()
+      deps: deps(),
+      xref: [exclude: [Poison.Parser, Poison]]
     ]
   end
 

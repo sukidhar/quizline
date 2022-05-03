@@ -24,7 +24,11 @@ defmodule Quizline.SubjectManager.Subject do
 
   def associate_changeset(association, params) do
     association
-    |> cast(params, [:semester, :branch])
+    |> cast(params, [])
+    |> cast_embed(:semester, with: &Quizline.SemesterManager.Semester.changeset/2)
+    |> cast_embed(:branch,
+      with: &Quizline.DepartmentManager.Department.branch_changeset/2
+    )
     |> add_id()
   end
 

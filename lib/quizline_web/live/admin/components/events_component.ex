@@ -65,24 +65,12 @@ defmodule QuizlineWeb.Admin.SessionLive.EventsComponent do
   end
 
   def handle_event("secondary-change", %{"exam" => event_params}, socket) do
-    event_params =
-      event_params
-      |> Map.put(
-        "subject",
-        case socket.assigns.selected_subject do
-          nil ->
-            nil
-
-          data ->
-            data
-            |> Map.from_struct()
-            |> Enum.into(Map.new(), fn {k, v} -> {Atom.to_string(k), v} end)
-        end
-      )
+    params = modify_event_params(event_params, socket)
+    # IO.inspect(params)
 
     changeset =
       %Exam{}
-      |> EventManager.exam_secondary_changeset(event_params)
+      |> EventManager.exam_secondary_changeset(params)
       |> Map.put(:action, :insert)
 
     send(self(), {:secondary_changeset, changeset})
@@ -95,8 +83,6 @@ defmodule QuizlineWeb.Admin.SessionLive.EventsComponent do
       |> EventManager.exam_primary_changeset(event_params)
       |> Map.put(:action, :validate)
 
-    IO.inspect(changeset)
-
     case changeset do
       %Ecto.Changeset{valid?: true} ->
         send(self(), primary_changeset: changeset, form_step: :secondary)
@@ -106,6 +92,18 @@ defmodule QuizlineWeb.Admin.SessionLive.EventsComponent do
         send(self(), {:primary_changeset, changeset})
         {:noreply, socket}
     end
+  end
+
+  def handle_event("secondary-submit", %{"exam" => event_params}, socket) do
+    event_params = modify_event_params(event_params, socket)
+
+    changeset =
+      %Exam{}
+      |> EventManager.exam_secondary_changeset(event_params)
+      |> Map.put(:action, :validate)
+
+    send(self(), {:secondary_changeset, changeset})
+    {:noreply, socket}
   end
 
   def handle_event("change_month", %{"month" => month}, socket) do
@@ -125,6 +123,52 @@ defmodule QuizlineWeb.Admin.SessionLive.EventsComponent do
     case sub do
       %Subject{subject_code: code} -> code
       nil -> ""
+    end
+  end
+
+  defp modify_event_params(event_params, socket) do
+    event_params
+    |> Map.put(
+      "subject",
+      case socket.assigns.selected_subject do
+        nil ->
+          nil
+
+        data ->
+          Poison.encode!(data)
+          |> Poison.Parser.parse!(%{})
+      end
+    )
+    |> Map.put(
+      "attendees",
+      case socket.assigns.selected_subject do
+        nil ->
+          nil
+
+        data ->
+          data
+          |> Map.get(:associates, [])
+          |> Enum.with_index()
+          |> Enum.map(fn {%{semester: semester, branch: branch}, index} ->
+            %{
+              "semester" => semester.sid,
+              "branch" => branch.branch_id <> "@" <> branch.id,
+              "assigned" =>
+                event_params
+                |> Map.get("attendees", %{})
+                |> Map.get("#{index}", %{"assigned" => "true"})
+                |> Map.get("assigned", "true")
+                |> string_to_bool()
+            }
+          end)
+      end
+    )
+  end
+
+  defp string_to_bool(string) do
+    case string do
+      "true" -> true
+      "false" -> false
     end
   end
 end

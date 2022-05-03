@@ -32,7 +32,7 @@ defmodule Necto do
     |> Enum.join(", ")
   end
 
-  defp structify_response(response, label, error) do
+  def structify_response(response, label, error) do
     case %{label: label, modules: Application.get_env(:quizline, Necto)[:modules]} do
       %{label: :admin, modules: %{admin: struct}} ->
         data =
@@ -106,7 +106,7 @@ defmodule Necto do
 
               Kernel.struct!(struct, props)
 
-            %{"dep" => node, "subjects" => _} ->
+            %{"dep" => node} ->
               props = convert_to_klist(node.properties)
               Kernel.struct!(struct, props)
           end
@@ -114,23 +114,38 @@ defmodule Necto do
 
       %{label: :semester, modules: %{semester: struct}} ->
         response
-        |> Enum.map(fn %{
-                         "semester" => %Bolt.Sips.Types.Node{properties: properties},
-                         "r" => %Bolt.Sips.Types.Relationship{properties: rel_props}
-                       } ->
-          props =
-            convert_to_klist(properties)
-            |> Keyword.put(
-              :created,
-              "#{rel_props["created"] || DateTime.to_unix(DateTime.utc_now())}"
-            )
+        |> Enum.map(fn k ->
+          case k do
+            %{
+              "semester" => %Bolt.Sips.Types.Node{properties: properties},
+              "r" => %Bolt.Sips.Types.Relationship{properties: rel_props}
+            } ->
+              props =
+                convert_to_klist(properties)
+                |> Keyword.put(
+                  :created,
+                  "#{rel_props["created"] || DateTime.to_unix(DateTime.utc_now())}"
+                )
 
-          props =
-            props
-            |> Keyword.put(:common?, Keyword.get(props, :common, false))
-            |> Keyword.delete(:common)
+              props =
+                props
+                |> Keyword.put(:common?, Keyword.get(props, :common, false))
+                |> Keyword.delete(:common)
 
-          Kernel.struct!(struct, props)
+              Kernel.struct!(struct, props)
+
+            %{
+              "semester" => %Bolt.Sips.Types.Node{properties: properties}
+            } ->
+              props = convert_to_klist(properties)
+
+              props =
+                props
+                |> Keyword.put(:common?, Keyword.get(props, :common, false))
+                |> Keyword.delete(:common)
+
+              Kernel.struct!(struct, props)
+          end
         end)
 
       %{label: :branch, modules: %{branch: struct}} ->
@@ -148,24 +163,85 @@ defmodule Necto do
         end)
 
       %{label: :subject, modules: %{subject: struct}} ->
-        response
-        |> Enum.map(fn %{
-                         "subject" => %Bolt.Sips.Types.Node{properties: properties},
-                         "r" => %Bolt.Sips.Types.Relationship{properties: rel_props}
-                       } ->
-          props =
-            convert_to_klist(properties)
-            |> Keyword.put(
-              :created,
-              "#{rel_props["created"] || DateTime.to_unix(DateTime.utc_now())}"
-            )
-            |> Keyword.put(
-              :updated,
-              "#{rel_props["updated"] || nil}"
-            )
+        case is_list(response) do
+          true ->
+            response
+            |> Enum.map(fn %{
+                             "subject" => %Bolt.Sips.Types.Node{properties: properties},
+                             "r" => %Bolt.Sips.Types.Relationship{properties: rel_props}
+                           } ->
+              props =
+                convert_to_klist(properties)
+                |> Keyword.put(
+                  :created,
+                  "#{rel_props["created"] || DateTime.to_unix(DateTime.utc_now())}"
+                )
+                |> Keyword.put(
+                  :updated,
+                  "#{rel_props["updated"] || nil}"
+                )
 
-          Kernel.struct!(struct, props)
-        end)
+              Kernel.struct!(struct, props)
+            end)
+
+          false ->
+            case response do
+              %{
+                "subject" => %Bolt.Sips.Types.Node{properties: properties},
+                "r" => %Bolt.Sips.Types.Relationship{properties: rel_props},
+                "assocs" => assocs
+              } ->
+                assocs =
+                  assocs
+                  |> Enum.map(fn k ->
+                    case k do
+                      %{"branch" => nil, "sem" => nil} ->
+                        nil
+
+                      %{"branch" => _, "sem" => nil} ->
+                        nil
+
+                      %{"branch" => nil, "sem" => _} ->
+                        nil
+
+                      %{"branch" => branch, "sem" => sem} ->
+                        [branch] =
+                          Necto.structify_response(
+                            [%{"new_branch" => branch}],
+                            :branch,
+                            "failed to structify response"
+                          )
+
+                        [semester] =
+                          Necto.structify_response(
+                            [%{"semester" => sem}],
+                            :semester,
+                            "failed to structify response"
+                          )
+
+                        Kernel.struct!(Module.concat([struct, Associate]),
+                          branch: branch,
+                          semester: semester
+                        )
+                    end
+                  end)
+                  |> Enum.reject(&is_nil/1)
+
+                props =
+                  convert_to_klist(properties)
+                  |> Keyword.put(:associates, assocs)
+                  |> Keyword.put(
+                    :created,
+                    "#{rel_props["created"] || DateTime.to_unix(DateTime.utc_now())}"
+                  )
+                  |> Keyword.put(
+                    :updated,
+                    "#{rel_props["updated"] || nil}"
+                  )
+
+                Kernel.struct!(struct, props)
+            end
+        end
 
       _ ->
         throw("Struct Module not mentioned in config.exs")
@@ -662,7 +738,8 @@ defmodule Necto do
   def get_all_subjects_with_departments() do
     query = """
     MATCH (dep:Department)-[r:has_subject]->(subject:Subject)
-    RETURN dep, collect({subject:subject, r: r}) as subjects
+    OPTIONAL MATCH (sem:Semester)<-[:assigns]-(subject)<-[:provides]-(branch:Branch)
+    RETURN dep, subject, collect({sem: sem, branch: branch}) as assocs, r
     """
 
     conn = Sips.conn()
@@ -670,18 +747,19 @@ defmodule Necto do
     try do
       %Bolt.Sips.Response{results: response} = Sips.query!(conn, query)
 
-      Enum.map(response, fn k ->
-        dep = structify_response([k], :department, "unable to structify department")
+      Enum.map(response, fn %{"assocs" => assocs, "dep" => dep, "r" => r, "subject" => subject} ->
+        [dep] =
+          structify_response([%{"dep" => dep}], :department, "unable to structify department")
 
-        subs =
-          structify_response(Map.get(k, "subjects", []), :subject, "unable to structify subjects")
+        subject =
+          structify_response(
+            %{"subject" => subject, "r" => r, "assocs" => assocs},
+            :subject,
+            "unable to structify department"
+          )
 
-        subs
-        |> Enum.map(fn k ->
-          {k, dep}
-        end)
+        {subject, dep}
       end)
-      |> List.flatten()
     rescue
       e -> {:error, "Failed to fetch subjects due to ", e}
     end

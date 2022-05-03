@@ -142,7 +142,7 @@ defmodule QuizlineWeb.Admin.SessionLive do
 
   @impl true
   def handle_info({:secondary_changeset, changeset}, socket) do
-    IO.inspect(changeset)
+    # IO.inspect(changeset)
 
     {:noreply,
      socket
