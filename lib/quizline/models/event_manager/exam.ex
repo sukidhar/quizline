@@ -12,8 +12,8 @@ defmodule Quizline.EventManager.Exam do
     embeds_one(:subject, Quizline.SubjectManager.Subject)
 
     embeds_many :attendees, Attendee do
-      field(:branch, :string)
-      field(:semester, :string)
+      embeds_one(:branch, Quizline.DepartmentManager.Department.Branch)
+      embeds_one(:semester, Quizline.SemesterManager.Semester)
       field(:assigned, :boolean, default: true)
     end
   end
@@ -49,7 +49,15 @@ defmodule Quizline.EventManager.Exam do
 
   def attendee_changeset(attendee, params) do
     attendee
-    |> cast(params, [:branch, :semester, :assigned])
-    |> validate_required([:branch, :semester, :assigned])
+    |> cast(params, [:assigned])
+    |> cast_embed(:branch,
+      with: &Quizline.DepartmentManager.Department.branch_changeset/2,
+      required: true
+    )
+    |> cast_embed(:semester,
+      with: &Quizline.SemesterManager.Semester.changeset/2,
+      required: true
+    )
+    |> validate_required([:assigned])
   end
 end

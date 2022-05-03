@@ -130,10 +130,32 @@
                                             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
                                         </button>
                                     </div>
+                                    <table class="table w-full">
+                                        <!-- head -->
+                                        <thead>
+                                          <tr>
+                                            <th>Branch</th>
+                                            <th>Semester</th>
+                                            <th>Assigned</th>
+                                          </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                <%= inputs_for f, :attendees, fn attendee -> %> 
+                                                <th class="text-base font-normal"><%= "#{branch_title(attendee)}" %></th>
+                                                <th class="text-base font-normal"><%= "#{semester_id(attendee)}" %></th>
+                                                <th class="text-base font-normal">
+                                                    <div class="flex items-center justify-center">
+                                                        <%= checkbox attendee, :assigned, class: "checkbox focus:outline-none" %> 
+                                                    </div>
+                                                </th>
+                                                <% end %> 
+                                            </tr>
+                                        </tbody>
+                                    </table>
                                 <% end %>
-                                <%= inputs_for f, :attendees, fn attendee -> %> 
-                                    <%= checkbox attendee, :assigned, class: "checkbox" %> 
-                                <% end %> 
+                                
+                                
                                 <button class="btn btn-outline btn-success" type="submit">
                                     Next
                                 </button>

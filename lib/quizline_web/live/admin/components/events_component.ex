@@ -66,13 +66,13 @@ defmodule QuizlineWeb.Admin.SessionLive.EventsComponent do
 
   def handle_event("secondary-change", %{"exam" => event_params}, socket) do
     params = modify_event_params(event_params, socket)
-    # IO.inspect(params)
 
     changeset =
       %Exam{}
       |> EventManager.exam_secondary_changeset(params)
       |> Map.put(:action, :insert)
 
+    # IO.inspect(changeset)
     send(self(), {:secondary_changeset, changeset})
     {:noreply, socket}
   end
@@ -135,8 +135,7 @@ defmodule QuizlineWeb.Admin.SessionLive.EventsComponent do
           nil
 
         data ->
-          Poison.encode!(data)
-          |> Poison.Parser.parse!(%{})
+          data
       end
     )
     |> Map.put(
@@ -151,8 +150,8 @@ defmodule QuizlineWeb.Admin.SessionLive.EventsComponent do
           |> Enum.with_index()
           |> Enum.map(fn {%{semester: semester, branch: branch}, index} ->
             %{
-              "semester" => semester.sid,
-              "branch" => branch.branch_id <> "@" <> branch.id,
+              "semester" => semester,
+              "branch" => branch,
               "assigned" =>
                 event_params
                 |> Map.get("attendees", %{})
@@ -163,6 +162,8 @@ defmodule QuizlineWeb.Admin.SessionLive.EventsComponent do
           end)
       end
     )
+    |> Poison.encode!()
+    |> Poison.decode!()
   end
 
   defp string_to_bool(string) do
@@ -170,5 +171,17 @@ defmodule QuizlineWeb.Admin.SessionLive.EventsComponent do
       "true" -> true
       "false" -> false
     end
+  end
+
+  defp branch_title(attendee) do
+    attendee.params["branch"]["title"]
+  rescue
+    _e -> ""
+  end
+
+  defp semester_id(attendee) do
+    attendee.params["semester"]["sid"]
+  rescue
+    _e -> ""
   end
 end
