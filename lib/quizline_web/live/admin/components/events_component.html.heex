@@ -32,7 +32,7 @@
                                         </div>
                                         <%= error_tag f, :date  %> 
                                         <%= if @calendar_open do  %>
-                                            <div class="bg-white rounded-lg p-4 shadow-lg absolute -top-24 left-64 w-fit border-[0.5px]" phx-click-away="toggle-calendar" phx-target={@myself}>
+                                            <div class="bg-white rounded-lg p-4 shadow-lg absolute -top-24 left-32 w-fit border-[0.5px]" phx-click-away="toggle-calendar" phx-target={@myself}>
                                                 <button class="absolute top-5 left-7" phx-click="change_month" phx-value-month={@calendar.previous_month} phx-target={@myself}><svg width="5" height="8" viewBox="0 0 5 8" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4 7L1 4L4 1" stroke="#829AB1" stroke-width="1"/></svg></button>
                                                 <h3 class="text-center text-sb-gray-900 text-xs pb-2"><%= @calendar.selected_month %></h3>
                                                 <button class="absolute top-5 right-7" phx-click="change_month" phx-value-month={@calendar.next_month} phx-target={@myself}><svg width="5" height="8" viewBox="0 0 5 8" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M1 1L4 4L1 7" stroke="#829AB1" stroke-width="1"/></svg></button>
@@ -100,7 +100,38 @@
                                     </button>
                                 </.form>
                             <% :secondary -> %>
-                                "second step"
+                            <.form let = {f} for={@primary_changeset} id="event_form", class="flex flex-col w-full gap-y-5 pb-5 px-5" phx-target={@myself} phx-change="secondary-change" phx-submit="secondary-submit">
+                                <%= hidden_input f, :subject, id: "subject-input-field"  %> 
+                                <div class="flex justify-center items-center">
+                                    <p class="text-black font-semibold text-base">Select subject</p>
+                                    <div class="flex grow"></div>
+                                    <div class="relative flex items-center text-gray-400 focus-within:text-cyan-400">
+                                        <span class="absolute left-4 h-6 flex items-center pr-3 border-r border-gray-300">
+                                        <svg xmlns="http://ww50w3.org/2000/svg" class="w-4 fill-current" viewBox="0 0 35.997 36.004">
+                                            <path id="sub-search-icon" data-name="search" d="M35.508,31.127l-7.01-7.01a1.686,1.686,0,0,0-1.2-.492H26.156a14.618,14.618,0,1,0-2.531,2.531V27.3a1.686,1.686,0,0,0,.492,1.2l7.01,7.01a1.681,1.681,0,0,0,2.384,0l1.99-1.99a1.7,1.7,0,0,0,.007-2.391Zm-20.883-7.5a9,9,0,1,1,9-9A8.995,8.995,0,0,1,14.625,23.625Z"></path>
+                                        </svg>
+                                        </span>
+                                        <input type="search" name="sub-search" id="sub-search-field" placeholder="Search here" class="w-full pl-14 pr-4 py-2.5 rounded-xl text-sm text-gray-600 outline-none border border-gray-300 focus:border-cyan-300 transition" phx-hook="searchBar">
+                                    </div>
+                                </div>
+                                <%= if @selected_subject == nil do %> 
+                                    <div class="w-full overflow-x-auto hide-scroll">
+                                        <div class="flex gap-3 w-max">
+                                            <%= for {sub, _dep} <- @subjects do  %>
+                                                <button type="button" id={"subject-button-#{sub.subject_code}"}  phx-hook="subjectPressed" data-event="select" data-sub-code={sub.subject_code} class="rounded-full bg-primary px-3 py-2 text-sm"><%= "#{sub.title} - #{sub.subject_code}" %></button>
+                                            <% end %>
+                                        </div>  
+                                    </div>
+                                    <%= error_tag f, :subject  %> 
+                                <% else %>
+                                    <div class="flex items-center justify-center rounded-full bg-primary px-3 py-2 text-sm w-fit gap-2">
+                                        <p><%= "#{@selected_subject.title} - #{@selected_subject.subject_code}" %></p>
+                                        <button id="selected-subject-button" type="button" phx-target={@myself} phx-hook="subjectPressed" data-event="deselect"  phx-value-code={@selected_subject.subject_code} class="stroke-base-200 hover:stroke-primary-content hover:bg-primary hover:border-[1px] hover:border-primary-content rounded-full">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                                        </button>
+                                    </div>
+                                <% end %>  
+                            </.form>
                         <% end %>  
                     <% else %>
                     <% end %>  
@@ -122,7 +153,7 @@
                     <div class="relative flex items-center text-gray-400 focus-within:text-cyan-400">
                         <span class="absolute left-4 h-6 flex items-center pr-3 border-r border-gray-300">
                         <svg xmlns="http://ww50w3.org/2000/svg" class="w-4 fill-current" viewBox="0 0 35.997 36.004">
-                            <path id="Icon_awesome-search" data-name="search" d="M35.508,31.127l-7.01-7.01a1.686,1.686,0,0,0-1.2-.492H26.156a14.618,14.618,0,1,0-2.531,2.531V27.3a1.686,1.686,0,0,0,.492,1.2l7.01,7.01a1.681,1.681,0,0,0,2.384,0l1.99-1.99a1.7,1.7,0,0,0,.007-2.391Zm-20.883-7.5a9,9,0,1,1,9-9A8.995,8.995,0,0,1,14.625,23.625Z"></path>
+                            <path id="Icon_awesome-search-1" data-name="search" d="M35.508,31.127l-7.01-7.01a1.686,1.686,0,0,0-1.2-.492H26.156a14.618,14.618,0,1,0-2.531,2.531V27.3a1.686,1.686,0,0,0,.492,1.2l7.01,7.01a1.681,1.681,0,0,0,2.384,0l1.99-1.99a1.7,1.7,0,0,0,.007-2.391Zm-20.883-7.5a9,9,0,1,1,9-9A8.995,8.995,0,0,1,14.625,23.625Z"></path>
                         </svg>
                         </span>
                         <input type="search" name="leadingIcon" id="leadingIcon" placeholder="Search here" class="w-full pl-14 pr-4 py-2.5 rounded-xl text-sm text-gray-600 outline-none border border-gray-300 focus:border-cyan-300 transition">

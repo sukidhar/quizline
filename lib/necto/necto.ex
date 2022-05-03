@@ -105,6 +105,10 @@ defmodule Necto do
                 )
 
               Kernel.struct!(struct, props)
+
+            %{"dep" => node, "subjects" => _} ->
+              props = convert_to_klist(node.properties)
+              Kernel.struct!(struct, props)
           end
         end)
 
@@ -650,6 +654,34 @@ defmodule Necto do
     try do
       %Bolt.Sips.Response{results: response} = Sips.query!(conn, query, %{email: dep_email})
       {:ok, structify_response(response, :subject, "unable to structify to subject")}
+    rescue
+      e -> {:error, "Failed to fetch subjects due to ", e}
+    end
+  end
+
+  def get_all_subjects_with_departments() do
+    query = """
+    MATCH (dep:Department)-[r:has_subject]->(subject:Subject)
+    RETURN dep, collect({subject:subject, r: r}) as subjects
+    """
+
+    conn = Sips.conn()
+
+    try do
+      %Bolt.Sips.Response{results: response} = Sips.query!(conn, query)
+
+      Enum.map(response, fn k ->
+        dep = structify_response([k], :department, "unable to structify department")
+
+        subs =
+          structify_response(Map.get(k, "subjects", []), :subject, "unable to structify subjects")
+
+        subs
+        |> Enum.map(fn k ->
+          {k, dep}
+        end)
+      end)
+      |> List.flatten()
     rescue
       e -> {:error, "Failed to fetch subjects due to ", e}
     end

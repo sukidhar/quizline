@@ -75,3 +75,14 @@
   background: -webkit-linear-gradient(to right, #0decfc, #8efcf7);  /* Chrome 10-25, Safari 5.1-6 */
   background: linear-gradient(to right, #0decfc, #8efcf7);
 }
+
+.hide-scroll::-webkit-scrollbar{
+  display: none;
+}
+
+.hide-scroll{
+  -ms-overflow-style: none; /* Edge, Internet Explorer */
+  scrollbar-width: none; /* Firefox */
+  overflow-x: scroll;
+}
+

@@ -45,7 +45,7 @@ window.addEventListener("phx:page-loading-stop", (info) => topbar.hide());
 
 // connect if there are any LiveViews on the page
 liveSocket.connect();
-liveSocket.enableDebug();
+// liveSocket.enableDebug();
 
 // expose liveSocket on window for web console debug logs and latency simulation:
 // >> liveSocket.enableDebug()
@@ -112,11 +112,47 @@ Hooks.scrollLock = {
 Hooks.date_button = {
   mounted() {
     this.el.addEventListener("click", () => {
-      console.log(this.el.dataset);
       let input_el = document.getElementById(this.el.dataset.valueField);
-      console.log(input_el);
       input_el.value = this.el.dataset.valueDate;
       input_el.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+  },
+};
+
+Hooks.searchBar = {
+  mounted() {
+    this.el.oninput = () => {
+      this.pushEvent(
+        "search-field-changed",
+        { filter: this.el.value },
+        (reply, ref) => {
+          console.log(reply);
+        }
+      );
+    };
+  },
+};
+
+Hooks.subjectPressed = {
+  mounted() {
+    this.el.addEventListener("click", () => {
+      var input_el = document.getElementById("subject-input-field");
+      switch (this.el.dataset.event || "") {
+        case "select":
+          this.pushEvent("select-subject", this.el.dataset, (reply, ref) => {
+            input_el.dispatchEvent(new Event("input", { bubbles: true }));
+          });
+          break;
+        case "deselect":
+          this.pushEvent("deselect-subject", null, (reply, ref) => {
+            input_el.dispatchEvent(new Event("input", { bubbles: true }));
+          });
+          break;
+        default:
+          break;
+      }
+
+      console.log();
     });
   },
 };

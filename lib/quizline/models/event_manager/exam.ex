@@ -19,6 +19,13 @@ defmodule Quizline.EventManager.Exam do
     |> validate_date()
   end
 
+  def secondary_changeset(exam, params) do
+    exam
+    |> cast(params, [])
+    |> cast_embed(:subject, changeset: &Quizline.SubjectManager.Subject.changeset/2)
+    |> validate_required([:subject])
+  end
+
   def validate_date(%Changeset{valid?: true, changes: %{date: date}} = changeset) do
     Date.compare(Date.utc_today(), date)
     |> case do

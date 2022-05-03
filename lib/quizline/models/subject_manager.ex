@@ -50,4 +50,8 @@ defmodule Quizline.SubjectManager do
         {:error, "data is corrupted, or missing"}
     end
   end
+
+  def get_all_subjects() do
+    Necto.get_all_subjects_with_departments()
+  end
 end

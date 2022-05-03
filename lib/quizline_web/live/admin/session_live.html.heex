@@ -63,7 +63,7 @@
     <% :dashboard -> %>
         <p> I am dashboard</p>
     <% :events -> %>
-        <.live_component module={QuizlineWeb.Admin.SessionLive.EventsComponent} id="semesters" admin={@admin} />
+        <.live_component module={QuizlineWeb.Admin.SessionLive.EventsComponent} id="events-component" admin={@admin} events_data={@events_data} />
     <% :semesters -> %>
         <.live_component module={QuizlineWeb.Admin.SessionLive.SemestersComponent} id="semesters" admin={@admin} />
     <% :departments -> %>
