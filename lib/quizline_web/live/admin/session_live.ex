@@ -12,6 +12,16 @@ defmodule QuizlineWeb.Admin.SessionLive do
   def mount(_params, %{"guardian_default_token" => token}, socket) do
     {:ok, %Admin{} = admin, _claims} = AdminManager.Guardian.resource_from_token(token)
 
+    subjects =
+      case SubjectManager.get_all_subjects() do
+        {:error, _, e} ->
+          IO.inspect(e)
+          []
+
+        data ->
+          data
+      end
+
     {:ok,
      socket
      |> assign(:admin, admin)
@@ -20,12 +30,12 @@ defmodule QuizlineWeb.Admin.SessionLive do
      |> assign(:events_data, %{
        primary_changeset: EventManager.exam_primary_changeset(%Exam{}),
        secondary_changeset: EventManager.exam_secondary_changeset(%Exam{}),
-       show_event_form?: true,
-       selected_event: false,
+       show_event_form?: false,
+       selected_event: nil,
        form_mode: :form,
-       form_step: :secondary,
+       form_step: :primary,
        selected_subject: nil,
-       subjects: SubjectManager.get_all_subjects(),
+       subjects: subjects,
        current_tab: :tab_upcoming,
        calendar_open: false,
        subject_filter: "",

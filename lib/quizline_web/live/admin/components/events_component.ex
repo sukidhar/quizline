@@ -72,7 +72,6 @@ defmodule QuizlineWeb.Admin.SessionLive.EventsComponent do
       |> EventManager.exam_secondary_changeset(params)
       |> Map.put(:action, :insert)
 
-    # IO.inspect(changeset)
     send(self(), {:secondary_changeset, changeset})
     {:noreply, socket}
   end
@@ -102,7 +101,38 @@ defmodule QuizlineWeb.Admin.SessionLive.EventsComponent do
       |> EventManager.exam_secondary_changeset(event_params)
       |> Map.put(:action, :validate)
 
-    send(self(), {:secondary_changeset, changeset})
+    case changeset do
+      %Ecto.Changeset{valid?: true, changes: secondary} ->
+        %Ecto.Changeset{valid?: true, changes: primary} = socket.assigns.primary_changeset
+        data = Map.merge(primary, secondary)
+
+        data
+        |> Map.put(
+          :attendees,
+          Map.get(data, :attendees, [])
+          |> Enum.map(fn k ->
+            case k do
+              %Ecto.Changeset{
+                valid?: true,
+                changes: %{branch: branch, semester: semester, assigned: true}
+              } ->
+                %{}
+                |> Map.put(:branch, branch.changes)
+                |> Map.put(:semester, semester.changes)
+
+              _ ->
+                nil
+            end
+          end)
+          |> Enum.reject(&is_nil/1)
+        )
+        |> Map.put(:subject, %{subject_code: data.subject.changes.subject_code})
+        |> EventManager.create_exam()
+
+      %Ecto.Changeset{valid?: false} ->
+        send(self(), {:secondary_changeset, changeset})
+    end
+
     {:noreply, socket}
   end
 

@@ -3,7 +3,7 @@ defmodule Quizline.Calendar do
     month = cast_to_date(month)
     selected_day = cast_to_date(selected_day)
 
-    res = %{
+    %{
       selected_day: selected_day,
       selected_month: Calendar.strftime(month, "%B"),
       previous_month: previous_month(month),
@@ -16,8 +16,6 @@ defmodule Quizline.Calendar do
         |> Enum.reverse()
         |> Enum.chunk_every(7)
     }
-
-    res
   end
 
   def previous_month(%{month: 1} = date), do: %{date | year: date.year - 1, month: 12, day: 1}

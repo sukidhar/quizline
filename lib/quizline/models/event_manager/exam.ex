@@ -14,7 +14,13 @@ defmodule Quizline.EventManager.Exam do
     embeds_many :attendees, Attendee do
       embeds_one(:branch, Quizline.DepartmentManager.Department.Branch)
       embeds_one(:semester, Quizline.SemesterManager.Semester)
-      field(:assigned, :boolean, default: true)
+      field(:assigned, :boolean)
+    end
+
+    embeds_many :rooms, Room do
+      embeds_one(:invigilator, Quizline.UserManager.Invigilator)
+      embeds_many(:students, Quizline.UserManager.Student)
+      field(:created, :string)
     end
   end
 
@@ -30,6 +36,7 @@ defmodule Quizline.EventManager.Exam do
     |> cast(params, [])
     |> cast_embed(:subject, with: &Quizline.SubjectManager.Subject.changeset/2, required: true)
     |> cast_embed(:attendees, with: &attendee_changeset/2, required: true)
+    |> attendees_updated()
   end
 
   def validate_date(%Changeset{valid?: true, changes: %{date: date}} = changeset) do
@@ -59,5 +66,25 @@ defmodule Quizline.EventManager.Exam do
       required: true
     )
     |> validate_required([:assigned])
+  end
+
+  def attendees_updated(%Changeset{valid?: true, changes: %{attendees: attendees}} = changeset) do
+    is_valid =
+      Enum.any?(attendees, fn k ->
+        case k do
+          %Changeset{valid?: true, changes: %{assigned: true}} -> true
+          _ -> false
+        end
+      end)
+
+    if is_valid do
+      changeset
+    else
+      changeset |> add_error(:attendees, "atleast one group of attendees must be assigned")
+    end
+  end
+
+  def attendees_updated(changeset) do
+    changeset
   end
 end

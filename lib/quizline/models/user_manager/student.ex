@@ -16,12 +16,15 @@ defmodule Quizline.UserManager.Student do
     field(:password, :string)
     field(:confirm_password, :string)
     field(:hashed_password, :string)
+
+    embeds_one(:semester, Quizline.SemesterManager.Semester)
+    embeds_one(:branch, Quizline.DepartmentManager.Department.Branch)
   end
 
   def changeset(user, params) do
     user
-    |> cast(params, [:reg_no, :first_name, :last_name, :email, :semester])
-    |> validate_required([:reg_no, :first_name, :last_name, :email, :semester])
+    |> cast(params, [:reg_no, :first_name, :last_name, :email, :semester, :branch])
+    |> validate_required([:reg_no, :first_name, :last_name, :email, :semester, :branch])
     |> put_change(:id, Ecto.UUID.generate())
   end
 end

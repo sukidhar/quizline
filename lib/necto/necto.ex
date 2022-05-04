@@ -764,4 +764,38 @@ defmodule Necto do
       e -> {:error, "Failed to fetch subjects due to ", e}
     end
   end
+
+  def create_exam_event(
+        %{
+          attendees: attendees,
+          date: date,
+          start_time: start_time,
+          end_time: end_time,
+          subject: %{subject_code: subject_code}
+        } = data
+      ) do
+    rels =
+      attendees
+      |> Enum.map(fn %{branch: branch, semester: sem} ->
+        %{
+          branch: branch.branch_id <> "@" <> branch.id,
+          semester: sem.sid
+        }
+      end)
+
+    query = """
+    UNWIND $rels as rel
+    MATCH (branch:Branch{id: rel.branch})<-[:pursuing]-(n:Student)<-[:has_student]-(sem:Semester{sid:rel.semester})
+    RETURN collect(n.email) as emails
+    """
+
+    conn = Sips.conn()
+
+    %Sips.Response{results: [res]} = Sips.query!(conn, query, %{rels: rels})
+    IO.inspect(res["emails"] |> Enum.chunk_every(12))
+  end
+
+  def create_exam_event(_data) do
+    {:error, "data not in the required format"}
+  end
 end

@@ -8,4 +8,8 @@ defmodule Quizline.EventManager do
   def exam_secondary_changeset(%Exam{} = exam, params \\ %{}) do
     Exam.secondary_changeset(exam, params)
   end
+
+  def create_exam(data) do
+    Necto.create_exam_event(data)
+  end
 end

@@ -41,7 +41,7 @@ defmodule Quizline.DepartmentManager.Department do
 
   def branch_changeset(branch, params) do
     branch
-    |> cast(params, [:title])
+    |> cast(params, [:title, :id])
     |> validate_required([:title])
     |> update_branch_id()
     |> add_id()
