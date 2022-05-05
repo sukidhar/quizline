@@ -30,9 +30,9 @@ defmodule QuizlineWeb.Admin.SessionLive do
      |> assign(:events_data, %{
        primary_changeset: EventManager.exam_primary_changeset(%Exam{}),
        secondary_changeset: EventManager.exam_secondary_changeset(%Exam{}),
-       show_event_form?: false,
+       show_event_form?: true,
        selected_event: nil,
-       form_mode: :form,
+       form_mode: :file,
        form_step: :primary,
        selected_subject: nil,
        subjects: subjects,
@@ -192,10 +192,25 @@ defmodule QuizlineWeb.Admin.SessionLive do
       :ok ->
         IO.inspect("refresh events")
 
+        {:noreply,
+         socket
+         |> assign(
+           :events_data,
+           socket.assigns.events_data
+           |> Map.put(:primary_changeset, EventManager.exam_primary_changeset(%Exam{}))
+           |> Map.put(:secondary_changeset, EventManager.exam_secondary_changeset(%Exam{}))
+           |> Map.put(:show_event_form?, false)
+         )}
+
       {:error, error} ->
         IO.inspect(error)
+        {:noreply, socket}
     end
+  end
 
+  @impl true
+  def handle_info(%{event: "create-bulk-exams", data: data}, socket) do
+    EventManager.create_exams(data, socket.assigns.admin.id)
     {:noreply, socket}
   end
 end

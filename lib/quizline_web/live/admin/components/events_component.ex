@@ -155,6 +155,155 @@ defmodule QuizlineWeb.Admin.SessionLive.EventsComponent do
     {:noreply, socket}
   end
 
+  def handle_event("event-file-changed", _, socket) do
+    {:noreply, socket}
+  end
+
+  def handle_event("event-file-uploaded", _, socket) do
+    [data] =
+      consume_uploaded_entries(socket, :events_file, fn %{path: path}, _entry ->
+        data =
+          File.stream!(path)
+          |> CSV.decode(validate_row_length: false, strip_fields: true)
+          |> Enum.to_list()
+          |> Enum.map(fn {:ok, row} ->
+            row
+          end)
+          |> Enum.reject(fn [head | data] ->
+            head == "##" or
+              ([head] ++ data)
+              |> Enum.all?(fn x ->
+                x == ""
+              end)
+          end)
+
+        {:ok, data}
+      end)
+
+    data =
+      data
+      |> CSV.Encoding.Encoder.encode()
+      |> CSV.decode(headers: true, validate_row_length: false)
+      |> Enum.to_list()
+      |> Enum.map(fn k ->
+        case k do
+          {:ok,
+           %{
+             "Branch" => branches,
+             "Date" => date,
+             "Start Time" => start_time,
+             "End Time" => end_time,
+             "Subject Code" => subject,
+             "Semester" => semesters,
+             "Exam Group" => exam_group
+           }}
+          when is_bitstring(semesters) and is_bitstring(branches) ->
+            if is_valid_date(date) and is_valid_timings(start_time, end_time) do
+              %{
+                subject: subject,
+                exam_group: exam_group,
+                attendees: [
+                  %{
+                    branch: branches,
+                    semester: semesters
+                  }
+                ],
+                date: parse_date(date),
+                start_time: parse_time(start_time),
+                end_time: parse_time(end_time)
+              }
+            else
+              nil
+            end
+
+          {:ok,
+           %{
+             "Branch" => branches,
+             "Date" => date,
+             "Start Time" => start_time,
+             "End Time" => end_time,
+             "Subject Code" => subject,
+             "Semester" => semesters,
+             "Exam Group" => exam_group
+           }}
+          when is_list(semesters) and is_list(branches) and
+                 length(semesters) == length(branches) ->
+            if is_valid_date(date) and is_valid_timings(start_time, end_time) do
+              %{
+                subject: subject,
+                exam_group: exam_group,
+                attendees:
+                  Enum.zip(branches, semesters)
+                  |> Enum.map(fn k ->
+                    case k do
+                      {_branch, ""} ->
+                        nil
+
+                      {"", ""} ->
+                        nil
+
+                      {"", sem} ->
+                        %{branch: nil, semester: sem}
+
+                      {branch, sem} ->
+                        %{branch: branch, semester: sem}
+                    end
+                  end)
+                  |> Enum.reject(&is_nil/1),
+                date: parse_date(date),
+                start_time: parse_time(start_time),
+                end_time: parse_time(end_time)
+              }
+            else
+              nil
+            end
+
+          _ ->
+            nil
+        end
+      end)
+      |> Enum.reject(&is_nil/1)
+
+    send(self(), %{event: "create-bulk-exams", data: data})
+
+    {:noreply, socket}
+  end
+
+  defp parse_date(date) do
+    res = Timex.parse!(date, "{D}/{M}/{YYYY}") |> Timex.to_unix()
+    "#{res}"
+  end
+
+  defp parse_time(time) do
+    Timex.parse!(time, "{_h24}:{m}")
+    |> Timex.to_datetime()
+    |> DateTime.to_time()
+    |> Time.to_iso8601()
+  end
+
+  def is_valid_date(date) do
+    res =
+      Timex.parse!(date, "{D}/{M}/{YYYY}")
+      |> Timex.to_date()
+      |> Date.compare(Date.utc_today())
+
+    res in [:gt]
+  end
+
+  def is_valid_timings(s, e) do
+    s =
+      Timex.parse!(s, "{_h24}:{m}")
+      |> Timex.to_datetime()
+      |> DateTime.to_time()
+
+    e =
+      Timex.parse!(e, "{_h24}:{m}")
+      |> Timex.to_datetime()
+      |> DateTime.to_time()
+
+    Time.compare(s, e) in [:lt]
+  end
+
   def subject_code(sub) do
     IO.inspect(sub)
 

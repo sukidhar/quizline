@@ -90,7 +90,7 @@ defmodule QuizlineWeb.Admin.SessionLive.DepartmentsComponent do
     consume_uploaded_entries(socket, :department_file, fn %{path: path}, _entry ->
       data =
         File.stream!(path)
-        |> CSV.decode(strip_fields: true)
+        |> CSV.decode(validate_row_length: false, strip_fields: true)
         |> Enum.to_list()
         |> Enum.map(fn {:ok, row} ->
           row

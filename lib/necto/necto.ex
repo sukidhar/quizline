@@ -807,18 +807,19 @@ defmodule Necto do
 
     query = """
       UNWIND $rels as rel
-      MATCH (sem:Semester{sid: rel.semester})-[:participates]->(exam)
+      MATCH (sem:Semester{sid: rel.semester})-[:participates]->(exam:Event)
+      WHERE exam.date = $date
       OPTIONAL MATCH (exam)<-[:participates]-(branch:Branch{id: rel.branch})
       RETURN collect({sem: rel.semester, branch: rel.branch, exam: exam}) as result
     """
 
     conn = Sips.conn()
 
-    %Sips.Response{results: results} = Sips.query!(conn, query, %{rels: rels})
+    %Sips.Response{results: results} = Sips.query!(conn, query, %{rels: rels, date: "#{date}"})
 
     case results do
       [] ->
-        true
+        nil
 
       [%{"result" => res} | _] ->
         res
@@ -838,16 +839,14 @@ defmodule Necto do
                   nil
 
                 _ ->
-                  if exam["date"] == "#{date}" do
-                    s1 = Time.from_iso8601!(exam["start_time"])
-                    s2 = Time.from_iso8601!(start_time)
-                    e1 = Time.from_iso8601!(exam["end_time"])
-                    e2 = Time.from_iso8601!(end_time)
+                  s1 = Time.from_iso8601!(exam["start_time"])
+                  s2 = Time.from_iso8601!(start_time)
+                  e1 = Time.from_iso8601!(exam["end_time"])
+                  e2 = Time.from_iso8601!(end_time)
 
-                    if Time.compare(s2, e1) not in [:gt, :eq] or
-                         Time.compare(e2, s1) in [:lt, :eq] do
-                      raise("One or more of the attendee grooups have conflict with exam timings")
-                    end
+                  if Time.compare(s2, e1) not in [:gt, :eq] or
+                       Time.compare(e2, s1) in [:lt, :eq] do
+                    raise("One or more of the attendee grooups have conflict with exam timings")
                   end
               end
           end
@@ -901,5 +900,124 @@ defmodule Necto do
 
   def create_exam_event(_data, _id) do
     {:error, "data not in the required format"}
+  end
+
+  def create_multiple_exams(dataset, id) do
+    main_conn = Sips.conn()
+
+    Sips.transaction(main_conn, fn conn ->
+      dataset
+      |> Enum.map(fn data ->
+        case data do
+          %{
+            exam_group: exam_group,
+            attendees: attendees,
+            date: date,
+            start_time: start_time,
+            end_time: end_time,
+            subject: subject_code
+          } ->
+            query = """
+              UNWIND $rels as rel
+              MATCH (sem:Semester{sid: rel.semester})-[:participates]->(exam:Event)
+              WHERE exam.date = $date
+              OPTIONAL MATCH (exam)<-[:participates]-(branch:Branch)
+              WHERE branch.id STARTS WITH rel.branch + "@"
+              RETURN collect({sem: rel.semester, branch: branch.id, exam: exam}) as result
+            """
+
+            %Sips.Response{results: results} =
+              Sips.query!(conn, query, %{rels: attendees, date: "#{date}"})
+
+            case results do
+              [] ->
+                nil
+
+              [%{"result" => res} | _] ->
+                res
+                |> Enum.map(fn k ->
+                  case k do
+                    %{
+                      "branch" => branch,
+                      "exam" => %Sips.Types.Node{properties: exam},
+                      "sem" => sem
+                    } ->
+                      attendees
+                      |> Enum.find(nil, fn x ->
+                        [branch | _] = branch |> String.split("@")
+                        x.branch == branch and x.semester == sem
+                      end)
+                      |> case do
+                        nil ->
+                          nil
+
+                        _ ->
+                          s1 = Time.from_iso8601!(exam["start_time"])
+                          s2 = Time.from_iso8601!(start_time)
+                          e1 = Time.from_iso8601!(exam["end_time"])
+                          e2 = Time.from_iso8601!(end_time)
+
+                          if Time.compare(s2, e1) not in [:gt, :eq] or
+                               Time.compare(e2, s1) in [:lt, :eq] do
+                            Sips.rollback(conn, :schedule_conflict)
+                          end
+                      end
+                  end
+                end)
+            end
+
+            query = """
+            UNWIND $rels as rel
+            MATCH (branch:Branch)<-[:pursuing]-(n:Student)<-[:has_student]-(sem:Semester{sid:rel.semester})
+            WHERE branch.id STARTS WITH rel.branch + "@"
+            RETURN collect(n.email) as emails
+            """
+
+            conn = Sips.conn()
+
+            %Sips.Response{results: [res | _]} = Sips.query!(conn, query, %{rels: attendees})
+            exam_group = exam_group |> String.split() |> Enum.join("_") |> String.upcase()
+
+            groups =
+              res["emails"]
+              |> Enum.shuffle()
+              |> Enum.chunk_every(12)
+
+            query = """
+            MATCH (admin:Admin{id: "#{id}"})
+            WITH admin
+            MATCH (sub:Subject{subject_code: "#{subject_code}"})
+            CREATE (admin)-[:has_event{created:datetime().epochSeconds}]->(exam:Event:#{exam_group}{id: apoc.create.uuid(), date: "#{date}", start_time: "#{start_time}", end_time: "#{end_time}"})-[:for{created:datetime().epochSeconds}]->(sub)
+            with exam
+            UNWIND $rels as rel
+            MATCH (branch:Branch)
+            WHERE branch.id STARTS WITH rel.branch + "@"
+            with exam, branch, rel
+            MATCH (sem:Semester{sid: rel.semester})
+            CREATE (sem)-[:participates]->(exam)<-[:participates]-(branch)
+            with exam
+            UNWIND $groups as group
+            CREATE (room:Room{id: apoc.create.uuid()})
+            with exam, group, room
+            UNWIND group as email
+            MATCH (student:Student{email: email})
+            MERGE (exam)-[r:has_room]-(room)
+            ON CREATE SET r.created = datetime().epochSeconds
+            ON MATCH SET r.updated = datetime().epochSeconds
+            CREATE (room)<-[:is_assigned]-(student)
+            """
+
+            _ = Sips.query!(conn, query, %{groups: groups, rels: attendees})
+            :ok
+
+          _ ->
+            Sips.rollback(conn, :invalid_format)
+        end
+      end)
+    end)
+    |> case do
+      {:ok, _res} -> :ok
+      e -> e
+    end
   end
 end
