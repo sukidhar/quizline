@@ -95,6 +95,7 @@
                                             <% end %>
                                         </div>
                                     </div>
+                                    <%= error_tag f, :end_time %> 
                                     <button class="btn btn-outline btn-success" type="submit">
                                         Next
                                     </button>
@@ -131,7 +132,6 @@
                                         </button>
                                     </div>
                                     <table class="table w-full">
-                                        <!-- head -->
                                         <thead>
                                           <tr>
                                             <th>Branch</th>
@@ -155,14 +155,32 @@
                                     </table>
                                     <%= error_tag f, :attendees %> 
                                 <% end %>
-                                
-                                
-                                <button class="btn btn-outline btn-success" type="submit">
-                                    Next
-                                </button>
+                                <div class="flex gap-5">
+                                    <button class="btn btn-outline btn-warning" type="button" phx-click="previous-step" phx-target={@myself}>
+                                        Previous
+                                    </button>
+                                    <button class="btn btn-outline btn-success" type="submit">
+                                        Next
+                                    </button>
+                                </div>
                             </.form>
                         <% end %>  
                     <% else %>
+                        <div class="flex flex-col gap-5 p-5">
+                            <p class="text-md font-medium"> The ideal appraoch to create multiple events with one click is to upload the details via a file and leave the job to us</p>
+                            <a href="/file/departments_template" class="btn btn-block btn-info">
+                                download the sample sheet
+                            </a>
+                            <p class="text-md font-medium">
+                                If you have filled the file, let us fasten the process
+                            </p>
+                            <form class="flex gap-2 w-full justify-center items-center" id="upload-form" phx-target={@myself} phx-submit="department-file-uploaded" phx-change="department-file-changed">
+                                <%= live_file_input @uploads.events_file, class: "focus:outline-none block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100" %>
+                                <button type="submit" class={if (@uploads.events_file.entries |> Enum.count() == 0), do: "btn text-sm font-normal btn-sm btn-disabled", else: "btn text-sm font-normal btn-sm btn-outline"}>
+                                    submit
+                                </button>
+                            </form>
+                        </div>
                     <% end %>  
                 </div>
             </div>

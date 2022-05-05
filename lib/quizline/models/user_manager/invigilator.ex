@@ -1,9 +1,9 @@
 defmodule Quizline.UserManager.Invigilator do
   use Ecto.Schema
   import Ecto.Changeset
-  import Quizline.ChangesetHelper
+  # import Quizline.ChangesetHelper
 
-  alias Ecto.Changeset
+  # alias Ecto.Changeset
 
   embedded_schema do
     field(:reg_no, :string)

@@ -3,7 +3,7 @@ defmodule Quizline.UserManager.User do
   import Ecto.Changeset
   import Quizline.ChangesetHelper
 
-  alias Ecto.Changeset
+  # alias Ecto.Changeset
 
   embedded_schema do
     field(:email, :string)

@@ -201,8 +201,18 @@ defmodule Necto do
                       %{"branch" => _, "sem" => nil} ->
                         nil
 
-                      %{"branch" => nil, "sem" => _} ->
-                        nil
+                      %{"branch" => nil, "sem" => sem} ->
+                        [semester] =
+                          Necto.structify_response(
+                            [%{"semester" => sem}],
+                            :semester,
+                            "failed to structify response"
+                          )
+
+                        Kernel.struct!(Module.concat([struct, Associate]),
+                          branch: nil,
+                          semester: semester
+                        )
 
                       %{"branch" => branch, "sem" => sem} ->
                         [branch] =
@@ -738,7 +748,8 @@ defmodule Necto do
   def get_all_subjects_with_departments() do
     query = """
     MATCH (dep:Department)-[r:has_subject]->(subject:Subject)
-    OPTIONAL MATCH (sem:Semester)<-[:assigns]-(subject)<-[:provides]-(branch:Branch)
+    OPTIONAL MATCH (sem:Semester)<-[:assigns]-(subject)
+    OPTIONAL MATCH (subject)<-[:provides]-(branch:Branch)
     RETURN dep, subject, collect({sem: sem, branch: branch}) as assocs, r
     """
 
@@ -767,13 +778,24 @@ defmodule Necto do
 
   def create_exam_event(
         %{
+          exam_group: exam_group,
           attendees: attendees,
           date: date,
           start_time: start_time,
           end_time: end_time,
           subject: %{subject_code: subject_code}
-        } = data
+        },
+        id
       ) do
+    {:ok, date, _} = ((date |> Date.to_iso8601()) <> " 00:00:00+00:00") |> DateTime.from_iso8601()
+
+    date =
+      date
+      |> DateTime.to_unix()
+
+    start_time = Time.to_iso8601(start_time)
+    end_time = Time.to_iso8601(end_time)
+
     rels =
       attendees
       |> Enum.map(fn %{branch: branch, semester: sem} ->
@@ -784,6 +806,55 @@ defmodule Necto do
       end)
 
     query = """
+      UNWIND $rels as rel
+      MATCH (sem:Semester{sid: rel.semester})-[:participates]->(exam)
+      OPTIONAL MATCH (exam)<-[:participates]-(branch:Branch{id: rel.branch})
+      RETURN collect({sem: rel.semester, branch: rel.branch, exam: exam}) as result
+    """
+
+    conn = Sips.conn()
+
+    %Sips.Response{results: results} = Sips.query!(conn, query, %{rels: rels})
+
+    case results do
+      [] ->
+        true
+
+      [%{"result" => res} | _] ->
+        res
+        |> Enum.map(fn k ->
+          case k do
+            %{
+              "branch" => branch,
+              "exam" => %Sips.Types.Node{properties: exam},
+              "sem" => sem
+            } ->
+              rels
+              |> Enum.find(nil, fn x ->
+                x.branch == branch and x.semester == sem
+              end)
+              |> case do
+                nil ->
+                  nil
+
+                _ ->
+                  if exam["date"] == "#{date}" do
+                    s1 = Time.from_iso8601!(exam["start_time"])
+                    s2 = Time.from_iso8601!(start_time)
+                    e1 = Time.from_iso8601!(exam["end_time"])
+                    e2 = Time.from_iso8601!(end_time)
+
+                    if Time.compare(s2, e1) not in [:gt, :eq] or
+                         Time.compare(e2, s1) in [:lt, :eq] do
+                      raise("One or more of the attendee grooups have conflict with exam timings")
+                    end
+                  end
+              end
+          end
+        end)
+    end
+
+    query = """
     UNWIND $rels as rel
     MATCH (branch:Branch{id: rel.branch})<-[:pursuing]-(n:Student)<-[:has_student]-(sem:Semester{sid:rel.semester})
     RETURN collect(n.email) as emails
@@ -791,11 +862,44 @@ defmodule Necto do
 
     conn = Sips.conn()
 
-    %Sips.Response{results: [res]} = Sips.query!(conn, query, %{rels: rels})
-    IO.inspect(res["emails"] |> Enum.chunk_every(12))
+    %Sips.Response{results: [res | _]} = Sips.query!(conn, query, %{rels: rels})
+    exam_group = exam_group |> String.split() |> Enum.join("_") |> String.upcase()
+
+    groups =
+      res["emails"]
+      |> Enum.shuffle()
+      |> Enum.chunk_every(12)
+
+    query = """
+    MATCH (admin:Admin{id: "#{id}"})
+    WITH admin
+    MATCH (sub:Subject{subject_code: "#{subject_code}"})
+    CREATE (admin)-[:has_event{created:datetime().epochSeconds}]->(exam:Event:#{exam_group}{id: apoc.create.uuid(), date: "#{date}", start_time: "#{start_time}", end_time: "#{end_time}"})-[:for{created:datetime().epochSeconds}]->(sub)
+    with exam
+    UNWIND $rels as rel
+    MATCH (branch:Branch{id: rel.branch})
+    with exam, branch, rel
+    MATCH (sem:Semester{sid: rel.semester})
+    CREATE (sem)-[:participates]->(exam)<-[:participates]-(branch)
+    with exam
+    UNWIND $groups as group
+    CREATE (room:Room{id: apoc.create.uuid()})
+    with exam, group, room
+    UNWIND group as email
+    MATCH (student:Student{email: email})
+    MERGE (exam)-[r:has_room]-(room)
+    ON CREATE SET r.created = datetime().epochSeconds
+    ON MATCH SET r.updated = datetime().epochSeconds
+    CREATE (room)<-[:is_assigned]-(student)
+    """
+
+    _ = Sips.query!(conn, query, %{groups: groups, rels: rels})
+    :ok
+  rescue
+    e -> {:error, e}
   end
 
-  def create_exam_event(_data) do
+  def create_exam_event(_data, _id) do
     {:error, "data not in the required format"}
   end
 end

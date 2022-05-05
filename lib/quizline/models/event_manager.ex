@@ -9,7 +9,7 @@ defmodule Quizline.EventManager do
     Exam.secondary_changeset(exam, params)
   end
 
-  def create_exam(data) do
-    Necto.create_exam_event(data)
+  def create_exam(data, id) do
+    Necto.create_exam_event(data, id)
   end
 end

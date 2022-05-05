@@ -163,6 +163,7 @@ defmodule QuizlineWeb.Admin.SessionLive do
      )}
   end
 
+  @impl true
   def handle_info([calendar: info, calendar_open: value], socket) do
     {:noreply,
      socket
@@ -172,5 +173,29 @@ defmodule QuizlineWeb.Admin.SessionLive do
        |> Map.put(:calendar, info)
        |> Map.put(:calendar_open, value)
      )}
+  end
+
+  @impl true
+  def handle_info(%{event_form_step: step}, socket) do
+    {:noreply,
+     socket
+     |> assign(
+       :events_data,
+       socket.assigns.events_data
+       |> Map.put(:form_step, step)
+     )}
+  end
+
+  @impl true
+  def handle_info(%{event: "create-exam", data: data}, socket) do
+    case EventManager.create_exam(data, socket.assigns.admin.id) do
+      :ok ->
+        IO.inspect("refresh events")
+
+      {:error, error} ->
+        IO.inspect(error)
+    end
+
+    {:noreply, socket}
   end
 end

@@ -40,7 +40,7 @@ defmodule Quizline.UserManager do
   end
 
   def registration_user_set(%User{} = user, params \\ %{}) do
-    User.changeset(user, params)
+    # User.changeset(user, params)
   end
 
   def fp_change_user(%User{} = user, attrs \\ %{}) do

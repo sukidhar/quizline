@@ -29,6 +29,7 @@ defmodule Quizline.EventManager.Exam do
     |> cast(params, [:exam_group, :date, :start_time, :end_time])
     |> validate_required([:exam_group, :date, :start_time, :end_time])
     |> validate_date()
+    |> validate_time()
   end
 
   def secondary_changeset(exam, params) do
@@ -54,16 +55,32 @@ defmodule Quizline.EventManager.Exam do
     changeset
   end
 
+  def validate_time(
+        %Changeset{changes: %{start_time: start_time, end_time: end_time}} = changeset
+      ) do
+    case Time.compare(start_time, end_time) do
+      :lt ->
+        changeset
+
+      _ ->
+        changeset |> add_error(:end_time, "end time can not be in the past of start time")
+    end
+  end
+
+  def validate_time(changeset) do
+    changeset
+  end
+
   def attendee_changeset(attendee, params) do
     attendee
     |> cast(params, [:assigned])
-    |> cast_embed(:branch,
-      with: &Quizline.DepartmentManager.Department.branch_changeset/2,
-      required: true
-    )
     |> cast_embed(:semester,
       with: &Quizline.SemesterManager.Semester.changeset/2,
       required: true
+    )
+    |> cast_embed(:branch,
+      with: &Quizline.DepartmentManager.Department.branch_changeset/2,
+      required: false
     )
     |> validate_required([:assigned])
   end

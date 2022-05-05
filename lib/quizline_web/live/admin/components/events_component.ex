@@ -19,7 +19,8 @@ defmodule QuizlineWeb.Admin.SessionLive.EventsComponent do
        |> Enum.map(fn {key, value} ->
          {if(is_atom(key), do: key, else: String.to_existing_atom(key)), value}
        end)
-     )}
+     )
+     |> allow_upload(:events_file, accept: ~w(.csv), max_entries: 1)}
   end
 
   def handle_event("select-tab", %{"tab" => tab}, socket) do
@@ -106,28 +107,30 @@ defmodule QuizlineWeb.Admin.SessionLive.EventsComponent do
         %Ecto.Changeset{valid?: true, changes: primary} = socket.assigns.primary_changeset
         data = Map.merge(primary, secondary)
 
-        data
-        |> Map.put(
-          :attendees,
-          Map.get(data, :attendees, [])
-          |> Enum.map(fn k ->
-            case k do
-              %Ecto.Changeset{
-                valid?: true,
-                changes: %{branch: branch, semester: semester, assigned: true}
-              } ->
-                %{}
-                |> Map.put(:branch, branch.changes)
-                |> Map.put(:semester, semester.changes)
+        data =
+          data
+          |> Map.put(
+            :attendees,
+            Map.get(data, :attendees, [])
+            |> Enum.map(fn k ->
+              case k do
+                %Ecto.Changeset{
+                  valid?: true,
+                  changes: %{branch: branch, semester: semester, assigned: true}
+                } ->
+                  %{}
+                  |> Map.put(:branch, branch.changes)
+                  |> Map.put(:semester, semester.changes)
 
-              _ ->
-                nil
-            end
-          end)
-          |> Enum.reject(&is_nil/1)
-        )
-        |> Map.put(:subject, %{subject_code: data.subject.changes.subject_code})
-        |> EventManager.create_exam()
+                _ ->
+                  nil
+              end
+            end)
+            |> Enum.reject(&is_nil/1)
+          )
+          |> Map.put(:subject, %{subject_code: data.subject.changes.subject_code})
+
+        send(self(), %{event: "create-exam", data: data})
 
       %Ecto.Changeset{valid?: false} ->
         send(self(), {:secondary_changeset, changeset})
@@ -144,6 +147,11 @@ defmodule QuizlineWeb.Admin.SessionLive.EventsComponent do
 
   def handle_event("change_selected_day", %{"date" => date}, socket) do
     send(self(), calendar: calendar_info(date, date), calendar_open: false)
+    {:noreply, socket}
+  end
+
+  def handle_event("previous-step", _, socket) do
+    send(self(), %{event_form_step: :primary})
     {:noreply, socket}
   end
 
@@ -205,8 +213,10 @@ defmodule QuizlineWeb.Admin.SessionLive.EventsComponent do
 
   defp branch_title(attendee) do
     attendee.params["branch"]["title"]
-  rescue
-    _e -> ""
+    |> case do
+      nil -> "Common"
+      res -> res
+    end
   end
 
   defp semester_id(attendee) do
