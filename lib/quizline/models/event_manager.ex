@@ -16,4 +16,12 @@ defmodule Quizline.EventManager do
   def create_exams(data, id) do
     Necto.create_multiple_exams(data, id)
   end
+
+  def fetch_exams(id) do
+    Necto.fetch_exam_events(id)
+  end
+
+  def get_event_details(id) do
+    Necto.fetch_exam_event_details(id)
+  end
 end

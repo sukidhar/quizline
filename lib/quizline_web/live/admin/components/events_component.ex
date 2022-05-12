@@ -10,7 +10,17 @@ defmodule QuizlineWeb.Admin.SessionLive.EventsComponent do
   import QuizlineWeb.InputHelpers
   import Quizline.Calendar
 
-  def update(%{admin: %Admin{id: _id}, events_data: events_data} = assigns, socket) do
+  def update(
+        %{
+          admin: %Admin{id: _id},
+          events_data: %{events: events, subjects: subjects} = events_data
+        } = assigns,
+        socket
+      ) do
+    if is_nil(events) or is_nil(subjects) do
+      send(self(), :load_events_and_subjects)
+    end
+
     {:ok,
      socket
      |> assign(assigns)
@@ -21,6 +31,18 @@ defmodule QuizlineWeb.Admin.SessionLive.EventsComponent do
        end)
      )
      |> allow_upload(:events_file, accept: ~w(.csv), max_entries: 1)}
+  end
+
+  def handle_event("event-pressed", %{"event_id" => event_id}, socket) do
+    Enum.find(socket.assigns.events, nil, fn event ->
+      event.id == event_id
+    end)
+    |> case do
+      nil -> nil
+      event -> send(self(), %{selected_event: event})
+    end
+
+    {:noreply, socket}
   end
 
   def handle_event("select-tab", %{"tab" => tab}, socket) do
@@ -372,5 +394,74 @@ defmodule QuizlineWeb.Admin.SessionLive.EventsComponent do
     attendee.params["semester"]["sid"]
   rescue
     _e -> ""
+  end
+
+  defp upcoming_events(events) do
+    events
+    |> Enum.filter(fn %Exam{date: date, start_time: start_time} ->
+      dt1 =
+        ((date |> Date.to_iso8601()) <> "T" <> start_time <> "Z")
+        |> Timex.parse!("{ISO:Extended}")
+        |> DateTime.to_naive()
+
+      {d, t} = :calendar.local_time()
+      {y, mo, d} = d
+      {h, m, s} = t
+      dt2 = Timex.parse!("#{y}-#{mo}-#{d}T#{h}:#{m}:#{s}", "{YYYY}-{M}-{D}T{_h24}:{_m}:{_s}")
+      :lt == NaiveDateTime.compare(dt2, dt1)
+    end)
+  end
+
+  defp on_going(events) do
+    events
+    |> Enum.filter(fn %Exam{date: date, start_time: start_time, end_time: end_time} ->
+      dt1 =
+        ((date |> Date.to_iso8601()) <> "T" <> start_time <> "Z")
+        |> Timex.parse!("{ISO:Extended}")
+        |> DateTime.to_naive()
+
+      dt2 =
+        ((date |> Date.to_iso8601()) <> "T" <> end_time <> "Z")
+        |> Timex.parse!("{ISO:Extended}")
+        |> DateTime.to_naive()
+
+      {d, t} = :calendar.local_time()
+      {y, mo, d} = d
+      {h, m, s} = t
+      dt = Timex.parse!("#{y}-#{mo}-#{d}T#{h}:#{m}:#{s}", "{YYYY}-{M}-{D}T{_h24}:{_m}:{_s}")
+
+      NaiveDateTime.compare(dt, dt1) in [:gt, :eq] and
+        NaiveDateTime.compare(dt, dt2) in [:lt, :eq]
+    end)
+  end
+
+  defp completed_events(events) do
+    events
+    |> Enum.filter(fn %Exam{date: date, end_time: end_time} ->
+      dt =
+        ((date |> Date.to_iso8601()) <> "T" <> end_time <> "Z")
+        |> Timex.parse!("{ISO:Extended}")
+        |> DateTime.to_naive()
+
+      {d, t} = :calendar.local_time()
+      {y, mo, d} = d
+      {h, m, s} = t
+      dt1 = Timex.parse!("#{y}-#{mo}-#{d}T#{h}:#{m}:#{s}", "{YYYY}-{M}-{D}T{_h24}:{_m}:{_s}")
+
+      NaiveDateTime.compare(dt1, dt) in [:gt]
+    end)
+  end
+
+  defp display_events(current_tab, events) do
+    case current_tab do
+      :tab_upcoming ->
+        upcoming_events(events)
+
+      :tab_ongoing ->
+        on_going(events)
+
+      :tab_completed ->
+        completed_events(events)
+    end
   end
 end

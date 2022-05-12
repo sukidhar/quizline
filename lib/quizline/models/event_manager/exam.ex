@@ -22,6 +22,9 @@ defmodule Quizline.EventManager.Exam do
       embeds_many(:students, Quizline.UserManager.Student)
       field(:created, :string)
     end
+
+    field(:created, :string)
+    field(:updated, :string)
   end
 
   def primary_changeset(exam, params) do

@@ -51,7 +51,7 @@ defmodule Quizline.SubjectManager do
     end
   end
 
-  def get_all_subjects() do
-    Necto.get_all_subjects_with_departments()
+  def get_all_subjects(id) do
+    Necto.get_all_subjects_with_departments(id)
   end
 end

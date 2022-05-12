@@ -65,11 +65,11 @@
     <% :events -> %>
         <.live_component module={QuizlineWeb.Admin.SessionLive.EventsComponent} id="events-component" admin={@admin} events_data={@events_data} />
     <% :semesters -> %>
-        <.live_component module={QuizlineWeb.Admin.SessionLive.SemestersComponent} id="semesters" admin={@admin} />
+        <.live_component module={QuizlineWeb.Admin.SessionLive.SemestersComponent} id="semesters-component" admin={@admin} />
     <% :departments -> %>
-        <.live_component module={QuizlineWeb.Admin.SessionLive.DepartmentsComponent} id="departments" admin={@admin} />
+        <.live_component module={QuizlineWeb.Admin.SessionLive.DepartmentsComponent} id="departments-component" admin={@admin} />
     <% :users -> %>
-        <p> I am users</p>
+        <.live_component module={QuizlineWeb.Admin.SessionLive.UsersComponent} id="users-component" admin={@admin} />
     <% end %>
 </div>
                                 

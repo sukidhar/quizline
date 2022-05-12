@@ -232,7 +232,22 @@
                 <a phx-target={@myself} phx-click="select-tab" phx-value-tab="ongoing" class={"tab #{if @current_tab == :tab_ongoing, do: 'tab-active'}"}>Ongoing</a>
                 <a phx-target={@myself} phx-click="select-tab" phx-value-tab="completed" class={"tab #{if @current_tab == :tab_completed, do: 'tab-active'}"}>Completed</a> 
             </div>
-            <div class="flex grow"></div>
         </div>
+        <%= cond do  %> 
+            <% @selected_event != nil -> %> 
+                <div class="flex-grow w-full">
+
+                </div>
+            <% true -> %> 
+                <div class="flex-grow w-full z-10 grid grid-cols-5 gap-4 p-5">
+                    <%= for {event, index} <- display_events(@current_tab,@events || []) |> Enum.with_index() do %> 
+                        <button phx-click="event-pressed" phx-target={@myself} phx-value-event_id={event.id} phx-value-index={index} class="card bg-white shadow-md h-44 w-full flex items-center justify-center p-2">
+                        <div class="flex">
+                                <p class="font-semibold text-base"><%= event.exam_group %></p> 
+                        </div>
+                        </button>
+                    <% end %> 
+                </div>
+        <% end %> 
     </div>
 </div>

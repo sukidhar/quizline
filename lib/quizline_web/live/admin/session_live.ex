@@ -12,34 +12,27 @@ defmodule QuizlineWeb.Admin.SessionLive do
   def mount(_params, %{"guardian_default_token" => token}, socket) do
     {:ok, %Admin{} = admin, _claims} = AdminManager.Guardian.resource_from_token(token)
 
-    subjects =
-      case SubjectManager.get_all_subjects() do
-        {:error, _, e} ->
-          IO.inspect(e)
-          []
-
-        data ->
-          data
-      end
-
     {:ok,
      socket
      |> assign(:admin, admin)
      |> assign(:view, :events)
      |> allow_upload(:form_sheet, accept: ~w(.csv), max_entries: 1)
      |> assign(:events_data, %{
+       events: nil,
        primary_changeset: EventManager.exam_primary_changeset(%Exam{}),
        secondary_changeset: EventManager.exam_secondary_changeset(%Exam{}),
-       show_event_form?: true,
-       selected_event: nil,
+       show_event_form?: false,
        form_mode: :file,
        form_step: :primary,
        selected_subject: nil,
-       subjects: subjects,
+       subjects: nil,
        current_tab: :tab_upcoming,
        calendar_open: false,
        subject_filter: "",
-       calendar: calendar_info(Date.utc_today(), Date.utc_today())
+       calendar: calendar_info(Date.utc_today(), Date.utc_today()),
+       # specific event
+       selected_event: nil,
+       selected_room: nil
      })}
   end
 
@@ -96,6 +89,36 @@ defmodule QuizlineWeb.Admin.SessionLive do
   end
 
   # events tab
+  @impl true
+  def handle_info(:load_events_and_subjects, socket) do
+    subjects =
+      case SubjectManager.get_all_subjects(socket.assigns.admin.id) do
+        {:error, _, e} ->
+          IO.inspect(e)
+          []
+
+        data ->
+          data
+      end
+
+    events =
+      case EventManager.fetch_exams(socket.assigns.admin.id) do
+        {:error, e} ->
+          IO.inspect(e)
+          []
+
+        data ->
+          data
+      end
+
+    {:noreply,
+     socket
+     |> assign(
+       :events_data,
+       socket.assigns.events_data |> Map.put(:subjects, subjects) |> Map.put(:events, events)
+     )}
+  end
+
   @impl true
   def handle_info({:current_tab, tab}, socket) do
     {:noreply,
@@ -212,5 +235,18 @@ defmodule QuizlineWeb.Admin.SessionLive do
   def handle_info(%{event: "create-bulk-exams", data: data}, socket) do
     EventManager.create_exams(data, socket.assigns.admin.id)
     {:noreply, socket}
+  end
+
+  @impl true
+  def handle_info(%{selected_event: event}, socket) do
+    EventManager.fetch_exams(event.id)
+
+    {:noreply,
+     socket
+     |> assign(
+       :events_data,
+       socket.assigns.events_data
+       |> Map.put(:selected_event, event)
+     )}
   end
 end

@@ -30,7 +30,8 @@ config :quizline, Necto,
     department: Quizline.DepartmentManager.Department,
     branch: Quizline.DepartmentManager.Department.Branch,
     semester: Quizline.SemesterManager.Semester,
-    subject: Quizline.SubjectManager.Subject
+    subject: Quizline.SubjectManager.Subject,
+    exam: Quizline.EventManager.Exam
   }
 
 # configures neo4j database connection

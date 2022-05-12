@@ -253,6 +253,54 @@ defmodule Necto do
             end
         end
 
+      %{label: :exam, modules: %{exam: struct}} ->
+        response
+        |> Enum.map(fn %{"subject" => subject, "events" => events} ->
+          [subject] = structify_response([subject], :subject, "unable to find subject")
+
+          events
+          |> Enum.map(fn %{
+                           "event" => %Sips.Types.Node{
+                             properties: props,
+                             labels: ["Event", label]
+                           },
+                           "r" => %Sips.Types.Relationship{properties: rel_props}
+                         } ->
+            props =
+              convert_to_klist(props)
+              |> Keyword.put(
+                :exam_group,
+                label |> String.split("_") |> Enum.map(&String.capitalize/1) |> Enum.join(" ")
+              )
+              |> Keyword.put(
+                :created,
+                "#{rel_props["created"] || DateTime.to_unix(DateTime.utc_now())}"
+              )
+              |> Keyword.put(
+                :updated,
+                "#{rel_props["updated"] || nil}"
+              )
+
+            props =
+              props
+              |> Keyword.put(
+                :date,
+                case Keyword.get(props, :date, nil) do
+                  nil ->
+                    nil
+
+                  date ->
+                    {date, ""} = Integer.parse(date)
+                    date |> DateTime.from_unix!() |> DateTime.to_date()
+                end
+              )
+
+            Kernel.struct!(struct, props)
+            |> Map.put(:subject, subject)
+          end)
+        end)
+        |> List.flatten()
+
       _ ->
         throw("Struct Module not mentioned in config.exs")
     end
@@ -745,9 +793,9 @@ defmodule Necto do
     end
   end
 
-  def get_all_subjects_with_departments() do
+  def get_all_subjects_with_departments(id) do
     query = """
-    MATCH (dep:Department)-[r:has_subject]->(subject:Subject)
+    MATCH (admin:Admin{id: $id})-[:has_department]-(dep:Department)-[r:has_subject]->(subject:Subject)
     OPTIONAL MATCH (sem:Semester)<-[:assigns]-(subject)
     OPTIONAL MATCH (subject)<-[:provides]-(branch:Branch)
     RETURN dep, subject, collect({sem: sem, branch: branch}) as assocs, r
@@ -756,7 +804,7 @@ defmodule Necto do
     conn = Sips.conn()
 
     try do
-      %Bolt.Sips.Response{results: response} = Sips.query!(conn, query)
+      %Bolt.Sips.Response{results: response} = Sips.query!(conn, query, %{id: id})
 
       Enum.map(response, fn %{"assocs" => assocs, "dep" => dep, "r" => r, "subject" => subject} ->
         [dep] =
@@ -1019,5 +1067,36 @@ defmodule Necto do
       {:ok, _res} -> :ok
       e -> e
     end
+  end
+
+  def fetch_exam_events(id) do
+    query = """
+    MATCH (admin:Admin {id: $id})-[:has_department]->()-[r1:has_subject]->(subject:Subject)<-[r2:for]-(event:Event)
+    RETURN {subject: subject, r: r1} as subject, collect({event: event, r:r2}) as events
+    """
+
+    conn = Sips.conn()
+
+    %Sips.Response{results: results} = Sips.query!(conn, query, %{id: id})
+    results |> structify_response(:exam, "unable to structify exams")
+  rescue
+    e -> {:error, e}
+  end
+
+  def fetch_exam_event_details(id) do
+    query = """
+    MATCH (event:Event{id: $id})
+    OPTIONAL MATCH (event)-[:has_room]-(room:Room)
+    RETURN event, collect(room) as rooms
+    """
+
+    conn = Sips.conn()
+
+    %Sips.Response{results: results} = Sips.query!(conn, query, %{id: id})
+    IO.inspect(results)
+  rescue
+    e ->
+      IO.inspect(e)
+      {:error, e}
   end
 end
