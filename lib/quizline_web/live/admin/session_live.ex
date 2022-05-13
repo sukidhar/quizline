@@ -32,7 +32,8 @@ defmodule QuizlineWeb.Admin.SessionLive do
        calendar: calendar_info(Date.utc_today(), Date.utc_today()),
        # specific event
        selected_event: nil,
-       selected_room: nil
+       selected_room: nil,
+       room_members_view: :students
      })}
   end
 
@@ -238,15 +239,85 @@ defmodule QuizlineWeb.Admin.SessionLive do
   end
 
   @impl true
-  def handle_info(%{selected_event: event}, socket) do
-    EventManager.fetch_exams(event.id)
-
+  def handle_info(%{selected_event: nil}, socket) do
     {:noreply,
      socket
      |> assign(
        :events_data,
        socket.assigns.events_data
-       |> Map.put(:selected_event, event)
+       |> Map.put(:selected_event, nil)
+     )}
+  end
+
+  @impl true
+  def handle_info(%{selected_event: event}, socket) do
+    case EventManager.get_event_details(event.id) do
+      {:error, e} ->
+        IO.inspect(e)
+
+        {:noreply,
+         socket
+         |> assign(
+           :events_data,
+           socket.assigns.events_data
+           |> Map.put(:selected_event, event)
+         )}
+
+      rooms ->
+        {:noreply,
+         socket
+         |> assign(
+           :events_data,
+           socket.assigns.events_data
+           |> Map.put(:selected_event, event |> Map.put(:rooms, rooms))
+         )}
+    end
+  end
+
+  @impl true
+  def handle_info(%{selected_room: nil}, socket) do
+    {:noreply,
+     socket
+     |> assign(
+       :events_data,
+       socket.assigns.events_data
+       |> Map.put(:selected_room, nil)
+     )}
+  end
+
+  @impl true
+  def handle_info(%{selected_room: room}, socket) do
+    case EventManager.get_room_details(room.id) do
+      {:error, e} ->
+        IO.inspect(e)
+
+        {:noreply,
+         socket
+         |> assign(
+           :events_data,
+           socket.assigns.events_data
+           |> Map.put(:selected_room, room)
+         )}
+
+      [room] ->
+        {:noreply,
+         socket
+         |> assign(
+           :events_data,
+           socket.assigns.events_data
+           |> Map.put(:selected_room, room)
+         )}
+    end
+  end
+
+  @impl true
+  def handle_info(%{room_members_view: type}, socket) do
+    {:noreply,
+     socket
+     |> assign(
+       :events_data,
+       socket.assigns.events_data
+       |> Map.put(:room_members_view, type)
      )}
   end
 end

@@ -255,51 +255,104 @@ defmodule Necto do
 
       %{label: :exam, modules: %{exam: struct}} ->
         response
-        |> Enum.map(fn %{"subject" => subject, "events" => events} ->
-          [subject] = structify_response([subject], :subject, "unable to find subject")
+        |> Enum.map(fn k ->
+          case k do
+            %{"subject" => subject, "events" => events} ->
+              [subject] = structify_response([subject], :subject, "unable to find subject")
 
-          events
-          |> Enum.map(fn %{
-                           "event" => %Sips.Types.Node{
-                             properties: props,
-                             labels: ["Event", label]
-                           },
-                           "r" => %Sips.Types.Relationship{properties: rel_props}
-                         } ->
-            props =
-              convert_to_klist(props)
-              |> Keyword.put(
-                :exam_group,
-                label |> String.split("_") |> Enum.map(&String.capitalize/1) |> Enum.join(" ")
-              )
-              |> Keyword.put(
-                :created,
-                "#{rel_props["created"] || DateTime.to_unix(DateTime.utc_now())}"
-              )
-              |> Keyword.put(
-                :updated,
-                "#{rel_props["updated"] || nil}"
-              )
+              events
+              |> Enum.map(fn %{
+                               "event" => %Sips.Types.Node{
+                                 properties: props,
+                                 labels: ["Event", label]
+                               },
+                               "r" => %Sips.Types.Relationship{properties: rel_props}
+                             } ->
+                props =
+                  convert_to_klist(props)
+                  |> Keyword.put(
+                    :exam_group,
+                    label |> String.split("_") |> Enum.map(&String.capitalize/1) |> Enum.join(" ")
+                  )
+                  |> Keyword.put(
+                    :created,
+                    "#{rel_props["created"] || DateTime.to_unix(DateTime.utc_now())}"
+                  )
+                  |> Keyword.put(
+                    :updated,
+                    "#{rel_props["updated"] || nil}"
+                  )
 
-            props =
-              props
-              |> Keyword.put(
-                :date,
-                case Keyword.get(props, :date, nil) do
-                  nil ->
-                    nil
+                props =
+                  props
+                  |> Keyword.put(
+                    :date,
+                    case Keyword.get(props, :date, nil) do
+                      nil ->
+                        nil
 
-                  date ->
-                    {date, ""} = Integer.parse(date)
-                    date |> DateTime.from_unix!() |> DateTime.to_date()
-                end
-              )
+                      date ->
+                        {date, ""} = Integer.parse(date)
+                        date |> DateTime.from_unix!() |> DateTime.to_date()
+                    end
+                  )
 
-            Kernel.struct!(struct, props)
-            |> Map.put(:subject, subject)
-          end)
+                Kernel.struct!(struct, props)
+                |> Map.put(:subject, subject)
+              end)
+
+            %{"rooms" => rooms} ->
+              rooms
+              |> Enum.map(fn %Sips.Types.Node{properties: props} ->
+                props = convert_to_klist(props)
+                Kernel.struct!(Module.concat([struct, Room]), props)
+              end)
+
+            %{"room" => %Bolt.Sips.Types.Node{properties: props}, "students" => students} ->
+              students =
+                students
+                |> structify_response(:student, "unable to structify students")
+
+              props =
+                convert_to_klist(props)
+                |> Keyword.put(:students, students)
+
+              Kernel.struct!(Module.concat([struct, Room]), props)
+          end
         end)
         |> List.flatten()
+
+      %{label: :student, modules: %{student: struct}} ->
+        response
+        |> Enum.map(fn student_data ->
+          case student_data do
+            %{
+              "student" => %Sips.Types.Node{properties: props},
+              "semester" => semester,
+              "branch" => branch
+            } ->
+              [semester] =
+                structify_response(
+                  [%{"semester" => semester}],
+                  :semester,
+                  "unable to structify semester"
+                )
+
+              [branch] =
+                structify_response(
+                  [%{"new_branch" => branch}],
+                  :branch,
+                  "unable to structify branch"
+                )
+
+              props =
+                convert_to_klist(props)
+                |> Keyword.put(:semester, semester)
+                |> Keyword.put(:branch, branch)
+
+              Kernel.struct!(struct, props)
+          end
+        end)
 
       _ ->
         throw("Struct Module not mentioned in config.exs")
@@ -1087,16 +1140,30 @@ defmodule Necto do
     query = """
     MATCH (event:Event{id: $id})
     OPTIONAL MATCH (event)-[:has_room]-(room:Room)
-    RETURN event, collect(room) as rooms
+    RETURN collect(room) as rooms
     """
 
     conn = Sips.conn()
 
     %Sips.Response{results: results} = Sips.query!(conn, query, %{id: id})
-    IO.inspect(results)
+    structify_response(results, :exam, "unknown error occured")
   rescue
     e ->
-      IO.inspect(e)
+      {:error, e}
+  end
+
+  def fetch_room_details(id) do
+    query = """
+    MATCH (room:Room{id: "ddeb9c2d-ead6-469d-a0ee-cdf9d4be9047"})<-[:is_assigned]-(student:Student)
+    OPTIONAL MATCH (semester:Semester)-[:has_student]->(student:Student)-[:pursuing]-(branch:Branch)
+    RETURN room, collect({student: student, branch: branch, semester: semester}) as students
+    """
+
+    conn = Sips.conn()
+    %Sips.Response{results: results} = Sips.query!(conn, query, %{id: id})
+    structify_response(results, :exam, "unable to fetch room details")
+  rescue
+    e ->
       {:error, e}
   end
 end

@@ -45,6 +45,16 @@ defmodule QuizlineWeb.Admin.SessionLive.EventsComponent do
     {:noreply, socket}
   end
 
+  def handle_event("deselect-event", _, socket) do
+    send(self(), %{selected_event: nil})
+    {:noreply, socket}
+  end
+
+  def handle_event("refresh-current-event", _, socket) do
+    send(self(), %{selected_event: socket.assigns.selected_event})
+    {:noreply, socket}
+  end
+
   def handle_event("select-tab", %{"tab" => tab}, socket) do
     send(self(), {:current_tab, ("tab_" <> tab) |> String.to_atom()})
     {:noreply, socket}
@@ -287,6 +297,33 @@ defmodule QuizlineWeb.Admin.SessionLive.EventsComponent do
       |> Enum.reject(&is_nil/1)
 
     send(self(), %{event: "create-bulk-exams", data: data})
+
+    {:noreply, socket}
+  end
+
+  def handle_event("room-pressed", %{"room_id" => id}, socket) do
+    Enum.find(socket.assigns.selected_event.rooms, nil, fn room ->
+      room.id == id
+    end)
+    |> case do
+      nil -> nil
+      room -> send(self(), %{selected_room: room})
+    end
+
+    {:noreply, socket}
+  end
+
+  def handle_event("deselect-room", _, socket) do
+    send(self(), %{selected_room: nil})
+    {:noreply, socket}
+  end
+
+  def handle_event("show-room-members", %{"type" => type}, socket) do
+    case type do
+      "students" -> send(self(), %{room_members_view: :students})
+      "invigilators" -> send(self(), %{room_members_view: :invigilators})
+      _ -> nil
+    end
 
     {:noreply, socket}
   end

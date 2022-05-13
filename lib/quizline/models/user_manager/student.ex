@@ -1,15 +1,12 @@
 defmodule Quizline.UserManager.Student do
   use Ecto.Schema
   import Ecto.Changeset
-  # import Quizline.ChangesetHelper
-
-  # alias Ecto.Changeset
 
   embedded_schema do
-    field(:reg_no, :string)
     field(:first_name, :string)
     field(:last_name, :string)
     field(:email, :string)
+    field(:rid, :string)
     field(:profile_pic, :string)
     field(:created_at, :string)
     field(:password, :string)

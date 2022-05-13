@@ -24,4 +24,8 @@ defmodule Quizline.EventManager do
   def get_event_details(id) do
     Necto.fetch_exam_event_details(id)
   end
+
+  def get_room_details(id) do
+    Necto.fetch_room_details(id)
+  end
 end

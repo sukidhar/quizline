@@ -226,22 +226,78 @@
         </div>
     </div>
     <div class="flex-1 mb-5 h-[calc(100%-theme(spacing.16))] bg-white">
-        <div class="flex justify-center items-center w-full h-14 border-b-[1px] z-20 pr-5">
-            <div class="w-fit tabs tabs-boxed bg-inherit">
-                <a phx-target={@myself} phx-click="select-tab" phx-value-tab="upcoming" class={"tab #{if @current_tab == :tab_upcoming, do: 'tab-active'}"}>Upcoming</a> 
-                <a phx-target={@myself} phx-click="select-tab" phx-value-tab="ongoing" class={"tab #{if @current_tab == :tab_ongoing, do: 'tab-active'}"}>Ongoing</a>
-                <a phx-target={@myself} phx-click="select-tab" phx-value-tab="completed" class={"tab #{if @current_tab == :tab_completed, do: 'tab-active'}"}>Completed</a> 
-            </div>
-        </div>
+        
         <%= cond do  %> 
             <% @selected_event != nil -> %> 
-                <div class="flex-grow w-full">
-
+                <div class="flex-grow w-full h-full">
+                    <div class="flex items-center p-5 w-full h-10 border-b-[1px]">
+                        <div class="text-sm breadcrumbs">
+                            <ul>
+                            <li><a phx-click="deselect-event" phx-target={@myself}>Events</a></li> 
+                            <li><a phx-click="refresh-current-event" phx-target={@myself}><%= @selected_event.subject.title <> " exam" %></a></li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="flex flex-grow h-[calc(100%-theme(spacing.10))]">
+                        <div class={if @selected_room != nil, do: "flex-grow w-full z-10 grid grid-cols-4 gap-4 p-5 h-full overflow-y-auto", else: "flex-grow w-full z-10 grid grid-cols-5 gap-4 p-5 h-full overflow-y-auto"}>
+                            <%= for {room, index} <- (@selected_event.rooms || []) |> Enum.with_index() do %> 
+                                <button phx-click="room-pressed" phx-target={@myself} phx-value-room_id={room.id} class="card bg-white shadow-md h-36 w-full flex items-center justify-center p-2">
+                                    <div class="flex">
+                                        <p class="font-semibold text-base"><%= index %></p> 
+                                    </div>
+                                </button>
+                            <% end %> 
+                        </div>
+                        <%= if @selected_room != nil do %>
+                            <div class="w-[35%] h-full flex flex-col items-center border-x-[1px] rounded-lg">
+                                <div class="flex w-full p-5 items-center h-fit">
+                                    <p class="font-semibold text-xl">Exam Room</p>
+                                    <div class="flex-grow"></div>
+                                    <button phx-click="deselect-room" phx-target={@myself} class="btn bg-white btn-sm btn-square btn-outline m-3">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                                    </button>
+                                </div>
+                                <div class="w-full border-b-[0.5px]">
+                                    <p class="text-xs font-thin px-5 py-1 text-gray-500">
+                                        <%= "Room id: #{@selected_room.id}"  %> 
+                                    </p>
+                                </div>
+                                <div class="flex justify-center items-center w-full h-10 border-b-[0.5px]">
+                                    <div class="w-fit tabs tabs-boxed bg-inherit">
+                                        <a phx-target={@myself} phx-click="show-room-members" phx-value-type={:students} class={"tab #{if @room_members_view == :students, do: 'tab-active'}"}>Students</a> 
+                                        <a phx-target={@myself} phx-click="show-room-members" phx-value-type={:invigilators} class={"tab #{if @room_members_view == :invigilators, do: 'tab-active'}"}>Invigilators</a>
+                                    </div>
+                                </div>
+                                <%= if @room_members_view == :students do %>
+                                    <div class="h-full overflow-y-auto w-full">
+                                        <%= for student <- @selected_room.students || [] do %> 
+                                            <div class="flex w-full">
+                                                <div class="flex flex-col w-full p-2 border-b-[0.5px]">
+                                                    <p class="font-normal text-sm"><%= student.first_name <> " " <> student.last_name %></p> 
+                                                    <p class="font-thin text-xs"><%= student.rid %></p> 
+                                                </div>
+                                            </div>
+                                        <% end %>
+                                       <div class="flex w-full justify-center items-center h-fit">
+                                            <p class="text-xs py-5"><%= "#{(@selected_room.students || []) |> Enum.count()} of 12 students filled"  %> </p>
+                                       </div>
+                                    </div>
+                                <% end %>  
+                            </div>
+                        <% end %>  
+                    </div>  
                 </div>
             <% true -> %> 
-                <div class="flex-grow w-full z-10 grid grid-cols-5 gap-4 p-5">
-                    <%= for {event, index} <- display_events(@current_tab,@events || []) |> Enum.with_index() do %> 
-                        <button phx-click="event-pressed" phx-target={@myself} phx-value-event_id={event.id} phx-value-index={index} class="card bg-white shadow-md h-44 w-full flex items-center justify-center p-2">
+                <div class="flex justify-center items-center w-full h-14 border-b-[1px] z-20 pr-5">
+                    <div class="w-fit tabs tabs-boxed bg-inherit">
+                        <a phx-target={@myself} phx-click="select-tab" phx-value-tab="upcoming" class={"tab #{if @current_tab == :tab_upcoming, do: 'tab-active'}"}>Upcoming</a> 
+                        <a phx-target={@myself} phx-click="select-tab" phx-value-tab="ongoing" class={"tab #{if @current_tab == :tab_ongoing, do: 'tab-active'}"}>Ongoing</a>
+                        <a phx-target={@myself} phx-click="select-tab" phx-value-tab="completed" class={"tab #{if @current_tab == :tab_completed, do: 'tab-active'}"}>Completed</a> 
+                    </div>
+                </div>
+                <div class="flex-grow w-full z-10 grid grid-cols-5 gap-4 p-5 h-full overflow-y-auto">
+                    <%= for event <- display_events(@current_tab,@events || []) do %> 
+                        <button phx-click="event-pressed" phx-target={@myself} phx-value-event_id={event.id} class="card bg-white shadow-md h-44 w-full flex items-center justify-center p-2">
                         <div class="flex">
                                 <p class="font-semibold text-base"><%= event.exam_group %></p> 
                         </div>

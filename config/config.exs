@@ -27,11 +27,13 @@ config :quizline, Necto,
   modules: %{
     admin: Quizline.AdminManager.Admin,
     user: Quizline.UserManager.User,
+    student: Quizline.UserManager.Student,
     department: Quizline.DepartmentManager.Department,
     branch: Quizline.DepartmentManager.Department.Branch,
     semester: Quizline.SemesterManager.Semester,
     subject: Quizline.SubjectManager.Subject,
-    exam: Quizline.EventManager.Exam
+    exam: Quizline.EventManager.Exam,
+    room: Quizline.EventManager.Exam.Room
   }
 
 # configures neo4j database connection

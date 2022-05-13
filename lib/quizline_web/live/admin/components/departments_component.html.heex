@@ -319,7 +319,7 @@
                         <% end %> 
                 <% end %> 
             <% true -> %> 
-                <div class="flex-grow w-full z-10 grid grid-cols-5 gap-4 p-5">
+                <div class="flex-grow w-full z-10 grid grid-cols-5 gap-4 p-5 h-full overflow-y-auto">
                     <%= for {department, index} <- @departments |> Enum.with_index() do %> 
                         <button phx-click="department-pressed" phx-target={@myself} phx-value-department_email={department.email} phx-value-index={index} class="card bg-white shadow-md h-52 w-full flex items-center justify-end p-2">
                             <p><%= department.title %></p> 
