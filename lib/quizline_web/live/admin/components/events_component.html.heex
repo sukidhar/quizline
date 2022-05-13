@@ -271,10 +271,17 @@
                                 <%= if @room_members_view == :students do %>
                                     <div class="h-full overflow-y-auto w-full">
                                         <%= for student <- @selected_room.students || [] do %> 
-                                            <div class="flex w-full">
-                                                <div class="flex flex-col w-full p-2 border-b-[0.5px]">
+                                            <div class="flex w-full border-b-[0.5px] card-parent">
+                                                <div class="flex flex-col w-full p-2">
                                                     <p class="font-normal text-sm"><%= student.first_name <> " " <> student.last_name %></p> 
                                                     <p class="font-thin text-xs"><%= student.rid %></p> 
+                                                </div>
+                                                <div class="flex items-center justify-center px-5 hidden-child">
+                                                   <button type="button" class="fill-primary hover:fill-primary-content" phx-click="remove-student" phx-target={@myself} phx-value-student_id={student.id}>
+                                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="0.5px" d="M20 6H16V5C16 4.20435 15.6839 3.44129 15.1213 2.87868C14.5587 2.31607 13.7956 2 13 2H11C10.2044 2 9.44129 2.31607 8.87868 2.87868C8.31607 3.44129 8 4.20435 8 5V6H4C3.73478 6 3.48043 6.10536 3.29289 6.29289C3.10536 6.48043 3 6.73478 3 7C3 7.26522 3.10536 7.51957 3.29289 7.70711C3.48043 7.89464 3.73478 8 4 8H5V19C5 19.7956 5.31607 20.5587 5.87868 21.1213C6.44129 21.6839 7.20435 22 8 22H16C16.7956 22 17.5587 21.6839 18.1213 21.1213C18.6839 20.5587 19 19.7956 19 19V8H20C20.2652 8 20.5196 7.89464 20.7071 7.70711C20.8946 7.51957 21 7.26522 21 7C21 6.73478 20.8946 6.48043 20.7071 6.29289C20.5196 6.10536 20.2652 6 20 6ZM10 5C10 4.73478 10.1054 4.48043 10.2929 4.29289C10.4804 4.10536 10.7348 4 11 4H13C13.2652 4 13.5196 4.10536 13.7071 4.29289C13.8946 4.48043 14 4.73478 14 5V6H10V5ZM17 19C17 19.2652 16.8946 19.5196 16.7071 19.7071C16.5196 19.8946 16.2652 20 16 20H8C7.73478 20 7.48043 19.8946 7.29289 19.7071C7.10536 19.5196 7 19.2652 7 19V8H17V19Z" />
+                                                        </svg>
+                                                   </button>
                                                 </div>
                                             </div>
                                         <% end %>
@@ -295,7 +302,7 @@
                         <a phx-target={@myself} phx-click="select-tab" phx-value-tab="completed" class={"tab #{if @current_tab == :tab_completed, do: 'tab-active'}"}>Completed</a> 
                     </div>
                 </div>
-                <div class="flex-grow w-full z-10 grid grid-cols-5 gap-4 p-5 h-full overflow-y-auto">
+                <div class="flex-grow w-full z-10 grid grid-cols-5 gap-4 px-5 pt-10 pb-5 h-full overflow-y-auto">
                     <%= for event <- display_events(@current_tab,@events || []) do %> 
                         <button phx-click="event-pressed" phx-target={@myself} phx-value-event_id={event.id} class="card bg-white shadow-md h-44 w-full flex items-center justify-center p-2">
                         <div class="flex">

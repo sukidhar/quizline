@@ -3,6 +3,7 @@ defmodule QuizlineWeb.Admin.SessionLive do
 
   alias Quizline.AdminManager
   alias Quizline.AdminManager.Admin
+  alias Quizline.UserManager.Student
   alias Quizline.EventManager
   alias Quizline.EventManager.Exam
   alias Quizline.SubjectManager
@@ -319,5 +320,47 @@ defmodule QuizlineWeb.Admin.SessionLive do
        socket.assigns.events_data
        |> Map.put(:room_members_view, type)
      )}
+  end
+
+  @impl true
+  def handle_info(%{student_id: student_id, room: room}, socket) do
+    case EventManager.remove_student_from_room(student_id, room.id) do
+      {:error, error} ->
+        IO.inspect(error)
+
+        {:noreply,
+         socket
+         |> assign(
+           :events_data,
+           socket.assigns.events_data
+         )}
+
+      false ->
+        {:noreply,
+         socket
+         |> assign(
+           :events_data,
+           socket.assigns.events_data
+         )}
+
+      true ->
+        students = socket.assigns.events_data.selected_room.students
+
+        students =
+          students
+          |> Enum.reject(fn %Student{id: id} ->
+            id == student_id
+          end)
+
+        {:noreply,
+         socket
+         |> assign(
+           :events_data,
+           socket.assigns.events_data
+           |> Map.update!(:selected_room, fn room ->
+             room |> Map.put(:students, students)
+           end)
+         )}
+    end
   end
 end

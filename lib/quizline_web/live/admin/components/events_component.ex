@@ -328,6 +328,11 @@ defmodule QuizlineWeb.Admin.SessionLive.EventsComponent do
     {:noreply, socket}
   end
 
+  def handle_event("remove-student", %{"student_id" => student_id}, socket) do
+    send(self(), %{student_id: student_id, room: socket.assigns.selected_room})
+    {:noreply, socket}
+  end
+
   defp parse_date(date) do
     res = Timex.parse!(date, "{D}/{M}/{YYYY}") |> Timex.to_unix()
     "#{res}"

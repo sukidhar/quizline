@@ -1154,7 +1154,7 @@ defmodule Necto do
 
   def fetch_room_details(id) do
     query = """
-    MATCH (room:Room{id: "ddeb9c2d-ead6-469d-a0ee-cdf9d4be9047"})<-[:is_assigned]-(student:Student)
+    MATCH (room:Room{id: $id})<-[:is_assigned]-(student:Student)
     OPTIONAL MATCH (semester:Semester)-[:has_student]->(student:Student)-[:pursuing]-(branch:Branch)
     RETURN room, collect({student: student, branch: branch, semester: semester}) as students
     """
@@ -1165,5 +1165,26 @@ defmodule Necto do
   rescue
     e ->
       {:error, e}
+  end
+
+  def remove_student_from_room(sid, room_id) do
+    query = """
+    MATCH (room:Room{id: $room_id})<-[r:is_assigned]-(student:Student{id: $sid})
+    DELETE r
+    """
+
+    conn = Sips.conn()
+
+    res = Sips.query!(conn, query, %{sid: sid, room_id: room_id})
+
+    case res do
+      %Sips.Response{stats: %{"relationships-deleted" => 1}} ->
+        true
+
+      _ ->
+        false
+    end
+  rescue
+    e -> {:error, e}
   end
 end

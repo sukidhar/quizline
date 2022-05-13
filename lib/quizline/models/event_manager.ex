@@ -28,4 +28,8 @@ defmodule Quizline.EventManager do
   def get_room_details(id) do
     Necto.fetch_room_details(id)
   end
+
+  def remove_student_from_room(sid, room_id) do
+    Necto.remove_student_from_room(sid, room_id)
+  end
 end
