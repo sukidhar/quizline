@@ -163,6 +163,8 @@ defmodule QuizlineWeb.Admin.SessionLive.EventsComponent do
             :attendees,
             Map.get(data, :attendees, [])
             |> Enum.map(fn k ->
+              IO.inspect(k)
+
               case k do
                 %Ecto.Changeset{
                   valid?: true,
@@ -170,6 +172,13 @@ defmodule QuizlineWeb.Admin.SessionLive.EventsComponent do
                 } ->
                   %{}
                   |> Map.put(:branch, branch.changes)
+                  |> Map.put(:semester, semester.changes)
+
+                %Ecto.Changeset{
+                  valid?: true,
+                  changes: %{semester: semester, assigned: true}
+                } ->
+                  %{}
                   |> Map.put(:semester, semester.changes)
 
                 _ ->

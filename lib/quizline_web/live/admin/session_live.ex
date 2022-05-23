@@ -377,6 +377,15 @@ defmodule QuizlineWeb.Admin.SessionLive do
                |> Map.update!(:selected_room, fn room ->
                  room |> Map.put(:students, students)
                end)
+               |> Map.update!(:student_search_results, fn results ->
+                 Enum.map(results, fn %{student: std, assigned: assigned} ->
+                   if student.id == std.id do
+                     %{student: std, assigned: true}
+                   else
+                     %{student: std, assigned: assigned}
+                   end
+                 end)
+               end)
              )}
         end
 

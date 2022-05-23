@@ -6,7 +6,6 @@ defmodule Quizline.UserManager.Invigilator do
   # alias Ecto.Changeset
 
   embedded_schema do
-    field(:reg_no, :string)
     field(:first_name, :string)
     field(:last_name, :string)
     field(:email, :string)

@@ -719,7 +719,7 @@ defmodule Necto do
           WITH new_branch, link, sem
           MATCH (sub:Subject) WHERE sub.subject_code = link.subject
           FOREACH (ignoreMe in CASE WHEN sem.common THEN [1] ELSE [] END |  MERGE (sem)<-[:assigns]-(sub))
-          FOREACH (ignoreMe2 in CASE WHEN sem.common THEN [] ELSE [1] END |   MERGE (sem)<-[:assigns]-(sub)<-[:provides]-(new_branch))
+          FOREACH (ignoreMe2 in CASE WHEN sem.common THEN [] ELSE [1] END |   MERGE (sem)<-[:assigns]-(sub) MERGE (sub)<-[:provides]-(new_branch))
           RETURN true as res
         }
         RETURN new_branch, collect(link) as links
@@ -910,13 +910,23 @@ defmodule Necto do
     start_time = Time.to_iso8601(start_time)
     end_time = Time.to_iso8601(end_time)
 
+    IO.inspect(attendees)
+
     rels =
       attendees
-      |> Enum.map(fn %{branch: branch, semester: sem} ->
-        %{
-          branch: branch.branch_id <> "@" <> branch.id,
-          semester: sem.sid
-        }
+      |> Enum.map(fn k ->
+        case k do
+          %{branch: branch, semester: sem} ->
+            %{
+              branch: branch.branch_id <> "@" <> branch.id,
+              semester: sem.sid
+            }
+
+          %{semester: sem} ->
+            %{
+              semester: sem.sid
+            }
+        end
       end)
 
     query = """
@@ -946,7 +956,7 @@ defmodule Necto do
             } ->
               rels
               |> Enum.find(nil, fn x ->
-                x.branch == branch and x.semester == sem
+                x.semester == sem and if x.branch == nil, do: true, else: x.branch == branch
               end)
               |> case do
                 nil ->
@@ -969,8 +979,12 @@ defmodule Necto do
 
     query = """
     UNWIND $rels as rel
-    MATCH (branch:Branch{id: rel.branch})<-[:pursuing]-(n:Student)<-[:has_student]-(sem:Semester{sid:rel.semester})
-    RETURN collect(n.email) as emails
+    MATCH (n:Student)<-[:has_student]-(sem:Semester{sid:rel.semester})
+    CALL apoc.when(rel.branch is null,
+    'RETURN n.email as student',
+    'MATCH (branch:Branch{id: rel.branch})<-[:pursuing]-(n) RETURN n.email as student',
+    {n: n, rel: rel}) YIELD value
+    RETURN collect(value.student) as emails
     """
 
     conn = Sips.conn()
@@ -983,6 +997,8 @@ defmodule Necto do
       |> Enum.shuffle()
       |> Enum.chunk_every(12)
 
+    IO.inspect(groups)
+
     query = """
     MATCH (admin:Admin{id: "#{id}"})
     WITH admin
@@ -990,11 +1006,18 @@ defmodule Necto do
     CREATE (admin)-[:has_event{created:datetime().epochSeconds}]->(exam:Event:#{exam_group}{id: apoc.create.uuid(), date: "#{date}", start_time: "#{start_time}", end_time: "#{end_time}"})-[:for{created:datetime().epochSeconds}]->(sub)
     with exam
     UNWIND $rels as rel
-    MATCH (branch:Branch{id: rel.branch})
-    with exam, branch, rel
+    CALL apoc.do.when(rel.branch is null,
+    'MATCH (sem:Semester{sid: rel.semester})
+    CREATE (sem)-[:participates]->(exam)
+    RETURN exam',
+    'MATCH (branch:Branch{id: rel.branch})
+    with branch, rel
     MATCH (sem:Semester{sid: rel.semester})
     CREATE (sem)-[:participates]->(exam)<-[:participates]-(branch)
-    with exam
+    RETURN exam',
+    {rel: rel, exam: exam})
+    YIELD value
+    with value.exam as exam
     UNWIND $groups as group
     CREATE (room:Room{id: apoc.create.uuid()})
     with exam, group, room

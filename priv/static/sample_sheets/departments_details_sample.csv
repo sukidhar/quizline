@@ -2,7 +2,8 @@
 ##,Branches Table,Make sure semester is a symbol which is already created in semesters tab,You can assign as many as subjects using this format. Making sure subject already exists or u can mention the subject in the below table
 Branch Title,Subject Code,Semester,Subject Code,Semester,Subject Code,Semester
 Example
-Information Technology,ICT4301,MIT003OC,ICT3504,MIT003OC,CSE1020,MIT00IP
+Information Technology,ICT4301,MIT0003C,ICT3504,MIT0003C,CSE1020,MIT00IP
+Computer and Communication Technology,ICT4301,MIT0003C,ICT3504,MIT0003C,CSE1040,MIT00IP
 ,,,,
 ,,,,
 ,,,,
@@ -10,5 +11,6 @@ Information Technology,ICT4301,MIT003OC,ICT3504,MIT003OC,CSE1020,MIT00IP
 ##,Subjects Table
 Subject Title,Subject Code, Department Email
 Introduction to C programming, CSE1020, cse@manipal.edu
+Introduction to Java, CSE1040, cse@manipal.edu
 Information Security, ICT4301
 Cloud Computing, ICT3504
