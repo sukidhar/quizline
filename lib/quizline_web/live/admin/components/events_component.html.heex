@@ -112,7 +112,7 @@
                                             <path id="sub-search-icon" data-name="search" d="M35.508,31.127l-7.01-7.01a1.686,1.686,0,0,0-1.2-.492H26.156a14.618,14.618,0,1,0-2.531,2.531V27.3a1.686,1.686,0,0,0,.492,1.2l7.01,7.01a1.681,1.681,0,0,0,2.384,0l1.99-1.99a1.7,1.7,0,0,0,.007-2.391Zm-20.883-7.5a9,9,0,1,1,9-9A8.995,8.995,0,0,1,14.625,23.625Z"></path>
                                         </svg>
                                         </span>
-                                        <input type="search" name="sub-search" id="sub-search-field" placeholder="Search here" class="w-full pl-14 pr-4 py-2.5 rounded-xl text-sm text-gray-600 outline-none border border-gray-300 focus:border-cyan-300 transition" phx-hook="searchBar">
+                                        <input type="search" name="sub-search" id="sub-search-field" placeholder="Search here" class="w-full pl-14 pr-4 py-2.5 rounded-xl text-sm text-gray-600 outline-none border border-gray-300 focus:border-cyan-300 transition" phx-hook="searchBar" data-event="subject-search">
                                     </div>
                                 </div>
                                 <%= if @selected_subject == nil do %> 
@@ -226,7 +226,6 @@
         </div>
     </div>
     <div class="flex-1 mb-5 h-[calc(100%-theme(spacing.16))] bg-white">
-        
         <%= cond do  %> 
             <% @selected_event != nil -> %> 
                 <div class="flex-grow w-full h-full">
@@ -238,46 +237,104 @@
                             </ul>
                         </div>
                     </div>
-                    <div class="flex flex-grow h-[calc(100%-theme(spacing.10))]">
-                        <div class={if @selected_room != nil, do: "flex-grow w-full z-10 grid grid-cols-4 gap-4 p-5 h-full overflow-y-auto", else: "flex-grow w-full z-10 grid grid-cols-5 gap-4 p-5 h-full overflow-y-auto"}>
+                    <div class="relative flex flex-grow h-[calc(100%-theme(spacing.10))]">
+                        <div class={if @selected_room != nil, do: "relative flex-grow w-full z-10 grid grid-cols-4 gap-4 p-5 h-full overflow-y-auto", else: "flex-grow w-full z-10 grid grid-cols-5 gap-4 p-5 h-full overflow-y-auto"}>
                             <%= for {room, index} <- (@selected_event.rooms || []) |> Enum.with_index() do %> 
                                 <button phx-click="room-pressed" phx-target={@myself} phx-value-room_id={room.id} class="card bg-white shadow-md h-36 w-full flex items-center justify-center p-2">
                                     <div class="flex">
                                         <p class="font-semibold text-base"><%= index %></p> 
                                     </div>
                                 </button>
-                            <% end %> 
+                            <% end %>
                         </div>
                         <%= if @selected_room != nil do %>
+                            <div id="student-search-bar-container" class="absolute z-50 h-full w-[74.2%] hidden backdrop-blur-md bg-black/5">
+                                <div class="relative flex items-center justify-center p-2 h-32 w-full">
+                                    <div class="relative flex shadow-md m-5 items-center justify-start h-14 bg-white w-full rounded-full overflow-hidden">
+                                        <div class="absolute px-6  pointer-events-none">
+                                            <svg class="h-4 w-4 fill-current" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" id="Capa_1" x="0px" y="0px" viewBox="0 0 56.966 56.966" style="enable-background:new 0 0 56.966 56.966;" xml:space="preserve" width="512px" height="512px">
+                                                <path d="M55.146,51.887L41.588,37.786c3.486-4.144,5.396-9.358,5.396-14.786c0-12.682-10.318-23-23-23s-23,10.318-23,23  s10.318,23,23,23c4.761,0,9.298-1.436,13.177-4.162l13.661,14.208c0.571,0.593,1.339,0.92,2.162,0.92  c0.779,0,1.518-0.297,2.079-0.837C56.255,54.982,56.293,53.08,55.146,51.887z M23.984,6c9.374,0,17,7.626,17,17s-7.626,17-17,17  s-17-7.626-17-17S14.61,6,23.984,6z"/>
+                                            </svg>
+                                        </div>
+                                        <input id="student-search-input" type="search" name="search" placeholder="Search" class="bg-white pl-14 pr-5 text-base focus:outline-none text-gray-600 form-control w-full h-full" phx-hook="searchBar" data-event="student-search">
+                                    </div>
+                                    <button class="rounded-full bg-white p-2 shadow-md close-button mr-5" phx-click={hide_student_search_container()}>
+                                        <div class="p-2 rounded-full border-[1px]">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                                        </div>
+                                    </button>
+                                </div>
+                                <div class="relative h-[calc(100%-theme(spacing.32))] w-full overflow-y-auto px-7 pb-5">
+                                    <div class="bg-white rounded-md h-full w-full flex items-center justify-center overflow-y-auto">
+                                        <%= if Enum.empty?(@student_search_results) do  %>
+                                            Show search message
+                                        <% else %>
+                                            <div class="flex flex-col h-full w-full">
+                                                <%= for %{student: student, assigned: assigned} <- @student_search_results do %> 
+                                                    <div class="flex w-full border-b-[0.5px] card-parent">
+                                                        <div class="flex flex-col w-full px-5 py-3">
+                                                            <p class="font-normal text-sm"><%= student.first_name <> " " <> student.last_name %></p> 
+                                                            <p class="font-thin text-xs"><%= student.rid %></p> 
+                                                        </div>
+                                                        <%= if assigned do  %> 
+                                                            <div class="fill-gray-700 flex flex-col justify-center items-center px-5">
+                                                                <svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                                                    <path d="M13.3 12.22C13.8336 11.7581 14.2616 11.1869 14.5549 10.545C14.8482 9.90316 15 9.20571 15 8.5C15 7.17392 14.4732 5.90215 13.5355 4.96447C12.5979 4.02678 11.3261 3.5 10 3.5C8.67392 3.5 7.40215 4.02678 6.46447 4.96447C5.52678 5.90215 5 7.17392 5 8.5C4.99999 9.20571 5.1518 9.90316 5.44513 10.545C5.73845 11.1869 6.16642 11.7581 6.7 12.22C5.30014 12.8539 4.11247 13.8775 3.27898 15.1685C2.4455 16.4596 2.00147 17.9633 2 19.5C2 19.7652 2.10536 20.0196 2.29289 20.2071C2.48043 20.3946 2.73478 20.5 3 20.5C3.26522 20.5 3.51957 20.3946 3.70711 20.2071C3.89464 20.0196 4 19.7652 4 19.5C4 17.9087 4.63214 16.3826 5.75736 15.2574C6.88258 14.1321 8.4087 13.5 10 13.5C11.5913 13.5 13.1174 14.1321 14.2426 15.2574C15.3679 16.3826 16 17.9087 16 19.5C16 19.7652 16.1054 20.0196 16.2929 20.2071C16.4804 20.3946 16.7348 20.5 17 20.5C17.2652 20.5 17.5196 20.3946 17.7071 20.2071C17.8946 20.0196 18 19.7652 18 19.5C17.9985 17.9633 17.5545 16.4596 16.721 15.1685C15.8875 13.8775 14.6999 12.8539 13.3 12.22ZM10 11.5C9.40666 11.5 8.82664 11.3241 8.33329 10.9944C7.83994 10.6648 7.45542 10.1962 7.22836 9.64805C7.0013 9.09987 6.94189 8.49667 7.05764 7.91473C7.1734 7.33279 7.45912 6.79824 7.87868 6.37868C8.29824 5.95912 8.83279 5.6734 9.41473 5.55764C9.99667 5.44189 10.5999 5.5013 11.1481 5.72836C11.6962 5.95542 12.1648 6.33994 12.4944 6.83329C12.8241 7.32664 13 7.90666 13 8.5C13 9.29565 12.6839 10.0587 12.1213 10.6213C11.5587 11.1839 10.7956 11.5 10 11.5ZM21.71 9.13C21.617 9.03627 21.5064 8.96188 21.3846 8.91111C21.2627 8.86034 21.132 8.8342 21 8.8342C20.868 8.8342 20.7373 8.86034 20.6154 8.91111C20.4936 8.96188 20.383 9.03627 20.29 9.13L18.29 11.13L17.67 10.5C17.577 10.4063 17.4664 10.3319 17.3446 10.2811C17.2227 10.2303 17.092 10.2042 16.96 10.2042C16.828 10.2042 16.6973 10.2303 16.5754 10.2811C16.4536 10.3319 16.343 10.4063 16.25 10.5C16.0637 10.6874 15.9592 10.9408 15.9592 11.205C15.9592 11.4692 16.0637 11.7226 16.25 11.91L17.59 13.25C17.7774 13.4363 18.0308 13.5408 18.295 13.5408C18.5592 13.5408 18.8126 13.4363 19 13.25L21.67 10.58C21.771 10.4893 21.8524 10.379 21.9094 10.2559C21.9664 10.1327 21.9977 9.99924 22.0014 9.86359C22.0052 9.72794 21.9813 9.59294 21.9312 9.46682C21.8811 9.34071 21.8058 9.22611 21.71 9.13Z"/>
+                                                                </svg>
+                                                                <p class="text-gray-700 text-xs font-normal">Added</p>
+                                                            </div>
+                                                        <% else %> 
+                                                            <div class="flex items-center justify-center px-5 hidden-child">
+                                                                <button type="button" class="fill-primary hover:fill-primary-content" phx-click="add-student-to-room" phx-target={@myself} phx-value-student_id={student.id}>
+                                                                    <svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                                                        <path d="M21 10.5H20V9.5C20 9.23478 19.8946 8.98043 19.7071 8.79289C19.5196 8.60536 19.2652 8.5 19 8.5C18.7348 8.5 18.4804 8.60536 18.2929 8.79289C18.1054 8.98043 18 9.23478 18 9.5V10.5H17C16.7348 10.5 16.4804 10.6054 16.2929 10.7929C16.1054 10.9804 16 11.2348 16 11.5C16 11.7652 16.1054 12.0196 16.2929 12.2071C16.4804 12.3946 16.7348 12.5 17 12.5H18V13.5C18 13.7652 18.1054 14.0196 18.2929 14.2071C18.4804 14.3946 18.7348 14.5 19 14.5C19.2652 14.5 19.5196 14.3946 19.7071 14.2071C19.8946 14.0196 20 13.7652 20 13.5V12.5H21C21.2652 12.5 21.5196 12.3946 21.7071 12.2071C21.8946 12.0196 22 11.7652 22 11.5C22 11.2348 21.8946 10.9804 21.7071 10.7929C21.5196 10.6054 21.2652 10.5 21 10.5ZM13.3 12.22C13.8336 11.7581 14.2616 11.1869 14.5549 10.545C14.8482 9.90316 15 9.20571 15 8.5C15 7.17392 14.4732 5.90215 13.5355 4.96447C12.5979 4.02678 11.3261 3.5 10 3.5C8.67392 3.5 7.40215 4.02678 6.46447 4.96447C5.52678 5.90215 5 7.17392 5 8.5C4.99999 9.20571 5.1518 9.90316 5.44513 10.545C5.73845 11.1869 6.16642 11.7581 6.7 12.22C5.30014 12.8539 4.11247 13.8775 3.27898 15.1685C2.4455 16.4596 2.00147 17.9633 2 19.5C2 19.7652 2.10536 20.0196 2.29289 20.2071C2.48043 20.3946 2.73478 20.5 3 20.5C3.26522 20.5 3.51957 20.3946 3.70711 20.2071C3.89464 20.0196 4 19.7652 4 19.5C4 17.9087 4.63214 16.3826 5.75736 15.2574C6.88258 14.1321 8.4087 13.5 10 13.5C11.5913 13.5 13.1174 14.1321 14.2426 15.2574C15.3679 16.3826 16 17.9087 16 19.5C16 19.7652 16.1054 20.0196 16.2929 20.2071C16.4804 20.3946 16.7348 20.5 17 20.5C17.2652 20.5 17.5196 20.3946 17.7071 20.2071C17.8946 20.0196 18 19.7652 18 19.5C17.9985 17.9633 17.5545 16.4596 16.721 15.1685C15.8875 13.8775 14.6999 12.8539 13.3 12.22ZM10 11.5C9.40666 11.5 8.82664 11.3241 8.33329 10.9944C7.83994 10.6648 7.45542 10.1962 7.22836 9.64805C7.0013 9.09987 6.94189 8.49667 7.05764 7.91473C7.1734 7.33279 7.45912 6.79824 7.87868 6.37868C8.29824 5.95912 8.83279 5.6734 9.41473 5.55764C9.99667 5.44189 10.5999 5.5013 11.1481 5.72836C11.6962 5.95542 12.1648 6.33994 12.4944 6.83329C12.8241 7.32664 13 7.90666 13 8.5C13 9.29565 12.6839 10.0587 12.1213 10.6213C11.5587 11.1839 10.7956 11.5 10 11.5Z"/>
+                                                                    </svg>                                                                
+                                                                </button>
+                                                            </div>
+                                                        <% end %> 
+                                                    </div>
+                                                <% end %> 
+                                            </div>
+                                        <% end %>  
+                                    </div>
+                                </div>
+                            </div> 
                             <div class="w-[35%] h-full flex flex-col items-center border-x-[1px] rounded-lg">
                                 <div class="flex w-full p-5 items-center h-fit">
                                     <p class="font-semibold text-xl">Exam Room</p>
                                     <div class="flex-grow"></div>
-                                    <button phx-click="deselect-room" phx-target={@myself} class="btn bg-white btn-sm btn-square btn-outline m-3">
+                                    <button phx-click="deselect-room" phx-target={@myself} class="btn bg-white btn-sm btn-square btn-outline my-3">
                                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
                                     </button>
                                 </div>
-                                <div class="w-full border-b-[0.5px]">
+                                <div class="w-full">
                                     <p class="text-xs font-thin px-5 py-1 text-gray-500">
                                         <%= "Room id: #{@selected_room.id}"  %> 
                                     </p>
                                 </div>
-                                <div class="flex justify-center items-center w-full h-10 border-b-[0.5px]">
+                                
+                                <div class={"flex justify-start items-center w-full h-fit border-b-[0.5px] pr-2 py-2 #{if @room_members_view == :students, do: 'pl-3.5'}"}>
                                     <div class="w-fit tabs tabs-boxed bg-inherit">
                                         <a phx-target={@myself} phx-click="show-room-members" phx-value-type={:students} class={"tab #{if @room_members_view == :students, do: 'tab-active'}"}>Students</a> 
                                         <a phx-target={@myself} phx-click="show-room-members" phx-value-type={:invigilators} class={"tab #{if @room_members_view == :invigilators, do: 'tab-active'}"}>Invigilators</a>
                                     </div>
+                                    <div class="flex-grow"></div>
+                                    <button class="btn btn-outline gap-2 scale-[70%]" phx-target={@myself} phx-click={show_student_search_container()}>
+                                        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" class="scale-90" xmlns="http://www.w3.org/2000/svg">
+                                            <path d="M12 2C10.0222 2 8.08879 2.58649 6.4443 3.6853C4.79981 4.78412 3.51809 6.3459 2.76121 8.17317C2.00433 10.0004 1.8063 12.0111 2.19215 13.9509C2.578 15.8907 3.53041 17.6725 4.92894 19.0711C6.32746 20.4696 8.10929 21.422 10.0491 21.8079C11.9889 22.1937 13.9996 21.9957 15.8268 21.2388C17.6541 20.4819 19.2159 19.2002 20.3147 17.5557C21.4135 15.9112 22 13.9778 22 12C22 10.6868 21.7413 9.38642 21.2388 8.17317C20.7363 6.95991 19.9997 5.85752 19.0711 4.92893C18.1425 4.00035 17.0401 3.26375 15.8268 2.7612C14.6136 2.25866 13.3132 2 12 2ZM12 20C10.4178 20 8.87104 19.5308 7.55544 18.6518C6.23985 17.7727 5.21447 16.5233 4.60897 15.0615C4.00347 13.5997 3.84504 11.9911 4.15372 10.4393C4.4624 8.88743 5.22433 7.46197 6.34315 6.34315C7.46197 5.22433 8.88743 4.4624 10.4393 4.15372C11.9911 3.84504 13.5997 4.00346 15.0615 4.60896C16.5233 5.21447 17.7727 6.23984 18.6518 7.55544C19.5308 8.87103 20 10.4177 20 12C20 14.1217 19.1572 16.1566 17.6569 17.6569C16.1566 19.1571 14.1217 20 12 20ZM16 11H13V8C13 7.73478 12.8946 7.48043 12.7071 7.29289C12.5196 7.10536 12.2652 7 12 7C11.7348 7 11.4804 7.10536 11.2929 7.29289C11.1054 7.48043 11 7.73478 11 8V11H8C7.73479 11 7.48043 11.1054 7.2929 11.2929C7.10536 11.4804 7 11.7348 7 12C7 12.2652 7.10536 12.5196 7.2929 12.7071C7.48043 12.8946 7.73479 13 8 13H11V16C11 16.2652 11.1054 16.5196 11.2929 16.7071C11.4804 16.8946 11.7348 17 12 17C12.2652 17 12.5196 16.8946 12.7071 16.7071C12.8946 16.5196 13 16.2652 13 16V13H16C16.2652 13 16.5196 12.8946 16.7071 12.7071C16.8946 12.5196 17 12.2652 17 12C17 11.7348 16.8946 11.4804 16.7071 11.2929C16.5196 11.1054 16.2652 11 16 11Z"/>
+                                        </svg>
+                                    </button>
                                 </div>
                                 <%= if @room_members_view == :students do %>
                                     <div class="h-full overflow-y-auto w-full">
                                         <%= for student <- @selected_room.students || [] do %> 
                                             <div class="flex w-full border-b-[0.5px] card-parent">
-                                                <div class="flex flex-col w-full p-2">
+                                                <div class="flex flex-col w-full px-5 py-3">
                                                     <p class="font-normal text-sm"><%= student.first_name <> " " <> student.last_name %></p> 
                                                     <p class="font-thin text-xs"><%= student.rid %></p> 
                                                 </div>
                                                 <div class="flex items-center justify-center px-5 hidden-child">
-                                                   <button type="button" class="fill-primary hover:fill-primary-content" phx-click="remove-student" phx-target={@myself} phx-value-student_id={student.id}>
+                                                   <button type="button" class="fill-primary hover:fill-primary-content" phx-click="remove-student-from-room" phx-target={@myself} phx-value-student_id={student.id}>
                                                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24">
                                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="0.5px" d="M20 6H16V5C16 4.20435 15.6839 3.44129 15.1213 2.87868C14.5587 2.31607 13.7956 2 13 2H11C10.2044 2 9.44129 2.31607 8.87868 2.87868C8.31607 3.44129 8 4.20435 8 5V6H4C3.73478 6 3.48043 6.10536 3.29289 6.29289C3.10536 6.48043 3 6.73478 3 7C3 7.26522 3.10536 7.51957 3.29289 7.70711C3.48043 7.89464 3.73478 8 4 8H5V19C5 19.7956 5.31607 20.5587 5.87868 21.1213C6.44129 21.6839 7.20435 22 8 22H16C16.7956 22 17.5587 21.6839 18.1213 21.1213C18.6839 20.5587 19 19.7956 19 19V8H20C20.2652 8 20.5196 7.89464 20.7071 7.70711C20.8946 7.51957 21 7.26522 21 7C21 6.73478 20.8946 6.48043 20.7071 6.29289C20.5196 6.10536 20.2652 6 20 6ZM10 5C10 4.73478 10.1054 4.48043 10.2929 4.29289C10.4804 4.10536 10.7348 4 11 4H13C13.2652 4 13.5196 4.10536 13.7071 4.29289C13.8946 4.48043 14 4.73478 14 5V6H10V5ZM17 19C17 19.2652 16.8946 19.5196 16.7071 19.7071C16.5196 19.8946 16.2652 20 16 20H8C7.73478 20 7.48043 19.8946 7.29289 19.7071C7.10536 19.5196 7 19.2652 7 19V8H17V19Z" />
                                                         </svg>
@@ -286,7 +343,7 @@
                                             </div>
                                         <% end %>
                                        <div class="flex w-full justify-center items-center h-fit">
-                                            <p class="text-xs py-5"><%= "#{(@selected_room.students || []) |> Enum.count()} of 12 students filled"  %> </p>
+                                            <p class="text-xs font-extralight text-gray-400 py-5"><%= "#{(@selected_room.students || []) |> Enum.count()} of 12 students filled"  %> </p>
                                        </div>
                                     </div>
                                 <% end %>  

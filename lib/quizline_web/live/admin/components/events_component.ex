@@ -1,6 +1,7 @@
 defmodule QuizlineWeb.Admin.SessionLive.EventsComponent do
   use QuizlineWeb, :live_component
 
+  alias Phoenix.LiveView.JS
   alias Quizline.AdminManager.Admin
   alias Quizline.EventManager.Exam
   # alias Quizline.SubjectManager
@@ -31,6 +32,23 @@ defmodule QuizlineWeb.Admin.SessionLive.EventsComponent do
        end)
      )
      |> allow_upload(:events_file, accept: ~w(.csv), max_entries: 1)}
+  end
+
+  # Dyanmic client code
+  def show_student_search_container(js \\ %JS{}) do
+    js
+    |> JS.remove_class("hidden",
+      to: "#student-search-bar-container",
+      transition: {"ease-out duration-300", "opacity-0", "opacity-100"}
+    )
+  end
+
+  def hide_student_search_container(js \\ %JS{}) do
+    js
+    |> JS.add_class("hidden",
+      to: "#student-search-bar-container",
+      transition: {"ease-in duration-300", "opacity-100", "opacity-0"}
+    )
   end
 
   def handle_event("event-pressed", %{"event_id" => event_id}, socket) do
@@ -328,8 +346,18 @@ defmodule QuizlineWeb.Admin.SessionLive.EventsComponent do
     {:noreply, socket}
   end
 
-  def handle_event("remove-student", %{"student_id" => student_id}, socket) do
-    send(self(), %{student_id: student_id, room: socket.assigns.selected_room})
+  def handle_event("remove-student-from-room", %{"student_id" => student_id}, socket) do
+    send(self(), %{student_id: student_id, room: socket.assigns.selected_room, action: :remove})
+    {:noreply, socket}
+  end
+
+  def handle_event("add-student-to-room", %{"student_id" => student_id}, socket) do
+    send(self(), %{student_id: student_id, room: socket.assigns.selected_room, action: :add})
+    {:noreply, socket}
+  end
+
+  def handle_event("show-student-search-form", _, socket) do
+    send(self(), %{student_search_form?: true})
     {:noreply, socket}
   end
 

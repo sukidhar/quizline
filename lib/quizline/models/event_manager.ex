@@ -32,4 +32,12 @@ defmodule Quizline.EventManager do
   def remove_student_from_room(sid, room_id) do
     Necto.remove_student_from_room(sid, room_id)
   end
+
+  def add_student_to_room(sid, room_id) do
+    Necto.add_student_to_room(sid, room_id)
+  end
+
+  def find_students(keyword, event_id) do
+    Necto.get_students_fuzzy(keyword, event_id)
+  end
 end

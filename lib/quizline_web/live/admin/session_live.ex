@@ -34,7 +34,8 @@ defmodule QuizlineWeb.Admin.SessionLive do
        # specific event
        selected_event: nil,
        selected_room: nil,
-       room_members_view: :students
+       room_members_view: :students,
+       student_search_results: []
      })}
   end
 
@@ -57,18 +58,35 @@ defmodule QuizlineWeb.Admin.SessionLive do
     {:noreply, socket |> assign(:view, view_to_string(view))}
   end
 
-  def handle_event("search-field-changed", %{"filter" => text}, socket) do
-    socket =
-      socket
-      |> assign(:events_data, socket.assigns.events_data |> Map.put("subject_filter", text))
+  def handle_event("search-field-changed", %{"filter" => text, "event" => event}, socket) do
+    case event do
+      "student-search" ->
+        case socket.assigns.events_data.selected_event do
+          nil ->
+            {:noreply, socket}
 
-    send_update(QuizlineWeb.Admin.SessionLive.EventsComponent,
-      id: "events-component",
-      admin: socket.assigns.admin,
-      events_data: socket.assigns.events_data
-    )
+          event ->
+            lv = self()
 
-    {:noreply, socket}
+            Task.start_link(fn ->
+              res = EventManager.find_students(text, event.id)
+              send(lv, %{student_search_results: res})
+            end)
+
+            {:noreply, socket}
+        end
+
+        {:noreply,
+         socket
+         |> assign(:events_data, socket.assigns.events_data |> Map.put(:subject_filter, text))}
+
+      "subject-search" ->
+        IO.inspect("subject search")
+
+        {:noreply,
+         socket
+         |> assign(:events_data, socket.assigns.events_data |> Map.put(:subject_filter, text))}
+    end
   end
 
   def handle_event("select-subject", %{"subCode" => sub_code}, socket) do
@@ -247,6 +265,7 @@ defmodule QuizlineWeb.Admin.SessionLive do
        :events_data,
        socket.assigns.events_data
        |> Map.put(:selected_event, nil)
+       |> Map.put(:selected_room, nil)
      )}
   end
 
@@ -323,44 +342,93 @@ defmodule QuizlineWeb.Admin.SessionLive do
   end
 
   @impl true
-  def handle_info(%{student_id: student_id, room: room}, socket) do
-    case EventManager.remove_student_from_room(student_id, room.id) do
-      {:error, error} ->
-        IO.inspect(error)
+  def handle_info(%{student_id: student_id, room: room, action: action}, socket) do
+    case action do
+      :add ->
+        case EventManager.add_student_to_room(student_id, room.id) do
+          {:error, error} ->
+            IO.inspect(error)
 
-        {:noreply,
-         socket
-         |> assign(
-           :events_data,
-           socket.assigns.events_data
-         )}
+            {:noreply,
+             socket
+             |> assign(
+               :events_data,
+               socket.assigns.events_data
+             )}
 
-      false ->
-        {:noreply,
-         socket
-         |> assign(
-           :events_data,
-           socket.assigns.events_data
-         )}
+          false ->
+            {:noreply,
+             socket
+             |> assign(
+               :events_data,
+               socket.assigns.events_data
+             )}
 
-      true ->
-        students = socket.assigns.events_data.selected_room.students
+          student ->
+            students = socket.assigns.events_data.selected_room.students
 
-        students =
-          students
-          |> Enum.reject(fn %Student{id: id} ->
-            id == student_id
-          end)
+            students = students ++ [student]
 
-        {:noreply,
-         socket
-         |> assign(
-           :events_data,
-           socket.assigns.events_data
-           |> Map.update!(:selected_room, fn room ->
-             room |> Map.put(:students, students)
-           end)
-         )}
+            {:noreply,
+             socket
+             |> assign(
+               :events_data,
+               socket.assigns.events_data
+               |> Map.update!(:selected_room, fn room ->
+                 room |> Map.put(:students, students)
+               end)
+             )}
+        end
+
+      :remove ->
+        case EventManager.remove_student_from_room(student_id, room.id) do
+          {:error, error} ->
+            IO.inspect(error)
+
+            {:noreply,
+             socket
+             |> assign(
+               :events_data,
+               socket.assigns.events_data
+             )}
+
+          false ->
+            {:noreply,
+             socket
+             |> assign(
+               :events_data,
+               socket.assigns.events_data
+             )}
+
+          true ->
+            students = socket.assigns.events_data.selected_room.students
+
+            students =
+              students
+              |> Enum.reject(fn %Student{id: id} ->
+                id == student_id
+              end)
+
+            {:noreply,
+             socket
+             |> assign(
+               :events_data,
+               socket.assigns.events_data
+               |> Map.update!(:selected_room, fn room ->
+                 room |> Map.put(:students, students)
+               end)
+             )}
+        end
     end
+  end
+
+  def handle_info(%{student_search_results: res}, socket) do
+    {:noreply,
+     socket
+     |> assign(
+       :events_data,
+       socket.assigns.events_data
+       |> Map.put(:student_search_results, res)
+     )}
   end
 end

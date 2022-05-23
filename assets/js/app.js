@@ -48,8 +48,8 @@ liveSocket.connect();
 // liveSocket.enableDebug();
 
 // expose liveSocket on window for web console debug logs and latency simulation:
-// >> liveSocket.enableDebug()
-// >> liveSocket.enableLatencySim(1000)  // enabled for duration of browser session
+liveSocket.enableDebug();
+// liveSocket.enableLatencySim(500); // enabled for duration of browser session
 // >> liveSocket.disableLatencySim()
 window.liveSocket = liveSocket;
 
@@ -124,7 +124,10 @@ Hooks.searchBar = {
     this.el.oninput = () => {
       this.pushEvent(
         "search-field-changed",
-        { filter: this.el.value },
+        {
+          filter: this.el.value,
+          event: this.el.dataset.event,
+        },
         (reply, ref) => {
           console.log(reply);
         }

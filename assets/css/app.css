@@ -86,3 +86,10 @@
   overflow-x: scroll;
 }
 
+.close-button:hover>div{
+  @apply stroke-white bg-black
+}
+
+.close-button{
+  @apply stroke-gray-400 bg-white
+}

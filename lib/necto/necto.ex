@@ -351,6 +351,19 @@ defmodule Necto do
                 |> Keyword.put(:branch, branch)
 
               Kernel.struct!(struct, props)
+
+            %{
+              "student" => %Sips.Types.Node{properties: props},
+              "assigned" => value
+            } ->
+              props = convert_to_klist(props)
+              %{student: Kernel.struct!(struct, props), assigned: value}
+
+            %{
+              "student" => %Sips.Types.Node{properties: props}
+            } ->
+              props = convert_to_klist(props)
+              Kernel.struct!(struct, props)
           end
         end)
 
@@ -1186,5 +1199,72 @@ defmodule Necto do
     end
   rescue
     e -> {:error, e}
+  end
+
+  def add_student_to_room(sid, room_id) do
+    query = """
+    MATCH (room:Room{id: $room_id})-[:is_assigned]-(s:Student)
+    WITH count(s) as scount, room
+    MATCH (student:Student{id: $sid})
+    FOREACH (ignoreMe in CASE WHEN scount < 12 THEN [1] ELSE [] END |  MERGE (room)<-[:is_assigned]-(student))
+    RETURN student
+    """
+
+    conn = Sips.conn()
+
+    res = Sips.query!(conn, query, %{sid: sid, room_id: room_id})
+
+    case res do
+      %Sips.Response{stats: %{"relationships-created" => 1}, results: res} ->
+        [head | _] = structify_response(res, :student, "unable to structify")
+        head
+
+      _ ->
+        false
+    end
+  rescue
+    e -> {:error, e}
+  end
+
+  def get_students_fuzzy(keyword, event_id) do
+    case String.split(String.trim(keyword)) do
+      [] ->
+        []
+
+      [first_name | extras] ->
+        conditions =
+          case extras do
+            [] ->
+              """
+              WHERE student.first_name =~ "(?i)#{first_name}.*" or student.last_name =~ "(?i)#{first_name}.*" or student.rid =~ "(?i)#{first_name}.*"
+              """
+
+            extras ->
+              extras = Enum.join(extras, " ")
+
+              """
+              WHERE student.first_name =~ "(?i)#{first_name}.*"
+              or student.first_name =~ "(?i)#{extras}.*"
+              or student.last_name =~ "(?i)#{extras}.*"
+              or student.last_name =~ "(?i)#{first_name}.*"
+              """
+          end
+
+        query = """
+        MATCH (event:Event{id: $event_id})-[:for]-(subject:Subject)
+        MATCH (sem:Semester)-[:assigns]-(subject)-[:provides]-(branch:Branch)
+        with event, sem, branch
+        MATCH (sem)-[:has_student]-(student:Student)-[:pursuing]-(branch)
+        #{conditions}
+        RETURN distinct(student), exists((student)-[:is_assigned]-(:Room)-[:has_room]-(event)) as assigned
+        ORDER BY assigned
+        LIMIT 20
+        """
+
+        conn = Sips.conn()
+
+        %Sips.Response{results: results} = Sips.query!(conn, query, %{event_id: event_id})
+        structify_response(results, :student, "unable to structify")
+    end
   end
 end
