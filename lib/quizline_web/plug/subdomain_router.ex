@@ -35,6 +35,7 @@ defmodule QuizlineWeb.SubdomainRouter do
 
     get("/file/departments_template", SessionController, :get_departments_sample)
     get("/file/department_details_template", SessionController, :get_department_details_sample)
+    get("/file/events_template", SessionController, :get_events_sample)
   end
 
   scope "/", QuizlineWeb do

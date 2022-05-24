@@ -597,8 +597,6 @@ defmodule Necto do
   end
 
   def create_departments(data, id) do
-    IO.inspect(data)
-
     query = """
     MATCH (admin:Admin {id: $id})
     with admin
@@ -669,8 +667,6 @@ defmodule Necto do
     conn = Sips.conn()
 
     %Bolt.Sips.Response{results: res} = Sips.query!(conn, query, params)
-
-    IO.inspect(res)
 
     case res do
       [%{"result" => true} | _] ->
@@ -910,8 +906,6 @@ defmodule Necto do
     start_time = Time.to_iso8601(start_time)
     end_time = Time.to_iso8601(end_time)
 
-    IO.inspect(attendees)
-
     rels =
       attendees
       |> Enum.map(fn k ->
@@ -997,8 +991,6 @@ defmodule Necto do
       |> Enum.shuffle()
       |> Enum.chunk_every(12)
 
-    IO.inspect(groups)
-
     query = """
     MATCH (admin:Admin{id: "#{id}"})
     WITH admin
@@ -1011,7 +1003,7 @@ defmodule Necto do
     CREATE (sem)-[:participates]->(exam)
     RETURN exam',
     'MATCH (branch:Branch{id: rel.branch})
-    with branch, rel
+    with branch, rel, exam
     MATCH (sem:Semester{sid: rel.semester})
     CREATE (sem)-[:participates]->(exam)<-[:participates]-(branch)
     RETURN exam',
@@ -1105,9 +1097,12 @@ defmodule Necto do
 
             query = """
             UNWIND $rels as rel
-            MATCH (branch:Branch)<-[:pursuing]-(n:Student)<-[:has_student]-(sem:Semester{sid:rel.semester})
-            WHERE branch.id STARTS WITH rel.branch + "@"
-            RETURN collect(n.email) as emails
+            MATCH (n:Student)<-[:has_student]-(sem:Semester{sid:rel.semester})
+            CALL apoc.when(rel.branch is null,
+            'RETURN n.email as student',
+            'MATCH (branch:Branch)<-[:pursuing]-(n) WHERE branch.id STARTS WITH rel.branch + "@" RETURN n.email as student',
+            {n: n, rel: rel}) YIELD value
+            RETURN collect(value.student) as emails
             """
 
             conn = Sips.conn()
@@ -1127,12 +1122,19 @@ defmodule Necto do
             CREATE (admin)-[:has_event{created:datetime().epochSeconds}]->(exam:Event:#{exam_group}{id: apoc.create.uuid(), date: "#{date}", start_time: "#{start_time}", end_time: "#{end_time}"})-[:for{created:datetime().epochSeconds}]->(sub)
             with exam
             UNWIND $rels as rel
-            MATCH (branch:Branch)
+            CALL apoc.do.when(rel.branch is null,
+            'MATCH (sem:Semester{sid: rel.semester})
+            CREATE (sem)-[:participates]->(exam)
+            RETURN exam',
+            'MATCH (branch:Branch)
             WHERE branch.id STARTS WITH rel.branch + "@"
-            with exam, branch, rel
+            with branch, rel, exam
             MATCH (sem:Semester{sid: rel.semester})
             CREATE (sem)-[:participates]->(exam)<-[:participates]-(branch)
-            with exam
+            RETURN exam',
+            {rel: rel, exam: exam})
+            YIELD value
+            with value.exam as exam
             UNWIND $groups as group
             CREATE (room:Room{id: apoc.create.uuid()})
             with exam, group, room
