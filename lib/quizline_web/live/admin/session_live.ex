@@ -233,13 +233,12 @@ defmodule QuizlineWeb.Admin.SessionLive do
   def handle_info(%{event: "create-exam", data: data}, socket) do
     case EventManager.create_exam(data, socket.assigns.admin.id) do
       :ok ->
-        IO.inspect("refresh events")
-
         {:noreply,
          socket
          |> assign(
            :events_data,
            socket.assigns.events_data
+           |> Map.put(:events, nil)
            |> Map.put(:primary_changeset, EventManager.exam_primary_changeset(%Exam{}))
            |> Map.put(:secondary_changeset, EventManager.exam_secondary_changeset(%Exam{}))
            |> Map.put(:show_event_form?, false)
@@ -253,8 +252,21 @@ defmodule QuizlineWeb.Admin.SessionLive do
 
   @impl true
   def handle_info(%{event: "create-bulk-exams", data: data}, socket) do
-    EventManager.create_exams(data, socket.assigns.admin.id)
-    {:noreply, socket}
+    case EventManager.create_exams(data, socket.assigns.admin.id) do
+      :ok ->
+        {:noreply,
+         socket
+         |> assign(
+           :events_data,
+           socket.assigns.events_data
+           |> Map.put(:events, nil)
+           |> Map.put(:show_event_form?, false)
+         )}
+
+      {:error, error} ->
+        IO.inspect(error)
+        {:noreply, socket}
+    end
   end
 
   @impl true
@@ -267,6 +279,42 @@ defmodule QuizlineWeb.Admin.SessionLive do
        |> Map.put(:selected_event, nil)
        |> Map.put(:selected_room, nil)
      )}
+  end
+
+  def handle_info(%{delete_event: id}, socket) do
+    case EventManager.delete_exam(id) do
+      {:error, error} ->
+        IO.inspect(error)
+
+        {:noreply,
+         socket
+         |> assign(
+           :events_data,
+           socket.assigns.events_data
+         )}
+
+      false ->
+        {:noreply,
+         socket
+         |> assign(
+           :events_data,
+           socket.assigns.events_data
+         )}
+
+      true ->
+        {:noreply,
+         socket
+         |> assign(
+           :events_data,
+           socket.assigns.events_data
+           |> Map.update!(:events, fn events ->
+             events
+             |> Enum.reject(fn event ->
+               event.id == id
+             end)
+           end)
+         )}
+    end
   end
 
   @impl true

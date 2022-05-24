@@ -361,11 +361,14 @@
                 </div>
                 <div class="flex-grow w-full z-10 grid grid-cols-5 gap-4 px-5 pt-10 pb-5 h-full overflow-y-auto">
                     <%= for event <- display_events(@current_tab,@events || []) do %> 
-                        <button phx-click="event-pressed" phx-target={@myself} phx-value-event_id={event.id} class="card bg-white shadow-md h-44 w-full flex items-center justify-center p-2">
-                        <div class="flex">
-                                <p class="font-semibold text-base"><%= event.exam_group %></p> 
+                        <div class="relative card-parent h-44 w-full mb-5">
+                            <button phx-click="event-pressed" phx-target={@myself} phx-value-event_id={event.id} class="card bg-white shadow-md h-full w-full flex items-center justify-end p-2">
+                                <div class="flex">
+                                        <p class="font-semibold text-base"><%= event.exam_group %></p> 
+                                </div>
+                            </button>
+                            <button type="button" phx-target={@myself} phx-click="delete-event" phx-value-id={event.id} class="absolute hidden-child -top-3 -right-3 hidden-child h-6 w-6 card bg-white shadow-md btn-circle flex items-center justify-center">x</button>
                         </div>
-                        </button>
                     <% end %> 
                 </div>
         <% end %> 

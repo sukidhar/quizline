@@ -1031,6 +1031,27 @@ defmodule Necto do
     {:error, "data not in the required format"}
   end
 
+  def delete_exam_event(id) do
+    query = """
+    MATCH (event:Event{id: $id})
+    OPTIONAL MATCH (event)-[:has_room]->(room:Room)
+    DETACH DELETE event
+    DETACH DELETE room
+    """
+
+    conn = Sips.conn()
+
+    res = Sips.query!(conn, query, %{id: id})
+
+    case res do
+      %Sips.Response{stats: %{"nodes-deleted" => count}} ->
+        count >= 1
+
+      _ ->
+        false
+    end
+  end
+
   def create_multiple_exams(dataset, id) do
     main_conn = Sips.conn()
 
@@ -1128,7 +1149,7 @@ defmodule Necto do
             RETURN exam',
             'MATCH (branch:Branch)
             WHERE branch.id STARTS WITH rel.branch + "@"
-            with branch, rel, exam
+            with branch, rel,exam
             MATCH (sem:Semester{sid: rel.semester})
             CREATE (sem)-[:participates]->(exam)<-[:participates]-(branch)
             RETURN exam',

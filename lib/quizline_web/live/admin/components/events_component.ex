@@ -63,6 +63,11 @@ defmodule QuizlineWeb.Admin.SessionLive.EventsComponent do
     {:noreply, socket}
   end
 
+  def handle_event("delete-event", %{"id" => id}, socket) do
+    send(self(), %{delete_event: id})
+    {:noreply, socket}
+  end
+
   def handle_event("deselect-event", _, socket) do
     send(self(), %{selected_event: nil})
     {:noreply, socket}
