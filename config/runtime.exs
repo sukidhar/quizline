@@ -1,125 +1,6 @@
 import Config
 
-# config/runtime.exs is executed for all environments, including
-# during releases. It is executed after compilation and before the
-# system starts, so it is typically used to load production configuration
-# and secrets from environment variables or elsewhere. Do not define
-# any compile-time configuration in here, as it won't be applied.
-# The block below contains prod specific runtime configuration.
-
-# Start the phoenix server if environment is set and running in a release
-if System.get_env("PHX_SERVER") && System.get_env("RELEASE_NAME") do
-  config :quizline, QuizlineWeb.Endpoint, server: true
-end
-
-if config_env() == :prod or config_env() == :dev do
-  # Configuring the mailer
-  config :quizline, Quizline.Mailer,
-    adapter: Swoosh.Adapters.Sendgrid,
-    api_key: System.get_env("SENDGRID_API_KEY")
-
-  config :swoosh, :api_client, Swoosh.ApiClient.Finch
-end
-
-if config_env() == :prod do
-  # The secret key base is used to sign/encrypt cookies and other secrets.
-  # A default value is used in config/dev.exs and config/test.exs but you
-  # want to use a different value for prod and you most likely don't want
-  # to check this value into version control, so we use an environment
-  # variable instead.
-  secret_key_base =
-    System.get_env("SECRET_KEY_BASE") ||
-      raise """
-      environment variable SECRET_KEY_BASE is missing.
-      You can generate one by calling: mix phx.gen.secret
-      """
-
-  host = System.get_env("PHX_HOST") || "example.com"
-  port = String.to_integer(System.get_env("PORT") || "4000")
-
-  config :quizline, QuizlineWeb.Endpoint,
-    url: [host: host, port: 443],
-    http: [
-      # Enable IPv6 and bind on all interfaces.
-      # Set it to  {0, 0, 0, 0, 0, 0, 0, 1} for local network only access.
-      # See the documentation on https://hexdocs.pm/plug_cowboy/Plug.Cowboy.html
-      # for details about using IPv6 vs IPv4 and loopback vs public addresses.
-      ip: {0, 0, 0, 0, 0, 0, 0, 0},
-      port: port
-    ],
-    secret_key_base: secret_key_base
-
-  # ## Using releases
-  #
-  # If you are doing OTP releases, you need to instruct Phoenix
-  # to start each relevant endpoint:
-  #
-  #     config :quizline, QuizlineWeb.Endpoint, server: true
-  #
-  # Then you can assemble a release by calling `mix release`.
-  # See `mix help release` for more information.
-
-  # ## Configuring the mailer
-  #
-  # In production you need to configure the mailer to use a different adapter.
-  # Also, you may need to configure the Swoosh API client of your choice if you
-  # are not using SMTP. Here is an example of the configuration:
-  #
-  #     config :quizline, Quizline.Mailer,
-  #       adapter: Swoosh.Adapters.Mailgun,
-  #       api_key: System.get_env("MAILGUN_API_KEY"),
-  #       domain: System.get_env("MAILGUN_DOMAIN")
-  #
-  # For this example you need include a HTTP client required by Swoosh API client.
-  # Swoosh supports Hackney and Finch out of the box:
-  #
-  #     config :swoosh, :api_client, Swoosh.ApiClient.Hackney
-  #
-  # See https://hexdocs.pm/swoosh/Swoosh.html#module-installation for details.
-end
-
 defmodule ConfigParser do
-  def parse_stun_servers(""), do: []
-
-  def parse_stun_servers(servers) do
-    servers
-    |> String.split(",")
-    |> Enum.map(fn server ->
-      with [addr, port] <- String.split(server, ":"),
-           {port, ""} <- Integer.parse(port) do
-        %{server_addr: parse_addr(addr), server_port: port}
-      else
-        _ -> raise("Bad STUN server format. Expected addr:port, got: #{inspect(server)}")
-      end
-    end)
-  end
-
-  def parse_turn_servers(""), do: []
-
-  def parse_turn_servers(servers) do
-    servers
-    |> String.split(",")
-    |> Enum.map(fn server ->
-      with [addr, port, username, password, proto] when proto in ["udp", "tcp", "tls"] <-
-             String.split(server, ":"),
-           {port, ""} <- Integer.parse(port) do
-        %{
-          server_addr: parse_addr(addr),
-          server_port: port,
-          username: username,
-          password: password,
-          relay_type: String.to_atom(proto)
-        }
-      else
-        _ ->
-          raise("""
-          "Bad TURN server format. Expected addr:port:username:password:proto, got: \
-          #{inspect(server)}
-          """)
-      end
-    end)
-  end
-
   def parse_integrated_turn_ip(ip) do
     with {:ok, parsed_ip} <- ip |> to_charlist() |> :inet.parse_address() do
       parsed_ip
@@ -129,24 +10,6 @@ defmodule ConfigParser do
         Bad integrated TURN IP format. Expected IPv4, got: \
         #{inspect(ip)}
         """)
-    end
-  end
-
-  def parse_use_integrated_turn("true"), do: true
-  def parse_use_integrated_turn("false"), do: false
-
-  def parse_use_integrated_turn(env) do
-    raise("""
-    Bad USE_INTEGRATED_TURN enviroment variable value. Expected "true" or "false", got: \
-    #{inspect(env)}
-    """)
-  end
-
-  def parse_addr(addr) do
-    case :inet.parse_address(String.to_charlist(addr)) do
-      {:ok, ip} -> ip
-      # FQDN?
-      {:error, :einval} -> addr
     end
   end
 
@@ -180,11 +43,6 @@ defmodule ConfigParser do
 end
 
 config :quizline,
-  stun_servers:
-    System.get_env("STUN_SERVERS", "64.233.163.127:19302") |> ConfigParser.parse_stun_servers(),
-  turn_servers: System.get_env("TURN_SERVERS", "") |> ConfigParser.parse_turn_servers(),
-  use_integrated_turn:
-    System.get_env("USE_INTEGRATED_TURN", "false") |> ConfigParser.parse_use_integrated_turn(),
   integrated_turn_ip:
     System.get_env("INTEGRATED_TURN_IP", "127.0.0.1") |> ConfigParser.parse_integrated_turn_ip(),
   integrated_turn_port_range:
