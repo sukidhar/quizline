@@ -5,7 +5,7 @@ defmodule QuizlineWeb.VideoRoomChannel do
   @impl true
   def join("video_room:" <> room_id, _payload, socket) do
     case :global.whereis_name(room_id) do
-      :undefined -> Quizline.VideoRoom.start(room_id, name: {:global, room_id})
+      :undefined -> Quizline.ExamRoom.start(room_id, name: {:global, room_id})
       pid -> {:ok, pid}
     end
     |> case do
