@@ -1,12 +1,15 @@
-defmodule QuizlineWeb.VideoRoomChannel do
+defmodule QuizlineWeb.ExamRoomChannel do
   use QuizlineWeb, :channel
   require Logger
 
   @impl true
-  def join("video_room:" <> room_id, _payload, socket) do
+  def join("exam_room:" <> room_id, _payload, socket) do
     case :global.whereis_name(room_id) do
-      :undefined -> Quizline.ExamRoom.start(room_id, name: {:global, room_id})
-      pid -> {:ok, pid}
+      :undefined ->
+        Quizline.ExamRoom.start(room_id, name: {:global, room_id})
+
+      pid ->
+        {:ok, pid}
     end
     |> case do
       {:ok, room_pid} ->

@@ -25,7 +25,8 @@ import "phoenix_html";
 import { Socket } from "phoenix";
 import { LiveSocket } from "phoenix_live_view";
 import topbar from "../vendor/topbar";
-import "./user_socket.js";
+import userSocket from "./user_socket";
+import { Room, UserType } from "./exam_room/exam_room";
 // import picker from "./calender";
 
 let Hooks = {};
@@ -46,7 +47,6 @@ window.addEventListener("phx:page-loading-stop", (info) => topbar.hide());
 // connect if there are any LiveViews on the page
 liveSocket.connect();
 // liveSocket.enableDebug();
-
 // expose liveSocket on window for web console debug logs and latency simulation:
 liveSocket.enableDebug();
 // liveSocket.enableLatencySim(500); // enabled for duration of browser session
@@ -157,6 +157,17 @@ Hooks.subjectPressed = {
 
       console.log();
     });
+  },
+};
+let room = null;
+Hooks.VideoRoomView = {
+  mounted() {
+    room = new Room(
+      userSocket,
+      this.el.dataset.room_id || "hello",
+      UserType.invigilator
+    );
+    room.init();
   },
 };
 

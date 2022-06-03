@@ -25,7 +25,7 @@ defmodule QuizlineWeb.Router do
   scope "/", QuizlineWeb do
     pipe_through [:browser, :auth]
 
-    live "/exam/:room", ExamRoomLive
+    live "/exam/:room", User.Invigilator.ExamRoomLive
 
     live "/auth", User.AuthLive
 
