@@ -13,7 +13,7 @@ defmodule Quizline.ExamRoom do
   require Membrane.Logger
   require OpenTelemetry.Tracer, as: Tracer
 
-  @mix_env Mix.env()
+  @mix_env Mix.env(:dev)
 
   def start(init_arg, opts) do
     GenServer.start(__MODULE__, init_arg, opts)
@@ -30,7 +30,7 @@ defmodule Quizline.ExamRoom do
     turn_mock_ip = Application.fetch_env!(:quizline, :integrated_turn_ip)
     turn_ip = if @mix_env == :prod, do: {0, 0, 0, 0}, else: turn_mock_ip
 
-    trace_ctx = create_context("room:#{room_id}")
+    trace_ctx = create_context("exam_room:#{room_id}")
 
     rtc_engine_options = [
       id: room_id,

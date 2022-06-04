@@ -93,3 +93,7 @@
 .close-button{
   @apply stroke-gray-400 bg-white
 }
+
+.flip-horizontally {
+  transform: scaleX(-1);
+}

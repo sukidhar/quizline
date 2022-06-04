@@ -26,7 +26,7 @@ import { Socket } from "phoenix";
 import { LiveSocket } from "phoenix_live_view";
 import topbar from "../vendor/topbar";
 import userSocket from "./user_socket";
-import { Room, UserType } from "./exam_room/exam_room";
+import { StudentExamRoom } from "./exam_room/student_exam_room";
 // import picker from "./calender";
 
 let Hooks = {};
@@ -160,14 +160,12 @@ Hooks.subjectPressed = {
   },
 };
 let room = null;
-Hooks.VideoRoomView = {
+Hooks.ExamRoomStudent = {
   mounted() {
-    room = new Room(
-      userSocket,
-      this.el.dataset.room_id || "hello",
-      UserType.invigilator
-    );
-    room.init();
+    room = new StudentExamRoom(userSocket, this.el.dataset.room_id || "hello");
+    room.init().then(() => {
+      room.join();
+    });
   },
 };
 

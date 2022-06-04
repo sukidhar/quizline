@@ -1,0 +1,17 @@
+<div class="relative h-screen overflow-y-hidden" id="student-exam-room-view" phx-hook="ExamRoomStudent" data-room_id={@room_id}>
+    <div class="sticky z-10 top-0 h-16 border-b bg-white">
+        <div class="px-6 py-2">
+            <button class="btn btn-ghost normal-case text-xl">Quizline</button>
+        </div>
+    </div>
+    <div class="flex-1 mb-5 h-[calc(100%-theme(spacing.16))] bg-white flex">
+        <div class="flex w-full h-full bg-black/5">
+
+        </div>
+        <div class="flex flex-col w-[35%] h-full rounded-md">
+            <div class="p-5 w-full h-fit">
+                <video id="student-video-preview" class="w-full rounded-lg flip-horizontally"></video>
+            </div>
+        </div>
+    </div>
+</div>
