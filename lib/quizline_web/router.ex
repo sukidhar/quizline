@@ -27,6 +27,8 @@ defmodule QuizlineWeb.Router do
 
     live "/exam/:room", User.Student.ExamRoomLive
 
+    live "/exam/i/:room", User.Invigilator.ExamRoomLive
+
     live "/auth", User.AuthLive
 
     live "/set-pw/:token", User.PasswordLive

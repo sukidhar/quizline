@@ -27,6 +27,7 @@ import { LiveSocket } from "phoenix_live_view";
 import topbar from "../vendor/topbar";
 import userSocket from "./user_socket";
 import { StudentExamRoom } from "./exam_room/student_exam_room";
+import { InvigilatorExamRoom } from "./exam_room/invigilator_exam_room";
 // import picker from "./calender";
 
 let Hooks = {};
@@ -166,6 +167,16 @@ Hooks.ExamRoomStudent = {
     room.init().then(() => {
       room.join();
     });
+  },
+};
+
+Hooks.InvigilatorRoomView = {
+  mounted() {
+    room = new InvigilatorExamRoom(
+      userSocket,
+      this.el.dataset.room_id || "hello"
+    );
+    room.init();
   },
 };
 

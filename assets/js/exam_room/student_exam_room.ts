@@ -31,6 +31,9 @@ export class StudentExamRoom {
       window.location.reload();
     });
 
+    this.webrtcSocketRefs.push(this.socket.onError(this.leave));
+    this.webrtcSocketRefs.push(this.socket.onClose(this.leave));
+
     this.webrtc = new MembraneWebRTC({
       callbacks: {
         onSendMediaEvent: (mediaEvent: SerializedMediaEvent) => {
@@ -138,5 +141,11 @@ export class StudentExamRoom {
 
   private handleError = (message: String = "can't connect to server") => {
     console.log(message);
+  };
+
+  private leave = () => {
+    this.webrtc.leave();
+    this.webrtcChannel.leave();
+    this.socketOff();
   };
 }
