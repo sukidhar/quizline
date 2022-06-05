@@ -26,3 +26,8 @@ export const BANDWIDTH_LIMITS = {
   video: 10 * MBps,
   audio: 1 * MBps,
 };
+
+type MediaStreams = {
+  audioStream: MediaStream | null;
+  videoStream: MediaStream | null;
+};

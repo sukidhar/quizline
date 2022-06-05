@@ -1,3 +1,15 @@
-<div class="video-room" id="exam-room-view" phx-hook="InvigilatorRoomView" data-room_id={@room_id}>
-    
+<div class="relative h-screen overflow-y-hidden" id="exam-room-view" phx-hook="InvigilatorRoomView" data-room_id={@room_id}>
+    <div class="sticky z-10 top-0 h-16 border-b bg-white">
+        <div class="px-6 py-2">
+            <button class="btn btn-ghost normal-case text-xl">Quizline</button>
+        </div>
+    </div>
+    <div class="flex-1 mb-5 h-[calc(100%-theme(spacing.16))] bg-white flex">
+        <div id="grid-holder" class="flex w-full h-full" phx-update="ignore">
+            <div id="streams-container" class="remote-grid grid w-full h-fit grid-cols-4 bg-white gap-4 p-5 overflow-y-auto"></div>
+        </div>
+        <div class="flex flex-col w-[35%] h-full rounded-md border-l-[1px]">
+            
+        </div>
+    </div>
 </div>

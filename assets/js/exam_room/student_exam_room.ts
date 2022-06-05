@@ -1,5 +1,5 @@
 import { AUDIO_TRACK_CONSTRAINTS, VIDEO_TRACK_CONSTRAINTS } from "./constants";
-import { Socket } from "phoenix";
+import { Socket, Push } from "phoenix";
 import {
   MembraneWebRTC,
   Peer,
@@ -125,7 +125,7 @@ export class StudentExamRoom {
     video.srcObject = this.localVideoStream;
     video.style.height = video.style.width;
 
-    await this.webrtcChannel.join();
+    await this.phoenixChannelPushResult(this.webrtcChannel.join());
   };
 
   public join = () => {
@@ -147,5 +147,13 @@ export class StudentExamRoom {
     this.webrtc.leave();
     this.webrtcChannel.leave();
     this.socketOff();
+  };
+
+  private phoenixChannelPushResult = async (push: Push): Promise<any> => {
+    return new Promise((resolve, reject) => {
+      push
+        .receive("ok", (response: any) => resolve(response))
+        .receive("error", (response: any) => reject(response));
+    });
   };
 }
