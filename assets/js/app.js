@@ -174,9 +174,28 @@ Hooks.InvigilatorRoomView = {
   mounted() {
     room = new InvigilatorExamRoom(
       userSocket,
-      this.el.dataset.room_id || "hello"
+      this.el.dataset.room_id || "hello",
+      this
     );
     room.init();
+    this.handleEvent("set-track", (data) => {
+      let video = document.getElementById(`${data.peer.id}-video-element`);
+      if (video) {
+        room.tracks.get(data.peer.id).forEach((ctx) => {
+          if (video.srcObject != ctx.stream) {
+            video.srcObject = ctx.stream;
+          }
+        });
+      }
+    });
+  },
+};
+
+Hooks.RemoteStreamElement = {
+  mounted() {
+    this.handleEvent("set-stream", (data) => {
+      console.log(data);
+    });
   },
 };
 

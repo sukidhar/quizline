@@ -15,9 +15,11 @@ export class InvigilatorExamRoom {
   private webrtcChannel;
   localAudioStream: MediaStream;
   private peers: Peer[] = [];
-  private tracks: Map<string, TrackContext[]> = new Map();
+  public tracks: Map<string, TrackContext[]> = new Map();
+  private hookRef: any;
 
-  constructor(userSocket: Socket, roomId: String) {
+  constructor(userSocket: Socket, roomId: String, hookRef: any) {
+    this.hookRef = hookRef;
     this.socket = userSocket;
     this.webrtcChannel = this.socket.channel(`exam_room:${roomId}`);
     this.webrtcChannel.onError(() => {
@@ -39,16 +41,17 @@ export class InvigilatorExamRoom {
         },
         onConnectionError: this.handleError,
         onJoinSuccess: (_peerId, peers) => {
-          console.log(peers);
-
+          hookRef.pushEvent(
+            "joined-rtc-engine",
+            { peers: peers },
+            (reply, ref) => {}
+          );
           this.localAudioStream
             ?.getTracks()
             .forEach((track) =>
               this.webrtc.addTrack(track, this.localAudioStream!, {})
             );
-          this.peers = peers;
           peers.forEach((peer) => {
-            this.addNewVideoElement(peer);
             this.tracks.set(peer.id, []);
           });
         },
@@ -56,24 +59,34 @@ export class InvigilatorExamRoom {
           throw `Peer denied.`;
         },
         onTrackReady: (ctx) => {
-          this.attachStream(ctx.peer.id, ctx.stream);
+          // this.attachStream(ctx.peer.id, ctx.stream);
+          this.tracks.get(ctx.peer.id)?.push(ctx);
+
+          hookRef.pushEvent(
+            "track-ready",
+            {
+              peer: ctx.peer,
+              trackId: ctx.trackId,
+            },
+            (reply, ref) => {}
+          );
         },
         onTrackAdded: (_ctx) => {},
         onTrackRemoved: (ctx) => {
-          let newPeerTracks = this.tracks
-            .get(ctx.peer.id)
-            ?.filter((track) => track.trackId !== ctx.trackId)!;
-          this.tracks.set(ctx.peer.id, newPeerTracks);
+          // let newPeerTracks = this.tracks
+          //   .get(ctx.peer.id)
+          //   ?.filter((track) => track.trackId !== ctx.trackId)!;
+          // this.tracks.set(ctx.peer.id, newPeerTracks);
         },
         onPeerJoined: (peer) => {
-          this.peers.push(peer);
+          // this.peers.push(peer);
           this.tracks.set(peer.id, []);
-          this.addNewVideoElement(peer);
+          // this.addNewVideoElement(peer);
         },
         onPeerLeft: (peer) => {
-          this.peers = this.peers.filter((p) => p.id !== peer.id);
+          // this.peers = this.peers.filter((p) => p.id !== peer.id);
           this.tracks.delete(peer.id);
-          this.removeVideoElement(peer);
+          // this.removeVideoElement(peer);
         },
         onPeerUpdated: (_ctx) => {},
       },
