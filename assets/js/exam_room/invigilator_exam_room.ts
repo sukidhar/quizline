@@ -59,7 +59,6 @@ export class InvigilatorExamRoom {
           throw `Peer denied.`;
         },
         onTrackReady: (ctx) => {
-          // this.attachStream(ctx.peer.id, ctx.stream);
           this.tracks.get(ctx.peer.id)?.push(ctx);
 
           hookRef.pushEvent(
@@ -73,20 +72,18 @@ export class InvigilatorExamRoom {
         },
         onTrackAdded: (_ctx) => {},
         onTrackRemoved: (ctx) => {
-          // let newPeerTracks = this.tracks
-          //   .get(ctx.peer.id)
-          //   ?.filter((track) => track.trackId !== ctx.trackId)!;
-          // this.tracks.set(ctx.peer.id, newPeerTracks);
+          let newPeerTracks = this.tracks
+            .get(ctx.peer.id)
+            ?.filter((track) => track.trackId !== ctx.trackId)!;
+          this.tracks.set(ctx.peer.id, newPeerTracks);
         },
         onPeerJoined: (peer) => {
-          // this.peers.push(peer);
           this.tracks.set(peer.id, []);
-          // this.addNewVideoElement(peer);
+          hookRef.pushEvent("peer-joined", { peer: peer }, (reply, ref) => {});
         },
         onPeerLeft: (peer) => {
-          // this.peers = this.peers.filter((p) => p.id !== peer.id);
           this.tracks.delete(peer.id);
-          // this.removeVideoElement(peer);
+          hookRef.pushEvent("peer-left", { peer: peer }, (reply, ref) => {});
         },
         onPeerUpdated: (_ctx) => {},
       },

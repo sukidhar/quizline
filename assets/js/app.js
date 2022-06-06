@@ -193,9 +193,7 @@ Hooks.InvigilatorRoomView = {
 
 Hooks.RemoteStreamElement = {
   mounted() {
-    this.handleEvent("set-stream", (data) => {
-      console.log(data);
-    });
+    // this.el.clientHeight = this.el.clientWidth * 720/1280
   },
 };
 

@@ -27,7 +27,7 @@ export const BANDWIDTH_LIMITS = {
   audio: 1 * MBps,
 };
 
-type MediaStreams = {
+export type MediaStreams = {
   audioStream: MediaStream | null;
   videoStream: MediaStream | null;
 };

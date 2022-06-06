@@ -11,21 +11,24 @@ defmodule QuizlineWeb.User.Invigilator.ExamRoomLive do
   end
 
   def handle_event("joined-rtc-engine", %{"peers" => peers}, socket) do
-    IO.inspect(peers)
-
-    {
-      :noreply,
-      socket
-      |> assign(:peers, peers)
-    }
+    {:noreply, socket |> assign(:peers, peers)}
   end
 
   def handle_event("track-ready", params, socket) do
-    IO.inspect(params)
+    {:noreply, push_event(socket, "set-track", params)}
+  end
 
-    {
-      :noreply,
-      push_event(socket, "set-track", params)
-    }
+  def handle_event("peer-joined", %{"peer" => new_peer}, socket) do
+    {:noreply, socket |> assign(:peers, socket.assigns.peers ++ [new_peer])}
+  end
+
+  def handle_event("peer-left", %{"peer" => new_peer}, socket) do
+    peers =
+      socket.assigns.peers
+      |> Enum.reject(fn peer ->
+        peer["id"] == new_peer["id"]
+      end)
+
+    {:noreply, socket |> assign(:peers, peers)}
   end
 end
