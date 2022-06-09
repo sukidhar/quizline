@@ -1,38 +1,161 @@
-<div class="flex flex-col h-full w-full bg-white">
+<div class="relative h-screen overflow-y-hidden">
     <div class="navbar bg-white border-b-[1px] z-50">
         <div class="navbar-start">
           <a class="btn btn-ghost normal-case text-xl">Users</a>
         </div>
         <div class="navbar-end">
-            <button class="btn btn-outline gap-2 scale-90" phx-target={@myself} phx-click="show-add-form">
-                <p class="translate-y-[0.45px]">
-                    ADD
-                </p>
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" class="scale-90" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M12 2C10.0222 2 8.08879 2.58649 6.4443 3.6853C4.79981 4.78412 3.51809 6.3459 2.76121 8.17317C2.00433 10.0004 1.8063 12.0111 2.19215 13.9509C2.578 15.8907 3.53041 17.6725 4.92894 19.0711C6.32746 20.4696 8.10929 21.422 10.0491 21.8079C11.9889 22.1937 13.9996 21.9957 15.8268 21.2388C17.6541 20.4819 19.2159 19.2002 20.3147 17.5557C21.4135 15.9112 22 13.9778 22 12C22 10.6868 21.7413 9.38642 21.2388 8.17317C20.7363 6.95991 19.9997 5.85752 19.0711 4.92893C18.1425 4.00035 17.0401 3.26375 15.8268 2.7612C14.6136 2.25866 13.3132 2 12 2ZM12 20C10.4178 20 8.87104 19.5308 7.55544 18.6518C6.23985 17.7727 5.21447 16.5233 4.60897 15.0615C4.00347 13.5997 3.84504 11.9911 4.15372 10.4393C4.4624 8.88743 5.22433 7.46197 6.34315 6.34315C7.46197 5.22433 8.88743 4.4624 10.4393 4.15372C11.9911 3.84504 13.5997 4.00346 15.0615 4.60896C16.5233 5.21447 17.7727 6.23984 18.6518 7.55544C19.5308 8.87103 20 10.4177 20 12C20 14.1217 19.1572 16.1566 17.6569 17.6569C16.1566 19.1571 14.1217 20 12 20ZM16 11H13V8C13 7.73478 12.8946 7.48043 12.7071 7.29289C12.5196 7.10536 12.2652 7 12 7C11.7348 7 11.4804 7.10536 11.2929 7.29289C11.1054 7.48043 11 7.73478 11 8V11H8C7.73479 11 7.48043 11.1054 7.2929 11.2929C7.10536 11.4804 7 11.7348 7 12C7 12.2652 7.10536 12.5196 7.2929 12.7071C7.48043 12.8946 7.73479 13 8 13H11V16C11 16.2652 11.1054 16.5196 11.2929 16.7071C11.4804 16.8946 11.7348 17 12 17C12.2652 17 12.5196 16.8946 12.7071 16.7071C12.8946 16.5196 13 16.2652 13 16V13H16C16.2652 13 16.5196 12.8946 16.7071 12.7071C16.8946 12.5196 17 12.2652 17 12C17 11.7348 16.8946 11.4804 16.7071 11.2929C16.5196 11.1054 16.2652 11 16 11Z"/>
-                </svg>
-            </button>
+            <div class="dropdown dropdown-end">
+                <label tabindex="0" class="btn m-1 btn-outline gap-2 scale-90">
+                    <p class="translate-y-[0.45px]">
+                        ADD
+                    </p>
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" class="scale-90" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 2C10.0222 2 8.08879 2.58649 6.4443 3.6853C4.79981 4.78412 3.51809 6.3459 2.76121 8.17317C2.00433 10.0004 1.8063 12.0111 2.19215 13.9509C2.578 15.8907 3.53041 17.6725 4.92894 19.0711C6.32746 20.4696 8.10929 21.422 10.0491 21.8079C11.9889 22.1937 13.9996 21.9957 15.8268 21.2388C17.6541 20.4819 19.2159 19.2002 20.3147 17.5557C21.4135 15.9112 22 13.9778 22 12C22 10.6868 21.7413 9.38642 21.2388 8.17317C20.7363 6.95991 19.9997 5.85752 19.0711 4.92893C18.1425 4.00035 17.0401 3.26375 15.8268 2.7612C14.6136 2.25866 13.3132 2 12 2ZM12 20C10.4178 20 8.87104 19.5308 7.55544 18.6518C6.23985 17.7727 5.21447 16.5233 4.60897 15.0615C4.00347 13.5997 3.84504 11.9911 4.15372 10.4393C4.4624 8.88743 5.22433 7.46197 6.34315 6.34315C7.46197 5.22433 8.88743 4.4624 10.4393 4.15372C11.9911 3.84504 13.5997 4.00346 15.0615 4.60896C16.5233 5.21447 17.7727 6.23984 18.6518 7.55544C19.5308 8.87103 20 10.4177 20 12C20 14.1217 19.1572 16.1566 17.6569 17.6569C16.1566 19.1571 14.1217 20 12 20ZM16 11H13V8C13 7.73478 12.8946 7.48043 12.7071 7.29289C12.5196 7.10536 12.2652 7 12 7C11.7348 7 11.4804 7.10536 11.2929 7.29289C11.1054 7.48043 11 7.73478 11 8V11H8C7.73479 11 7.48043 11.1054 7.2929 11.2929C7.10536 11.4804 7 11.7348 7 12C7 12.2652 7.10536 12.5196 7.2929 12.7071C7.48043 12.8946 7.73479 13 8 13H11V16C11 16.2652 11.1054 16.5196 11.2929 16.7071C11.4804 16.8946 11.7348 17 12 17C12.2652 17 12.5196 16.8946 12.7071 16.7071C12.8946 16.5196 13 16.2652 13 16V13H16C16.2652 13 16.5196 12.8946 16.7071 12.7071C16.8946 12.5196 17 12.2652 17 12C17 11.7348 16.8946 11.4804 16.7071 11.2929C16.5196 11.1054 16.2652 11 16 11Z"/>
+                    </svg>
+                </label>
+                <ul tabindex="0" class="dropdown-content menu p-2 shadow bg-base-100 rounded-box w-52">
+                  <li><a phx-click={show_form(:invigilator)} phx-value-type={:invigilator} phx-target={@myself}>
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M15.71 12.7096C16.6904 11.9383 17.406 10.8806 17.7572 9.68358C18.1085 8.4866 18.0779 7.2099 17.6698 6.0311C17.2617 4.85231 16.4963 3.83003 15.4801 3.10649C14.4639 2.38296 13.2474 1.99414 12 1.99414C10.7525 1.99414 9.53611 2.38296 8.51993 3.10649C7.50374 3.83003 6.73834 4.85231 6.33021 6.0311C5.92208 7.2099 5.89151 8.4866 6.24276 9.68358C6.59401 10.8806 7.3096 11.9383 8.29 12.7096C6.61007 13.3827 5.14428 14.499 4.04889 15.9396C2.95349 17.3801 2.26956 19.0909 2.07 20.8896C2.05555 21.021 2.06711 21.1538 2.10402 21.2807C2.14093 21.4075 2.20246 21.5259 2.28511 21.629C2.45202 21.8371 2.69478 21.9705 2.96 21.9996C3.22521 22.0288 3.49116 21.9514 3.69932 21.7845C3.90749 21.6176 4.04082 21.3749 4.07 21.1096C4.28958 19.1548 5.22168 17.3494 6.68822 16.0384C8.15475 14.7274 10.0529 14.0027 12.02 14.0027C13.9871 14.0027 15.8852 14.7274 17.3518 16.0384C18.8183 17.3494 19.7504 19.1548 19.97 21.1096C19.9972 21.3554 20.1144 21.5823 20.2991 21.7467C20.4838 21.911 20.7228 22.0011 20.97 21.9996H21.08C21.3421 21.9695 21.5817 21.8369 21.7466 21.6309C21.9114 21.4248 21.9881 21.162 21.96 20.8996C21.7595 19.0958 21.0719 17.3806 19.9708 15.9378C18.8698 14.4951 17.3969 13.3791 15.71 12.7096ZM12 11.9996C11.2089 11.9996 10.4355 11.765 9.77772 11.3255C9.11992 10.886 8.60723 10.2613 8.30448 9.53037C8.00173 8.79947 7.92251 7.9952 8.07686 7.21928C8.2312 6.44335 8.61216 5.73062 9.17157 5.17121C9.73098 4.6118 10.4437 4.23084 11.2196 4.0765C11.9956 3.92215 12.7998 4.00137 13.5307 4.30412C14.2616 4.60687 14.8863 5.11956 15.3259 5.77736C15.7654 6.43515 16 7.20851 16 7.99964C16 9.0605 15.5786 10.0779 14.8284 10.8281C14.0783 11.5782 13.0609 11.9996 12 11.9996Z" fill="black"/>
+                    </svg>
+                    Invigilator                                       
+                  </a></li>
+                  <li><a phx-click={show_form(:student)} phx-value-type={:student} phx-target={@myself} >
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M20.1799 10.19C19.4606 10.0598 18.7308 9.99624 17.9999 10C17.5799 10 17.1699 10 16.7599 10.08C16.2495 9.39888 15.5979 8.83605 14.8499 8.43C15.4924 7.72825 15.8492 6.81148 15.8499 5.86C15.8499 4.83626 15.4432 3.85446 14.7193 3.13057C13.9954 2.40668 13.0136 2 11.9899 2C10.9662 2 9.98435 2.40668 9.26046 3.13057C8.53657 3.85446 8.12989 4.83626 8.12989 5.86C8.13062 6.81148 8.48734 7.72825 9.12989 8.43C8.38628 8.83816 7.73581 9.39668 7.21989 10.07C6.82989 10 6.41989 10 5.99989 10C5.26831 10.0028 4.53856 10.0731 3.81989 10.21C3.58693 10.2526 3.37665 10.3765 3.22649 10.5596C3.07633 10.7427 2.99603 10.9732 2.99989 11.21V19.46C2.99965 19.6069 3.03178 19.7521 3.09401 19.8852C3.15623 20.0182 3.24701 20.136 3.35989 20.23C3.47206 20.3246 3.60367 20.3933 3.74538 20.4313C3.8871 20.4694 4.03544 20.4757 4.17989 20.45C4.7783 20.3197 5.38766 20.246 5.99989 20.23C7.93698 20.2279 9.83205 20.7947 11.4499 21.86L11.5799 21.91C11.7125 21.9676 11.8553 21.9982 11.9999 22C12.0953 21.9988 12.1899 21.9819 12.2799 21.95H12.3499L12.4799 21.9C14.1131 20.8073 16.0348 20.2259 17.9999 20.23C18.6109 20.2328 19.2202 20.2931 19.8199 20.41C19.9643 20.4357 20.1127 20.4294 20.2544 20.3913C20.3961 20.3533 20.5277 20.2846 20.6399 20.19C20.7528 20.096 20.8436 19.9782 20.9058 19.8452C20.968 19.7121 21.0001 19.5669 20.9999 19.42V11.17C20.999 10.9366 20.9166 10.7109 20.7668 10.5319C20.6171 10.353 20.4094 10.232 20.1799 10.19ZM11.9999 4C12.4683 4.03442 12.9064 4.2448 13.2262 4.58888C13.5459 4.93297 13.7236 5.38529 13.7236 5.855C13.7236 6.32471 13.5459 6.77703 13.2262 7.12112C12.9064 7.4652 12.4683 7.67558 11.9999 7.71C11.5314 7.67558 11.0934 7.4652 10.7736 7.12112C10.4539 6.77703 10.2762 6.32471 10.2762 5.855C10.2762 5.38529 10.4539 4.93297 10.7736 4.58888C11.0934 4.2448 11.5314 4.03442 11.9999 4ZM10.9999 19.33C9.43256 18.6055 7.72655 18.2302 5.99989 18.23C5.66989 18.23 5.33989 18.23 4.99989 18.28V12C5.83845 11.9062 6.68571 11.923 7.51989 12.05H7.62989C8.82149 12.269 9.96337 12.7027 10.9999 13.33V19.33ZM11.9999 11.6C11.5552 11.3435 11.0942 11.1163 10.6199 10.92H10.5599C10.2299 10.79 9.89989 10.66 9.55989 10.56C10.2542 10.0074 11.1126 9.70132 11.9999 9.69C12.8849 9.69561 13.743 9.99455 14.4399 10.54C13.591 10.805 12.773 11.1604 11.9999 11.6ZM18.9999 18.28C16.9465 18.0737 14.8753 18.4189 12.9999 19.28V13.28C14.0383 12.6688 15.1809 12.2552 16.3699 12.06H16.5699C17.3739 11.9348 18.1907 11.9146 18.9999 12V18.28Z" fill="black"/>
+                    </svg>
+                    Student
+                  </a></li>
+                </ul>
+              </div>
         </div>
     </div>
-    <%= if @show_add_form? do %> 
-        <div class="absolute h-full w-full z-40 flex justify-center items-center bg-black/10">
-            <div class="card bg-white shadow-md h-fit w-2/5 py-10 px-10">
-                <p class="font-bold text-2xl text-black">
-                    Create new user
+    <div id="student-add-form-container" class="absolute bg-black/20 h-full w-full items-center justify-center z-20 hidden">
+        <div class="flex card h-fit max-h-3/4 p-5 w-2/5 items-center bg-white">
+            <div class="flex w-full justify-center items-center mb-3">
+                <p class="text-2xl w-full px-5">
+                    Create new student
                 </p>
-                <.form let = {f} for={@changeset}, class="space-y-10 pb-5" phx-target={@myself} phx-change="form-change" phx-submit="form-submit">
-                    <%= floating_input f, :title, wrapper: ["relative"], placeholder: "Semseter Title", phx_debounce: 0%>
-                    <%= floating_input f, :sid, wrapper: ["relative"], placeholder: "ID",label: ["truncate w-full"], phx_debounce: 0%>
-                    <label class="label cursor-pointer">
-                        <span class="label-text text-base">Is a common sememster</span> 
-                        <%= checkbox f, :common?, class: "checkbox" %> 
-                    </label>
-                    <div class="flex gap-3">
-                        <button phx-target={@myself} type="button" phx-click="hide-add-form" class="btn btn-outline btn-error">Cancel</button>
-                        <button phx-target={@myself} type="submit" class="btn btn-outline btn-success">Submit</button>
-                    </div>
-                </.form>
+                <button phx-click={hide_form(:student)} phx-target={@myself} class="btn bg-white btn-sm btn-square btn-outline m-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
             </div>
+            <div class="flex justify-center items-center w-full p-5">
+                <p class="text-xl font-semibold">Create using</p>
+                <div class="flex-1"></div>
+                <div class="tabs tabs-boxed bg-inherit border-[0.5px]">
+                    <a class={if @form_mode == :file, do: "tab-active tab font-semibold", else: "tab font-semibold"} phx-click="set-form-mode" phx-value-type="file" phx-target={@myself}>File</a> 
+                    <a class={if @form_mode == :form, do: "tab-active tab font-semibold", else: "tab font-semibold"} phx-click="set-form-mode"  phx-value-type="form" phx-target={@myself}>Form</a> 
+                </div>
+            </div>
+            <.form let = {f} for={@student_changeset} id="event_form", class="flex flex-col w-full gap-y-10 pb-5 px-5 max-h-[3/5] overflow-y-auto" phx-target={@myself} phx-change="invigilator-change" phx-submit="invigilator-submit">
+                <div class="flex gap-2 w-full">
+                    <%= floating_input f, :first_name, wrapper: ["relative w-full"], phx_debounce: 0 %>
+                    <%= floating_input f, :last_name, wrapper: ["relative w-full"], phx_debounce: 0 %>
+                </div>
+                <%= floating_input f, :email, wrapper: ["relative"]%>
+                <%= hidden_input f, :branch, id: "branch-input-field", value: "getmefromsocket"  %> 
+                <div class="flex justify-center items-center">
+                    <p class="text-black font-semibold text-base">Select Branch</p>
+                    <div class="flex grow"></div>
+                    <div class="relative flex items-center text-gray-400 focus-within:text-cyan-400">
+                        <span class="absolute left-4 h-6 flex items-center pr-3 border-r border-gray-300">
+                        <svg xmlns="http://ww50w3.org/2000/svg" class="w-4 fill-current" viewBox="0 0 35.997 36.004">
+                            <path id="sub-search-icon" data-name="search" d="M35.508,31.127l-7.01-7.01a1.686,1.686,0,0,0-1.2-.492H26.156a14.618,14.618,0,1,0-2.531,2.531V27.3a1.686,1.686,0,0,0,.492,1.2l7.01,7.01a1.681,1.681,0,0,0,2.384,0l1.99-1.99a1.7,1.7,0,0,0,.007-2.391Zm-20.883-7.5a9,9,0,1,1,9-9A8.995,8.995,0,0,1,14.625,23.625Z"></path>
+                        </svg>
+                        </span>
+                        <input type="search" name="sub-search" id="sub-search-field" placeholder="Search here" class="w-full pl-14 pr-4 py-2.5 rounded-xl text-sm text-gray-600 outline-none border border-gray-300 focus:border-cyan-300 transition" phx-hook="searchBar" data-event="subject-search">
+                    </div>
+                </div>
+                <%= if is_nil(@selected_department) do  %>
+                    <div class="w-full h-fit">
+                        <div class="w-full overflow-x-auto hide-scroll z-50">
+                            <div class="flex gap-3 w-max">
+                                <%= for department <- (@departments || []) do  %>
+                                    <button type="button" id={"department-button-#{id_provider(department.title)}"}  phx-hook="DepartmentButton" data-event="select" data-dep-email={department.email} class="rounded-full bg-primary px-3 py-2 text-sm"><%= "#{department.title} - #{department.dep}" %></button>
+                                <% end %>
+                            </div>  
+                        </div>
+                        <%= error_tag f, :department %>
+                    </div>
+                <% else %> 
+                    <div class="flex items-center justify-center rounded-full bg-primary px-3 py-2 text-sm w-fit gap-2">
+                        <p><%= "#{@selected_department.title} - #{@selected_department.dep}" %></p>
+                        <button id="selected-department-button" type="button" phx-target={@myself} phx-hook="DepartmentButton" data-event="deselect"  data-dep-email={@selected_department.email} class="stroke-base-200 hover:stroke-primary-content hover:bg-primary hover:border-[1px] hover:border-primary-content rounded-full">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                        </button>
+                    </div>
+                <% end  %> 
+                <div class="flex flex-row-reverse">
+                    <button class="btn btn-outline btn-success" type="submit">
+                        Create
+                    </button>
+                </div>
+            </.form>
         </div>
-    <% end %>
+    </div>
+    <div id="invigilator-add-form-container" class="absolute bg-black/20 h-full w-full items-center justify-center z-20 hidden">
+        <div class="flex card h-fit max-h-3/4 p-5 w-2/5 items-center bg-white">
+            <div class="flex w-full justify-center items-center mb-3">
+                <p class="text-2xl w-full px-5">
+                    Create new invigilator
+                </p>
+                <button phx-click={hide_form(:invigilator)} phx-target={@myself} class="btn bg-white btn-sm btn-square btn-outline m-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+            </div>
+            <div class="flex justify-center items-center w-full p-5">
+                <p class="text-xl font-semibold">Create using</p>
+                <div class="flex-1"></div>
+                <div class="tabs tabs-boxed bg-inherit border-[0.5px]">
+                    <a class={if @form_mode == :file, do: "tab-active tab font-semibold", else: "tab font-semibold"} phx-click="set-form-mode" phx-value-type="file" phx-target={@myself}>File</a> 
+                    <a class={if @form_mode == :form, do: "tab-active tab font-semibold", else: "tab font-semibold"} phx-click="set-form-mode"  phx-value-type="form" phx-target={@myself}>Form</a> 
+                </div>
+            </div>
+            <.form let = {f} for={@invigilator_changeset} id="event_form", class="flex flex-col w-full gap-y-10 pb-5 px-5 max-h-[3/5] overflow-y-auto" phx-target={@myself} phx-change="invigilator-change" phx-submit="invigilator-submit">
+                <div class="flex w-full gap-2">
+                    <%= floating_input f, :first_name, wrapper: ["relative w-full"], phx_debounce: 0 %>
+                    <%= floating_input f, :last_name, wrapper: ["relative w-full"], phx_debounce: 0 %>
+                </div>
+                <%= floating_input f, :email, wrapper: ["relative"]%>
+                <%= hidden_input f, :department, id: "department-input-field", value: "getmefromsocket"  %> 
+                <div class="flex justify-center items-center">
+                    <p class="text-black font-semibold text-base">Select Department</p>
+                    <div class="flex grow"></div>
+                    <div class="relative flex items-center text-gray-400 focus-within:text-cyan-400">
+                        <span class="absolute left-4 h-6 flex items-center pr-3 border-r border-gray-300">
+                        <svg xmlns="http://ww50w3.org/2000/svg" class="w-4 fill-current" viewBox="0 0 35.997 36.004">
+                            <path id="sub-search-icon" data-name="search" d="M35.508,31.127l-7.01-7.01a1.686,1.686,0,0,0-1.2-.492H26.156a14.618,14.618,0,1,0-2.531,2.531V27.3a1.686,1.686,0,0,0,.492,1.2l7.01,7.01a1.681,1.681,0,0,0,2.384,0l1.99-1.99a1.7,1.7,0,0,0,.007-2.391Zm-20.883-7.5a9,9,0,1,1,9-9A8.995,8.995,0,0,1,14.625,23.625Z"></path>
+                        </svg>
+                        </span>
+                        <input type="search" name="sub-search" id="sub-search-field" placeholder="Search here" class="w-full pl-14 pr-4 py-2.5 rounded-xl text-sm text-gray-600 outline-none border border-gray-300 focus:border-cyan-300 transition" phx-hook="searchBar" data-event="subject-search">
+                    </div>
+                </div>
+                <%= if is_nil(@selected_department) do  %>
+                    <div class="w-full h-fit">
+                        <div class="w-full overflow-x-auto hide-scroll z-50">
+                            <div class="flex gap-3 w-max">
+                                <%= for department <- (@departments || []) do  %>
+                                    <button type="button" id={"department-button-#{id_provider(department.title)}"}  phx-hook="DepartmentButton" data-event="select" data-dep-email={department.email} class="rounded-full bg-primary px-3 py-2 text-sm"><%= "#{department.title} - #{department.dep}" %></button>
+                                <% end %>
+                            </div>  
+                        </div>
+                        <%= error_tag f, :department %>
+                    </div>
+                <% else %> 
+                    <div class="flex items-center justify-center rounded-full bg-primary px-3 py-2 text-sm w-fit gap-2">
+                        <p><%= "#{@selected_department.title} - #{@selected_department.dep}" %></p>
+                        <button id="selected-department-button" type="button" phx-target={@myself} phx-hook="DepartmentButton" data-event="deselect"  data-dep-email={@selected_department.email} class="stroke-base-200 hover:stroke-primary-content hover:bg-primary hover:border-[1px] hover:border-primary-content rounded-full">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                        </button>
+                    </div>
+                <% end  %> 
+                <div class="flex flex-row-reverse">
+                    <button class="btn btn-outline btn-success" type="submit">
+                        Create
+                    </button>
+                </div>
+            </.form>
+        </div>
+    </div>
 </div>

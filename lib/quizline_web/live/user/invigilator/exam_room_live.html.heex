@@ -6,10 +6,10 @@
     </div>
     <div class="flex-1 mb-5 h-[calc(100%-theme(spacing.16))] bg-white flex">
         <div id="grid-holder" class="flex w-full h-full">
-            <div id="streams-container" class="remote-grid grid w-full aspect-video grid-cols-4 bg-white gap-4 p-5 overflow-y-auto">
+            <div id="streams-container" class="remote-grid grid w-full h-fit grid-cols-4 bg-white gap-4 p-5 overflow-y-auto">
                 <%= for peer <- @peers do  %>
-                    <div class="h-fit w-full">
-                        <video id={"#{peer["id"]}-video-element"} autoplay playsinline class="min-h-full min-w-full bg-cover overflow-hidden" phx-hook="RemoteStreamElement"></video>
+                    <div class="aspect-video w-full">
+                        <video id={"#{peer["id"]}-video-element"} autoplay playsinline class="w-full h-full object-cover" phx-hook="RemoteStreamElement"></video>
                     </div>
                 <% end %> 
             </div>

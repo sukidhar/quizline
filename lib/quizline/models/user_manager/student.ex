@@ -19,8 +19,10 @@ defmodule Quizline.UserManager.Student do
 
   def changeset(user, params) do
     user
-    |> cast(params, [:reg_no, :first_name, :last_name, :email, :semester, :branch])
-    |> validate_required([:reg_no, :first_name, :last_name, :email, :semester, :branch])
+    |> cast(params, [:rid, :first_name, :last_name, :email])
+    |> cast_embed(:semester, with: &Quizline.SemesterManager.Semester.changeset/2, required: true)
+    |> cast_embed(:branch, with: &Quizline.DepartmentManager.branch_changeset/2, required: true)
+    |> validate_required([:rid, :first_name, :last_name, :email])
     |> put_change(:id, Ecto.UUID.generate())
   end
 end

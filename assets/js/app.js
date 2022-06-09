@@ -136,7 +136,27 @@ Hooks.searchBar = {
     };
   },
 };
-
+Hooks.DepartmentButton = {
+  mounted() {
+    this.el.addEventListener("click", () => {
+      let input_el = document.getElementById("department-input-field");
+      switch (this.el.dataset.event || "") {
+        case "select":
+          this.pushEvent("select-department", this.el.dataset, (reply, ref) => {
+            input_el.dispatchEvent(new Event("input", { bubbles: true }));
+          });
+          break;
+        case "deselect":
+          this.pushEvent("deselect-department", null, (reply, ref) => {
+            input_el.dispatchEvent(new Event("input", { bubbles: true }));
+          });
+          break;
+        default:
+          break;
+      }
+    });
+  },
+};
 Hooks.subjectPressed = {
   mounted() {
     this.el.addEventListener("click", () => {
@@ -155,8 +175,6 @@ Hooks.subjectPressed = {
         default:
           break;
       }
-
-      console.log();
     });
   },
 };

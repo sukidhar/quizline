@@ -1,7 +1,7 @@
 defmodule Quizline.UserManager.Invigilator do
   use Ecto.Schema
   import Ecto.Changeset
-  # import Quizline.ChangesetHelper
+  import Quizline.ChangesetHelper
 
   # alias Ecto.Changeset
 
@@ -14,12 +14,19 @@ defmodule Quizline.UserManager.Invigilator do
     field(:password, :string)
     field(:confirm_password, :string)
     field(:hashed_password, :string)
+
+    embeds_one(:department, Quizline.DepartmentManager.Department)
   end
 
   def changeset(user, params) do
     user
-    |> cast(params, [:reg_no, :first_name, :last_name, :email])
-    |> validate_required([:reg_no, :first_name, :last_name, :email])
+    |> cast(params, [:first_name, :last_name, :email])
+    |> cast_embed(:department,
+      with: &Quizline.DepartmentManager.Department.changeset/2,
+      required: true
+    )
+    |> validate_required([:first_name, :last_name, :email])
+    |> validate_email()
     |> put_change(:id, Ecto.UUID.generate())
   end
 end

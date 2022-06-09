@@ -101,10 +101,10 @@ defmodule QuizlineWeb.Admin.SessionLive.EventsComponent do
   def handle_event("set-form-mode", %{"type" => type}, socket) do
     case type do
       "file" ->
-        send(self(), {:form_mode, :file})
+        send(self(), %{form_mode: :file, map: :events_data})
 
       _ ->
-        send(self(), {:form_mode, :form})
+        send(self(), %{form_mode: :form, map: :events_data})
     end
 
     {:noreply, socket}

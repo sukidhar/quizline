@@ -1050,6 +1050,8 @@ defmodule Necto do
       _ ->
         false
     end
+  rescue
+    e -> {:error, e}
   end
 
   def create_multiple_exams(dataset, id) do
@@ -1312,5 +1314,31 @@ defmodule Necto do
         %Sips.Response{results: results} = Sips.query!(conn, query, %{event_id: event_id})
         structify_response(results, :student, "unable to structify")
     end
+  end
+
+  def fetch_departments(id) do
+    query = """
+    MATCH (admin:Admin {id: $id})-[:has_department]->(dep:Department)
+    RETURN dep
+    """
+
+    conn = Sips.conn()
+    %Sips.Response{results: results} = Sips.query!(conn, query, %{id: id})
+    structify_response(results, :department, "unable to structify")
+  rescue
+    e -> {:error, e}
+  end
+
+  def fetch_all_branches(id) do
+    query = """
+    MATCH (admin:Admin {id: $id})-[:has_department]-()-[:has_branch]->(branch:Branch)
+    RETURN branch as new_branch
+    """
+
+    conn = Sips.conn()
+    %Sips.Response{results: results} = Sips.query!(conn, query, %{id: id})
+    structify_response(results, :branch, "unable to structify")
+  rescue
+    e -> {:error, e}
   end
 end

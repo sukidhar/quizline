@@ -1,5 +1,7 @@
 defmodule Quizline.UserManager do
   alias Quizline.UserManager.UserMailer
+  alias Quizline.UserManager.Invigilator
+  alias Quizline.UserManager.Student
   alias Quizline.UserManager.User
   alias Quizline.UserManager.Guardian
   import Necto
@@ -8,39 +10,45 @@ defmodule Quizline.UserManager do
 
   alias Ecto.Changeset
 
-  def create_accounts(account_data, id) do
-    [data | _] = account_data
+  # def create_accounts(account_data, id) do
+  #   [data | _] = account_data
 
-    res =
-      Enum.map(data, fn account ->
-        %{
-          user: registration_user_set(%User{}, account.user)
-        }
-      end)
-      |> Necto.create_user_accounts(id)
+  #   res =
+  #     Enum.map(data, fn account ->
+  #       %{
+  #         user: registration_user_set(%User{}, account.user)
+  #       }
+  #     end)
+  #     |> Necto.create_user_accounts(id)
 
-    IO.inspect(res)
+  #   IO.inspect(res)
 
-    case res do
-      {:ok, users} ->
-        users
-        |> Enum.map(fn user ->
-          UserMailer.deliver_password_settings(
-            user,
-            "http://lvh.me:4000/set-pw/#{tokenise_user(user)}"
-          )
-        end)
+  #   case res do
+  #     {:ok, users} ->
+  #       users
+  #       |> Enum.map(fn user ->
+  #         UserMailer.deliver_password_settings(
+  #           user,
+  #           "http://lvh.me:4000/set-pw/#{tokenise_user(user)}"
+  #         )
+  #       end)
 
-        {:ok, users}
+  #       {:ok, users}
 
-      {:error, e} ->
-        IO.inspect(e)
-        {:error, "failed to create accounts"}
-    end
+  #     {:error, e} ->
+  #       IO.inspect(e)
+  #       {:error, "failed to create accounts"}
+  #   end
+  # end
+
+  def registration_user_set(a, params \\ %{})
+
+  def registration_user_set(:invigilator, params) do
+    Invigilator.changeset(%Invigilator{}, params)
   end
 
-  def registration_user_set(%User{} = user, params \\ %{}) do
-    # User.changeset(user, params)
+  def registration_user_set(:student, params) do
+    Student.changeset(%Student{}, params)
   end
 
   def fp_change_user(%User{} = user, attrs \\ %{}) do
