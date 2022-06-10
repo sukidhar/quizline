@@ -157,6 +157,52 @@ Hooks.DepartmentButton = {
     });
   },
 };
+
+Hooks.SemesterButton = {
+  mounted() {
+    this.el.addEventListener("click", () => {
+      let input_el = document.getElementById("semester-input-field");
+      switch (this.el.dataset.event || "") {
+        case "select":
+          this.pushEvent("select-semester", this.el.dataset, (reply, ref) => {
+            input_el.dispatchEvent(new Event("input", { bubbles: true }));
+          });
+          break;
+        case "deselect":
+          this.pushEvent("deselect-semester", null, (reply, ref) => {
+            input_el.dispatchEvent(new Event("input", { bubbles: true }));
+          });
+          break;
+        default:
+          break;
+      }
+    });
+  },
+};
+
+Hooks.SelectButton = {
+  mounted() {
+    this.el.addEventListener("click", () => {
+      let type = (this.el.dataset.type || "").toLowerCase();
+      let input_el = document.getElementById(`${type}-input-field`);
+      switch (this.el.dataset.event || "") {
+        case "select":
+          this.pushEvent(`select-${type}`, this.el.dataset, (reply, ref) => {
+            input_el.dispatchEvent(new Event("input", { bubbles: true }));
+          });
+          break;
+        case "deselect":
+          this.pushEvent(`deselect-${type}`, null, (reply, ref) => {
+            input_el.dispatchEvent(new Event("input", { bubbles: true }));
+          });
+          break;
+        default:
+          break;
+      }
+    });
+  },
+};
+
 Hooks.subjectPressed = {
   mounted() {
     this.el.addEventListener("click", () => {

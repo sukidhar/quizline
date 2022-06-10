@@ -4,7 +4,7 @@ defmodule QuizlineWeb.Admin.SessionLive.UsersComponent do
 
   alias Phoenix.LiveView.JS
   alias Quizline.AdminManager.Admin
-  # alias Quizline.UserManager
+  alias Quizline.UserManager.Student
   alias Quizline.UserManager.Invigilator
 
   def update(
@@ -109,23 +109,23 @@ defmodule QuizlineWeb.Admin.SessionLive.UsersComponent do
     {:noreply, socket}
   end
 
-  def handle_event("student-change", %{"student" => inv_params}, socket) do
+  def handle_event("student-change", %{"student" => std_params}, socket) do
     changeset =
-      %Invigilator{}
-      |> Invigilator.changeset(inv_params)
+      %Student{}
+      |> Student.changeset(modify_student_params(std_params, socket))
       |> Map.put(:action, :insert)
 
-    send(self(), %{changeset: changeset, key: :invigilator_changeset})
+    send(self(), %{changeset: changeset, key: :student_changeset})
     {:noreply, socket}
   end
 
-  def handle_event("student-submit", %{"invigilator" => inv_params}, socket) do
+  def handle_event("student-submit", %{"student" => std_params}, socket) do
     changeset =
-      %Invigilator{}
-      |> Invigilator.changeset(inv_params)
+      %Student{}
+      |> Student.changeset(modify_student_params(std_params, socket))
       |> Map.put(:action, :validate)
 
-    send(self(), %{changeset: changeset, key: :invigilator_changeset})
+    send(self(), %{changeset: changeset, key: :student_changeset})
     {:noreply, socket}
   end
 
@@ -138,6 +138,14 @@ defmodule QuizlineWeb.Admin.SessionLive.UsersComponent do
   def modify_invigilator_params(params, socket) do
     params
     |> Map.put("department", socket.assigns.selected_department)
+    |> Poison.encode!()
+    |> Poison.decode!()
+  end
+
+  def modify_student_params(params, socket) do
+    params
+    |> Map.put("semester", socket.assigns.selected_semester)
+    |> Map.put("branch", socket.assigns.selected_branch)
     |> Poison.encode!()
     |> Poison.decode!()
   end

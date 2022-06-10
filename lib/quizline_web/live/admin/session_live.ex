@@ -29,6 +29,8 @@ defmodule QuizlineWeb.Admin.SessionLive do
        branches: nil,
        semesters: nil,
        selected_department: nil,
+       selected_semester: nil,
+       selected_branch: nil,
        departments_filter: ""
      })
      |> assign(:events_data, %{
@@ -542,7 +544,7 @@ defmodule QuizlineWeb.Admin.SessionLive do
           IO.inspect(e)
           socket
 
-        data ->
+        {:ok, data} ->
           socket
           |> assign(
             :users_data,
@@ -587,6 +589,62 @@ defmodule QuizlineWeb.Admin.SessionLive do
        socket.assigns.users_data
        |> Map.put(
          :selected_department,
+         nil
+       )
+     )}
+  end
+
+  def handle_event("select-semester", %{"semesterId" => sid}, socket) do
+    {:noreply,
+     socket
+     |> assign(
+       :users_data,
+       socket.assigns.users_data
+       |> Map.put(
+         :selected_semester,
+         Enum.find(socket.assigns.users_data.semesters || [], nil, fn k ->
+           k.sid == sid
+         end)
+       )
+     )}
+  end
+
+  def handle_event("deselect-semester", _, socket) do
+    {:noreply,
+     socket
+     |> assign(
+       :users_data,
+       socket.assigns.users_data
+       |> Map.put(
+         :selected_semester,
+         nil
+       )
+     )}
+  end
+
+  def handle_event("select-branch", %{"branchId" => bid}, socket) do
+    {:noreply,
+     socket
+     |> assign(
+       :users_data,
+       socket.assigns.users_data
+       |> Map.put(
+         :selected_branch,
+         Enum.find(socket.assigns.users_data.branches || [], nil, fn k ->
+           k.id == bid
+         end)
+       )
+     )}
+  end
+
+  def handle_event("deselect-branch", _, socket) do
+    {:noreply,
+     socket
+     |> assign(
+       :users_data,
+       socket.assigns.users_data
+       |> Map.put(
+         :selected_branch,
          nil
        )
      )}
