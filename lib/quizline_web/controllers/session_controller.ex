@@ -18,4 +18,10 @@ defmodule QuizlineWeb.SessionController do
 
     send_download(conn, {:file, path})
   end
+
+  def get_users_sample(conn, _params) do
+    path = Application.app_dir(:quizline, "priv/static/sample_sheets/users_sample.csv")
+
+    send_download(conn, {:file, path})
+  end
 end

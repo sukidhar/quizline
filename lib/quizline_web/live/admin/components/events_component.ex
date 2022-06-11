@@ -423,13 +423,7 @@ defmodule QuizlineWeb.Admin.SessionLive.EventsComponent do
     event_params
     |> Map.put(
       "subject",
-      case socket.assigns.selected_subject do
-        nil ->
-          nil
-
-        data ->
-          data
-      end
+      socket.assigns.selected_subject
     )
     |> Map.put(
       "attendees",

@@ -26,7 +26,8 @@ defmodule QuizlineWeb.Admin.SessionLive.UsersComponent do
        |> Enum.map(fn {key, value} ->
          {if(is_atom(key), do: key, else: String.to_existing_atom(key)), value}
        end)
-     )}
+     )
+     |> allow_upload(:users_file, accept: ~w(.csv), max_entries: 1)}
   end
 
   def show_form(atom, js \\ %JS{}) do
@@ -75,6 +76,16 @@ defmodule QuizlineWeb.Admin.SessionLive.UsersComponent do
     end
   end
 
+  def handle_event("show-form", %{"type" => type}, socket) do
+    type = String.downcase(type) |> String.to_atom()
+
+    if type in [:student, :invigilator] do
+      send(self(), %{show_form: type})
+    end
+
+    {:noreply, socket}
+  end
+
   def handle_event("set-form-mode", %{"type" => type}, socket) do
     case type do
       "file" ->
@@ -87,13 +98,43 @@ defmodule QuizlineWeb.Admin.SessionLive.UsersComponent do
     {:noreply, socket}
   end
 
+  def handle_event("users-file-changed", _, socket) do
+    {:noreply, socket}
+  end
+
+  def handle_event("users-file-uploaded", _, socket) do
+    [data] =
+      consume_uploaded_entries(socket, :users_file, fn %{path: path}, _entry ->
+        data =
+          File.stream!(path)
+          |> CSV.decode(validate_row_length: false, strip_fields: true)
+          |> Enum.to_list()
+          |> Enum.map(fn {:ok, row} ->
+            row
+          end)
+          |> Enum.reject(fn [head | data] ->
+            head == "##" or
+              ([head] ++ data)
+              |> Enum.all?(fn x ->
+                x == ""
+              end)
+          end)
+          |> CSV.encode()
+          |> CSV.decode!(headers: true)
+          |> Enum.to_list()
+
+        {:ok, data}
+      end)
+
+    send(self(), %{users_data: data})
+    {:noreply, socket}
+  end
+
   def handle_event("invigilator-change", %{"invigilator" => inv_params}, socket) do
     changeset =
       %Invigilator{}
       |> Invigilator.changeset(modify_invigilator_params(inv_params, socket))
       |> Map.put(:action, :insert)
-
-    IO.inspect(changeset)
 
     send(self(), %{changeset: changeset, key: :invigilator_changeset})
     {:noreply, socket}
@@ -105,7 +146,7 @@ defmodule QuizlineWeb.Admin.SessionLive.UsersComponent do
       |> Invigilator.changeset(modify_invigilator_params(inv_params, socket))
       |> Map.put(:action, :validate)
 
-    send(self(), %{changeset: changeset, key: :invigilator_changeset})
+    send(self(), %{changeset: changeset, key: :invigilator, action: :submit})
     {:noreply, socket}
   end
 
@@ -125,7 +166,7 @@ defmodule QuizlineWeb.Admin.SessionLive.UsersComponent do
       |> Student.changeset(modify_student_params(std_params, socket))
       |> Map.put(:action, :validate)
 
-    send(self(), %{changeset: changeset, key: :student_changeset})
+    send(self(), %{changeset: changeset, key: :student, action: :submit})
     {:noreply, socket}
   end
 

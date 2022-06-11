@@ -23,6 +23,8 @@ defmodule QuizlineWeb.Admin.SessionLive do
      |> allow_upload(:form_sheet, accept: ~w(.csv), max_entries: 1)
      |> assign(:users_data, %{
        form_mode: :file,
+       invigilator_form?: false,
+       student_form?: false,
        invigilator_changeset: UserManager.registration_user_set(:invigilator),
        student_changeset: UserManager.registration_user_set(:student),
        departments: nil,
@@ -540,7 +542,7 @@ defmodule QuizlineWeb.Admin.SessionLive do
 
     socket =
       case SemesterManager.get_semesters(socket.assigns.admin.id) do
-        {:error, e} ->
+        {:error, _, e} ->
           IO.inspect(e)
           socket
 
@@ -553,6 +555,31 @@ defmodule QuizlineWeb.Admin.SessionLive do
           )
       end
 
+    {:noreply, socket}
+  end
+
+  def handle_info(%{show_form: type}, socket) do
+    {:noreply,
+     socket
+     |> assign(
+       :users_data,
+       socket.assigns.users_data
+       |> Map.put(:invigilator_form?, type == :invigilator)
+       |> Map.put(:student_form?, type == :student)
+     )}
+  end
+
+  def handle_info(%{users_data: _data}, socket) do
+    {:noreply, socket}
+  end
+
+  def handle_info(%{changeset: changeset, key: :student, action: :submit}, socket) do
+    UserManager.create_student(changeset)
+    {:noreply, socket}
+  end
+
+  def handle_info(%{changeset: changeset, key: :invigilator, action: :submit}, socket) do
+    UserManager.create_invigilator(changeset)
     {:noreply, socket}
   end
 

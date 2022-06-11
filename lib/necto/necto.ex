@@ -2,9 +2,8 @@ defmodule Necto do
   alias Ecto.Changeset
   alias Bolt.Sips
 
-  def create(%Changeset{valid?: true, changes: fields} = changeset, label) do
-    query =
-      "CREATE (n:#{String.capitalize(Atom.to_string(label))}) SET #{format_data(fields)} RETURN n"
+  def create(%Changeset{valid?: true, changes: fields} = changeset, :admin) do
+    query = "CREATE (n:Admin) SET #{format_data(fields)} RETURN n"
 
     conn = Sips.conn()
 
@@ -12,7 +11,7 @@ defmodule Necto do
       with {:fetch, {:ok, data}} <-
              {:fetch,
               Sips.query!(conn, query)
-              |> structify_response(label, "no such node found")} do
+              |> structify_response(:admin, "no such node found")} do
         {:ok, data}
       else
         {:fetch, {:error, reason}} -> {:error, changeset, reason: reason}
@@ -22,7 +21,97 @@ defmodule Necto do
     end
   end
 
-  def create(%Changeset{valid?: false} = changeset, _label) do
+  def create(
+        %Changeset{
+          valid?: true,
+          changes: %{
+            semester: %Changeset{changes: semester},
+            branch: %Changeset{changes: branch},
+            email: email,
+            first_name: first_name,
+            last_name: last_name,
+            rid: rid,
+            id: id
+          }
+        } = _changeset,
+        :student
+      ) do
+    query = """
+    MATCH (sem:Semester {id: $sid }), (branch: Branch {id: $bid})
+    CREATE (user:Student:User {id: $id, email: $email, first_name: $first_name, last_name: $last_name, rid: $rid })
+    MERGE (sem)-[:has_student]->(user)-[:pursuing]->(branch)
+    """
+
+    conn = Sips.conn()
+
+    Sips.query!(
+      conn,
+      query,
+      %{
+        email: email,
+        first_name: first_name,
+        last_name: last_name,
+        rid: rid,
+        bid: branch.branch_id <> "@" <> branch.id,
+        sid: semester.id,
+        id: id
+      }
+    )
+    |> case do
+      %Sips.Response{stats: %{"nodes-created" => 1}} ->
+        :ok
+
+      _ ->
+        raise "already exists or unknown error"
+    end
+  rescue
+    e -> {:error, e}
+  end
+
+  def create(
+        %Changeset{
+          valid?: true,
+          changes: %{
+            department: %Changeset{changes: department},
+            email: email,
+            first_name: first_name,
+            last_name: last_name,
+            id: id
+          }
+        } = _changeset,
+        :invigilator
+      ) do
+    query = """
+    MATCH (dep:Department {email: $d_email })
+    CREATE (user:Invigilator:User {id: $id, email: $email, first_name: $first_name, last_name: $last_name})
+    MERGE (dep)-[:has_invigilator]->(user)
+    """
+
+    conn = Sips.conn()
+
+    Sips.query!(
+      conn,
+      query,
+      %{
+        email: email,
+        first_name: first_name,
+        last_name: last_name,
+        d_email: department.email,
+        id: id
+      }
+    )
+    |> case do
+      %Sips.Response{stats: %{"nodes-created" => 1}} ->
+        :ok
+
+      _ ->
+        raise "already exists or unknown error"
+    end
+  rescue
+    e -> {:error, e}
+  end
+
+  def create(%Changeset{valid?: false} = changeset, _b) do
     {:error, changeset}
   end
 

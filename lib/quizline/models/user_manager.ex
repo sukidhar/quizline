@@ -41,6 +41,26 @@ defmodule Quizline.UserManager do
   #   end
   # end
 
+  def create_student(changeset) do
+    case Necto.create(changeset, :student) do
+      :ok ->
+        IO.inspect("mail them")
+
+      {:error, e} ->
+        IO.inspect(e)
+    end
+  end
+
+  def create_invigilator(changeset) do
+    case Necto.create(changeset, :invigilator) do
+      :ok ->
+        IO.inspect("mail them")
+
+      {:error, e} ->
+        IO.inspect(e)
+    end
+  end
+
   def registration_user_set(a, params \\ %{})
 
   def registration_user_set(:invigilator, params) do
