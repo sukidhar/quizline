@@ -127,21 +127,38 @@ defmodule Necto do
         MATCH (branch:Branch) WHERE branch.id STARTS WITH student.branch + "@"
         CREATE (user:Student:User {id: student.id, email: student.email, first_name: student.first_name, last_name: student.last_name, rid: student.rid })
         MERGE (sem)-[:has_student]->(user)-[:pursuing]->(branch)
+        RETURN user.email as email
         """
 
-        _ = Sips.query!(conn, query, %{students: students, id: id}) |> IO.inspect()
+        %Sips.Response{results: students} =
+          Sips.query!(conn, query, %{students: students, id: id})
+
+        students =
+          students
+          |> Enum.map(fn %{"email" => email} ->
+            email
+          end)
 
         query = """
         UNWIND $invigilators as invigilator
         MATCH (dep:Department {email: invigilator.department })
         CREATE (user:Invigilator:User {id: invigilator.id, email: invigilator.email, first_name: invigilator.first_name, last_name: invigilator.last_name})
         MERGE (dep)-[:has_invigilator]->(user)
+        RETURN user.email as email
         """
 
-        _ = Sips.query!(conn, query, %{invigilators: invigilators}) |> IO.inspect()
-      end)
+        %Sips.Response{results: invigilators} =
+          Sips.query!(conn, query, %{invigilators: invigilators})
 
-      :ok
+        invigilators =
+          invigilators
+          |> Enum.map(fn %{"email" => email} ->
+            email
+          end)
+
+        {students, invigilators}
+      end)
+      |> IO.inspect()
     rescue
       e -> {:error, e}
     end

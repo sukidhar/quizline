@@ -1,4 +1,4 @@
 ##,,,,Ignore if invigilator,Ignore if invigilator,Ignore if invigilator,Ignore if student
 type,first_name,last_name,email,reg_no,branch,semester,department
-s,First_name_1,Last_name_1,test@email.com,180953123,IT,MIT00IP,
-i,First_name_2,Last_name_2,test2@email.com,,,,ict@manipal.edu
+s,First_name_1,Last_name_1,tested1@email.com,180953125,IT,MIT00IP,
+i,First_name_2,Last_name_2,tested3@email.com,,,,ict@manipal.edu
