@@ -10,36 +10,9 @@ defmodule Quizline.UserManager do
 
   alias Ecto.Changeset
 
-  # def create_accounts(account_data, id) do
-  #   [data | _] = account_data
-
-  #   res =
-  #     Enum.map(data, fn account ->
-  #       %{
-  #         user: registration_user_set(%User{}, account.user)
-  #       }
-  #     end)
-  #     |> Necto.create_user_accounts(id)
-
-  #   IO.inspect(res)
-
-  #   case res do
-  #     {:ok, users} ->
-  #       users
-  #       |> Enum.map(fn user ->
-  #         UserMailer.deliver_password_settings(
-  #           user,
-  #           "http://lvh.me:4000/set-pw/#{tokenise_user(user)}"
-  #         )
-  #       end)
-
-  #       {:ok, users}
-
-  #     {:error, e} ->
-  #       IO.inspect(e)
-  #       {:error, "failed to create accounts"}
-  #   end
-  # end
+  def create_accounts(account_data, id) do
+    Necto.create_bulk_user_accounts(account_data, id)
+  end
 
   def create_student(changeset) do
     case Necto.create(changeset, :student) do
@@ -69,6 +42,16 @@ defmodule Quizline.UserManager do
 
   def registration_user_set(:student, params) do
     Student.changeset(%Student{}, params)
+  end
+
+  def file_user_set(a, params \\ %{})
+
+  def file_user_set(:invigilator, params) do
+    Invigilator.file_changeset(%Invigilator{}, params)
+  end
+
+  def file_user_set(:student, params) do
+    Student.file_changeset(%Student{}, params)
   end
 
   def fp_change_user(%User{} = user, attrs \\ %{}) do

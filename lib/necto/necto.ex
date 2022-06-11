@@ -115,6 +115,38 @@ defmodule Necto do
     {:error, changeset}
   end
 
+  def create_bulk_user_accounts({students, invigilators}, id) do
+    main_conn = Sips.conn()
+
+    try do
+      Sips.transaction(main_conn, fn conn ->
+        query = """
+        UNWIND $students as student
+        MATCH (admin:Admin{id: $id})-[:has_semester]->(sem:Semester {sid: student.semester })
+        WITH sem, student
+        MATCH (branch:Branch) WHERE branch.id STARTS WITH student.branch + "@"
+        CREATE (user:Student:User {id: student.id, email: student.email, first_name: student.first_name, last_name: student.last_name, rid: student.rid })
+        MERGE (sem)-[:has_student]->(user)-[:pursuing]->(branch)
+        """
+
+        _ = Sips.query!(conn, query, %{students: students, id: id}) |> IO.inspect()
+
+        query = """
+        UNWIND $invigilators as invigilator
+        MATCH (dep:Department {email: invigilator.department })
+        CREATE (user:Invigilator:User {id: invigilator.id, email: invigilator.email, first_name: invigilator.first_name, last_name: invigilator.last_name})
+        MERGE (dep)-[:has_invigilator]->(user)
+        """
+
+        _ = Sips.query!(conn, query, %{invigilators: invigilators}) |> IO.inspect()
+      end)
+
+      :ok
+    rescue
+      e -> {:error, e}
+    end
+  end
+
   defp format_data(fields) do
     fields
     |> Enum.map(fn {k, v} -> "n.#{k} = '#{v}'" end)
@@ -531,77 +563,6 @@ defmodule Necto do
       {:ok, true}
     rescue
       e -> {:error, e}
-    end
-  end
-
-  def create_user_accounts(changesets, id) do
-    query = """
-    UNWIND $batch as row
-    WITH row.user as userData, row.department as depData
-    call apoc.do.when(
-      userData.account_type="invigilator",
-      "MERGE (n:Invigilator:User {email: user.email, first_name: user.first_name, last_name: user.last_name, reg_no: user.reg_no})
-      ON CREATE SET n.id = user.id
-      RETURN n",
-      "MERGE (n:Student:User {email: user.email, first_name: user.first_name, last_name: user.last_name, reg_no: user.reg_no})
-      ON CREATE SET n.id = user.id
-      RETURN n",
-      {user: apoc.map.removeKey(userData, "account_type")}
-    ) YIELD value
-    with value.n as user,userData, depData
-    MATCH (admin:Admin {id: $id})
-    MERGE (admin)-[r1:has_department]->(dep:Department {email: depData.email})
-    ON CREATE SET r1.created = datetime().epochSeconds,
-    dep.title = depData.title
-    ON MATCH SET r1.updated = datetime().epochSeconds
-    with admin, user, dep,userData, depData
-    CALL apoc.do.when(
-      userData.account_type = "invigilator",
-      "MERGE (dep)-[r2:has_invigilator]->(user) ON CREATE SET r2.created = datetime().epochSeconds ON MATCH SET r2.updated = datetime().epochSeconds RETURN r2 as r",
-      "
-      MERGE (admin)-[k:has_semester]->(sem:Semester {title: br.semester}) ON CREATE SET k.created = datetime().epochSeconds ON MEATCH SET k.updated = datetime().epochSeconds
-      MERGE (dep)-[r2:has_branch]->(branch:Branch {title: br.title}) ON CREATE SET r2.created = datetime().epochSeconds ON MATCH SET r2.updated = datetime().epochSeconds
-      MERGE (branch)-[r3:has_student]->(user) ON CREATE SET r3.created = datetime().epochSeconds ON MATCH SET r3.updated = datetime().epochSeconds
-      MERGE (user)-[r4: is_studying]->(sem) ON CREATE SET r4.created = datetime().epochSeconds ON MATCH SET r4.updated = datetime().epochSeconds
-      RETURN r3 as r
-      ",
-    {dep: dep, user: user, br: {title: depData.branch, semester: userData.semester}, admin: admin}) YIELD value
-    return user as n,value.r as r
-    """
-
-    batch =
-      Enum.filter(
-        changesets,
-        fn %{
-             user: %Changeset{valid?: b1},
-             department: %Changeset{valid?: b2}
-           } ->
-          b1 && b2
-        end
-      )
-      |> Enum.map(fn %{
-                       user: %Changeset{changes: user},
-                       department: %Changeset{changes: department}
-                     } ->
-        %{user: user, department: department}
-      end)
-
-    conn = Sips.conn()
-
-    try do
-      %Bolt.Sips.Response{results: data} = Sips.query!(conn, query, %{batch: batch, id: id})
-
-      users =
-        Enum.map(data, fn k ->
-          {:ok, user} = structify_response(k, :user, "no such node found")
-          user
-        end)
-
-      {:ok, users}
-    rescue
-      e ->
-        IO.inspect(e)
-        {:error, e}
     end
   end
 

@@ -569,8 +569,68 @@ defmodule QuizlineWeb.Admin.SessionLive do
      )}
   end
 
-  def handle_info(%{users_data: _data}, socket) do
+  def handle_info(%{users_data: data}, socket) do
+    {students, invigilators} =
+      data
+      |> Enum.reject(fn %{"type" => type} ->
+        String.downcase(type) not in ["s", "i"]
+      end)
+      |> Enum.split_with(fn %{"type" => type} ->
+        type == "s"
+      end)
+
+    {
+      students
+      |> Enum.map(fn %{
+                       "branch" => branch,
+                       "semester" => semester,
+                       "first_name" => first_name,
+                       "last_name" => last_name,
+                       "email" => email,
+                       "reg_no" => rid
+                     } ->
+        UserManager.file_user_set(:student, %{
+          "first_name" => first_name,
+          "last_name" => last_name,
+          "email" => email,
+          "rid" => rid
+        })
+        |> case do
+          %Ecto.Changeset{valid?: true, changes: changes} ->
+            changes |> Map.put(:semester, semester) |> Map.put(:branch, branch)
+
+          _ ->
+            raise "Invalid Data"
+        end
+      end),
+      invigilators
+      |> Enum.map(fn %{
+                       "department" => department,
+                       "first_name" => first_name,
+                       "last_name" => last_name,
+                       "email" => email
+                     } ->
+        UserManager.file_user_set(:invigilator, %{
+          "first_name" => first_name,
+          "last_name" => last_name,
+          "email" => email
+        })
+        |> case do
+          %Ecto.Changeset{valid?: true, changes: changes} ->
+            changes |> Map.put(:department, department)
+
+          _ ->
+            raise "Invalid Data"
+        end
+      end)
+    }
+    |> UserManager.create_accounts(socket.assigns.admin.id)
+
     {:noreply, socket}
+  rescue
+    e ->
+      IO.inspect(e)
+      {:noreply, socket}
   end
 
   def handle_info(%{changeset: changeset, key: :student, action: :submit}, socket) do
