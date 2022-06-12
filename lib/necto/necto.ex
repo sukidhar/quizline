@@ -2,9 +2,8 @@ defmodule Necto do
   alias Ecto.Changeset
   alias Bolt.Sips
 
-  def create(%Changeset{valid?: true, changes: fields} = changeset, label) do
-    query =
-      "CREATE (n:#{String.capitalize(Atom.to_string(label))}) SET #{format_data(fields)} RETURN n"
+  def create(%Changeset{valid?: true, changes: fields} = changeset, :admin) do
+    query = "CREATE (n:Admin) SET #{format_data(fields)} RETURN n"
 
     conn = Sips.conn()
 
@@ -12,7 +11,7 @@ defmodule Necto do
       with {:fetch, {:ok, data}} <-
              {:fetch,
               Sips.query!(conn, query)
-              |> structify_response(label, "no such node found")} do
+              |> structify_response(:admin, "no such node found")} do
         {:ok, data}
       else
         {:fetch, {:error, reason}} -> {:error, changeset, reason: reason}
@@ -22,8 +21,139 @@ defmodule Necto do
     end
   end
 
-  def create(%Changeset{valid?: false} = changeset, _label) do
+  def create(
+        %Changeset{
+          valid?: true,
+          changes: %{
+            semester: %Changeset{changes: semester},
+            branch: %Changeset{changes: branch},
+            email: email,
+            first_name: first_name,
+            last_name: last_name,
+            rid: rid,
+            id: id
+          }
+        } = _changeset,
+        :student
+      ) do
+    query = """
+    MATCH (sem:Semester {id: $sid }), (branch: Branch {id: $bid})
+    CREATE (user:Student:User {id: $id, email: $email, first_name: $first_name, last_name: $last_name, rid: $rid })
+    MERGE (sem)-[:has_student]->(user)-[:pursuing]->(branch)
+    """
+
+    conn = Sips.conn()
+
+    Sips.query!(
+      conn,
+      query,
+      %{
+        email: email,
+        first_name: first_name,
+        last_name: last_name,
+        rid: rid,
+        bid: branch.branch_id <> "@" <> branch.id,
+        sid: semester.id,
+        id: id
+      }
+    )
+    |> case do
+      %Sips.Response{stats: %{"nodes-created" => 1}} ->
+        :ok
+
+      _ ->
+        raise "already exists or unknown error"
+    end
+  rescue
+    e -> {:error, e}
+  end
+
+  def create(
+        %Changeset{
+          valid?: true,
+          changes: %{
+            department: %Changeset{changes: department},
+            email: email,
+            first_name: first_name,
+            last_name: last_name,
+            id: id
+          }
+        } = _changeset,
+        :invigilator
+      ) do
+    query = """
+    MATCH (dep:Department {email: $d_email })
+    CREATE (user:Invigilator:User {id: $id, email: $email, first_name: $first_name, last_name: $last_name})
+    MERGE (dep)-[:has_invigilator]->(user)
+    """
+
+    conn = Sips.conn()
+
+    Sips.query!(
+      conn,
+      query,
+      %{
+        email: email,
+        first_name: first_name,
+        last_name: last_name,
+        d_email: department.email,
+        id: id
+      }
+    )
+    |> case do
+      %Sips.Response{stats: %{"nodes-created" => 1}} ->
+        :ok
+
+      _ ->
+        raise "already exists or unknown error"
+    end
+  rescue
+    e -> {:error, e}
+  end
+
+  def create(%Changeset{valid?: false} = changeset, _b) do
     {:error, changeset}
+  end
+
+  def create_bulk_user_accounts({students, invigilators}, id) do
+    main_conn = Sips.conn()
+
+    try do
+      Sips.transaction(main_conn, fn conn ->
+        query = """
+        UNWIND $students as student
+        MATCH (admin:Admin{id: $id})-[:has_semester]->(sem:Semester {sid: student.semester })
+        WITH sem, student
+        MATCH (branch:Branch) WHERE branch.id STARTS WITH student.branch + "@"
+        CREATE (user:Student:User {id: student.id, email: student.email, first_name: student.first_name, last_name: student.last_name, rid: student.rid })
+        MERGE (sem)-[:has_student]->(user)-[:pursuing]->(branch)
+        RETURN user
+        """
+
+        %Sips.Response{results: students} =
+          Sips.query!(conn, query, %{students: students, id: id})
+
+        students = structify_response(students, :user, "unable to structify the user data")
+
+        query = """
+        UNWIND $invigilators as invigilator
+        MATCH (dep:Department {email: invigilator.department })
+        CREATE (user:Invigilator:User {id: invigilator.id, email: invigilator.email, first_name: invigilator.first_name, last_name: invigilator.last_name})
+        MERGE (dep)-[:has_invigilator]->(user)
+        RETURN user
+        """
+
+        %Sips.Response{results: invigilators} =
+          Sips.query!(conn, query, %{invigilators: invigilators})
+
+        invigilators = structify_response(invigilators, :user, "unable to structify the user")
+
+        {students, invigilators}
+      end)
+      |> IO.inspect()
+    rescue
+      e -> {:error, e}
+    end
   end
 
   defp format_data(fields) do
@@ -45,26 +175,37 @@ defmodule Necto do
           data -> {:ok, data}
         end
 
-      %{label: :user, modules: %{user: struct}} ->
-        case response do
-          %{"n" => node, "r" => r} ->
-            props =
-              convert_to_klist(node.properties)
-              |> Keyword.put(:account_type, String.downcase(hd(node.labels) || "student"))
-              |> Keyword.put(
-                :created_at,
-                "#{r.properties["created_at"] || DateTime.to_unix(DateTime.utc_now())}"
-              )
+      %{
+        label: :user,
+        modules: %{user: %{student: student_struct, invigilator: invigilator_struct}}
+      } ->
+        response
+        |> Enum.map(fn k ->
+          case k do
+            %{"user" => node, "r" => r} ->
+              props =
+                convert_to_klist(node.properties)
+                |> Keyword.put(
+                  :created_at,
+                  "#{r.properties["created_at"] || DateTime.to_unix(DateTime.utc_now())}"
+                )
 
-            {:ok, Kernel.struct!(struct, props)}
+              case String.downcase(hd(node.labels) || "student") do
+                "student" -> Kernel.struct!(student_struct, props)
+                "invigilator" -> Kernel.struct!(invigilator_struct, props)
+              end
 
-          %{"n" => node} ->
-            props =
-              convert_to_klist(node.properties)
-              |> Keyword.put(:account_type, String.downcase(hd(node.labels) || "student"))
+            %{"user" => node} ->
+              props =
+                convert_to_klist(node.properties)
+                |> Keyword.put(:account_type, String.downcase(hd(node.labels) || "student"))
 
-            {:ok, Kernel.struct!(struct, props)}
-        end
+              case String.downcase(hd(node.labels) || "student") do
+                "student" -> Kernel.struct!(student_struct, props)
+                "invigilator" -> Kernel.struct!(invigilator_struct, props)
+              end
+          end
+        end)
 
       %{label: :department, modules: %{department: struct}} ->
         response
@@ -445,94 +586,33 @@ defmodule Necto do
     end
   end
 
-  def create_user_accounts(changesets, id) do
-    query = """
-    UNWIND $batch as row
-    WITH row.user as userData, row.department as depData
-    call apoc.do.when(
-      userData.account_type="invigilator",
-      "MERGE (n:Invigilator:User {email: user.email, first_name: user.first_name, last_name: user.last_name, reg_no: user.reg_no})
-      ON CREATE SET n.id = user.id
-      RETURN n",
-      "MERGE (n:Student:User {email: user.email, first_name: user.first_name, last_name: user.last_name, reg_no: user.reg_no})
-      ON CREATE SET n.id = user.id
-      RETURN n",
-      {user: apoc.map.removeKey(userData, "account_type")}
-    ) YIELD value
-    with value.n as user,userData, depData
-    MATCH (admin:Admin {id: $id})
-    MERGE (admin)-[r1:has_department]->(dep:Department {email: depData.email})
-    ON CREATE SET r1.created = datetime().epochSeconds,
-    dep.title = depData.title
-    ON MATCH SET r1.updated = datetime().epochSeconds
-    with admin, user, dep,userData, depData
-    CALL apoc.do.when(
-      userData.account_type = "invigilator",
-      "MERGE (dep)-[r2:has_invigilator]->(user) ON CREATE SET r2.created = datetime().epochSeconds ON MATCH SET r2.updated = datetime().epochSeconds RETURN r2 as r",
-      "
-      MERGE (admin)-[k:has_semester]->(sem:Semester {title: br.semester}) ON CREATE SET k.created = datetime().epochSeconds ON MEATCH SET k.updated = datetime().epochSeconds
-      MERGE (dep)-[r2:has_branch]->(branch:Branch {title: br.title}) ON CREATE SET r2.created = datetime().epochSeconds ON MATCH SET r2.updated = datetime().epochSeconds
-      MERGE (branch)-[r3:has_student]->(user) ON CREATE SET r3.created = datetime().epochSeconds ON MATCH SET r3.updated = datetime().epochSeconds
-      MERGE (user)-[r4: is_studying]->(sem) ON CREATE SET r4.created = datetime().epochSeconds ON MATCH SET r4.updated = datetime().epochSeconds
-      RETURN r3 as r
-      ",
-    {dep: dep, user: user, br: {title: depData.branch, semester: userData.semester}, admin: admin}) YIELD value
-    return user as n,value.r as r
-    """
-
-    batch =
-      Enum.filter(
-        changesets,
-        fn %{
-             user: %Changeset{valid?: b1},
-             department: %Changeset{valid?: b2}
-           } ->
-          b1 && b2
-        end
-      )
-      |> Enum.map(fn %{
-                       user: %Changeset{changes: user},
-                       department: %Changeset{changes: department}
-                     } ->
-        %{user: user, department: department}
-      end)
-
-    conn = Sips.conn()
-
-    try do
-      %Bolt.Sips.Response{results: data} = Sips.query!(conn, query, %{batch: batch, id: id})
-
-      users =
-        Enum.map(data, fn k ->
-          {:ok, user} = structify_response(k, :user, "no such node found")
-          user
-        end)
-
-      {:ok, users}
-    rescue
-      e ->
-        IO.inspect(e)
-        {:error, e}
-    end
-  end
-
   def get_user(:id, id) do
-    query = "MATCH (n : User)<-[r]-() WHERE n.id='#{id}' RETURN n,r"
+    query = "MATCH (user : User)<-[r]-() WHERE user.id='#{id}' RETURN user,r"
 
     conn = Sips.conn()
-    %Bolt.Sips.Response{results: [data | _]} = Sips.query!(conn, query)
+    %Bolt.Sips.Response{results: data} = Sips.query!(conn, query)
+
     structify_response(data, :user, "no such node found")
+    |> case do
+      [] -> raise "No such user exists"
+      [user | _] -> {:ok, user}
+    end
   rescue
     e -> {:error, reason: e.message}
   end
 
   def get_user(:email, email) do
-    query = "MATCH (n : User)<-[r]-() WHERE n.email='#{email}' RETURN n,r"
+    query = "MATCH (user : User)<-[r]-() WHERE user.email='#{email}' RETURN user,r"
 
     try do
       conn = Sips.conn()
-      %Bolt.Sips.Response{results: [data | _]} = Sips.query!(conn, query)
+      %Bolt.Sips.Response{results: data} = Sips.query!(conn, query)
+
       structify_response(data, :user, "no such node found")
+      |> case do
+        [] -> raise "No such user exists"
+        [user | _] -> {:ok, user}
+      end
     rescue
       e -> {:error, reason: e.message}
     end
@@ -992,10 +1072,48 @@ defmodule Necto do
       |> Enum.chunk_every(12)
 
     query = """
+    MATCH (admin:Admin{id: $id})-[:has_department]-()-[:has_invigilator]->(inv:Invigilator)
+    with inv
+    OPTIONAL MATCH (exam:Event) WHERE exam.date <> $date
+    WITH (CASE not exists((inv)-[:monitors]->(:Room)<-[:has_room]-(exam))
+    WHEN true THEN inv.email
+    ELSE null
+    END) as email
+    RETURN apoc.coll.shuffle(collect(email))[0..$limit] as emails
+    """
+
+    %Sips.Response{results: [res | _]} =
+      Sips.query!(conn, query, %{id: id, date: date, limit: groups |> Enum.count()})
+
+    IO.inspect(res)
+    invigilators = res["emails"]
+
+    if Enum.count(invigilators) < groups |> Enum.count() do
+      raise "insufficent invigilator count"
+    end
+
+    groups =
+      Enum.zip(groups, invigilators)
+      |> Enum.map(fn {k, inv} ->
+        %{students: k, invigilator: inv}
+      end)
+
+    query = """
     MATCH (admin:Admin{id: "#{id}"})
     WITH admin
     MATCH (sub:Subject{subject_code: "#{subject_code}"})
     CREATE (admin)-[:has_event{created:datetime().epochSeconds}]->(exam:Event:#{exam_group}{id: apoc.create.uuid(), date: "#{date}", start_time: "#{start_time}", end_time: "#{end_time}"})-[:for{created:datetime().epochSeconds}]->(sub)
+    with exam
+    UNWIND $groups as group
+    MATCH (inv:Invigilator {email: group.invigilator})
+    CREATE (inv)-[:monitors]->(room:Room{id: apoc.create.uuid()})
+    MERGE (exam)-[r:has_room]->(room)
+    ON CREATE SET r.created = datetime().epochSeconds
+    ON MATCH SET r.updated = datetime().epochSeconds
+    with group, room, exam
+    UNWIND group.students as email
+    MATCH (student:Student{email: email})
+    CREATE (room)<-[:is_assigned]-(student)
     with exam
     UNWIND $rels as rel
     CALL apoc.do.when(rel.branch is null,
@@ -1009,16 +1127,7 @@ defmodule Necto do
     RETURN exam',
     {rel: rel, exam: exam})
     YIELD value
-    with value.exam as exam
-    UNWIND $groups as group
-    CREATE (room:Room{id: apoc.create.uuid()})
-    with exam, group, room
-    UNWIND group as email
-    MATCH (student:Student{email: email})
-    MERGE (exam)-[r:has_room]-(room)
-    ON CREATE SET r.created = datetime().epochSeconds
-    ON MATCH SET r.updated = datetime().epochSeconds
-    CREATE (room)<-[:is_assigned]-(student)
+    RETURN distinct(value.exam) as exam
     """
 
     _ = Sips.query!(conn, query, %{groups: groups, rels: rels})
@@ -1050,6 +1159,8 @@ defmodule Necto do
       _ ->
         false
     end
+  rescue
+    e -> {:error, e}
   end
 
   def create_multiple_exams(dataset, id) do
@@ -1126,8 +1237,6 @@ defmodule Necto do
             RETURN collect(value.student) as emails
             """
 
-            conn = Sips.conn()
-
             %Sips.Response{results: [res | _]} = Sips.query!(conn, query, %{rels: attendees})
             exam_group = exam_group |> String.split() |> Enum.join("_") |> String.upcase()
 
@@ -1137,10 +1246,45 @@ defmodule Necto do
               |> Enum.chunk_every(12)
 
             query = """
+            MATCH (admin:Admin{id: $id})-[:has_department]-()-[:has_invigilator]->(inv:Invigilator)
+            with inv
+            OPTIONAL MATCH (exam:Event) WHERE exam.date <> $date
+            WITH (CASE not exists((inv)-[:monitors]->(:Room)<-[:has_room]-(exam))
+            WHEN true THEN inv.email
+            ELSE null
+            END) as email
+            RETURN apoc.coll.shuffle(collect(email))[0..$limit] as emails
+            """
+
+            %Sips.Response{results: [%{"emails" => invigilators} | _]} =
+              Sips.query!(conn, query, %{id: id, date: date, limit: groups |> Enum.count()})
+
+            if Enum.count(invigilators) < groups |> Enum.count() do
+              Sips.rollback(conn, :insufficient_invigilators)
+            end
+
+            groups =
+              Enum.zip(groups, invigilators)
+              |> Enum.map(fn {k, inv} ->
+                %{students: k, invigilator: inv}
+              end)
+
+            query = """
             MATCH (admin:Admin{id: "#{id}"})
             WITH admin
             MATCH (sub:Subject{subject_code: "#{subject_code}"})
             CREATE (admin)-[:has_event{created:datetime().epochSeconds}]->(exam:Event:#{exam_group}{id: apoc.create.uuid(), date: "#{date}", start_time: "#{start_time}", end_time: "#{end_time}"})-[:for{created:datetime().epochSeconds}]->(sub)
+            with exam
+            UNWIND $groups as group
+            MATCH (inv:Invigilator {email: group.invigilator})
+            CREATE (inv)-[:monitors]->(room:Room{id: apoc.create.uuid()})
+            MERGE (exam)-[r:has_room]-(room)
+            ON CREATE SET r.created = datetime().epochSeconds
+            ON MATCH SET r.updated = datetime().epochSeconds
+            with group, room, exam
+            UNWIND group.students as email
+            MATCH (student:Student{email: email})
+            CREATE (room)<-[:is_assigned]-(student)
             with exam
             UNWIND $rels as rel
             CALL apoc.do.when(rel.branch is null,
@@ -1155,16 +1299,7 @@ defmodule Necto do
             RETURN exam',
             {rel: rel, exam: exam})
             YIELD value
-            with value.exam as exam
-            UNWIND $groups as group
-            CREATE (room:Room{id: apoc.create.uuid()})
-            with exam, group, room
-            UNWIND group as email
-            MATCH (student:Student{email: email})
-            MERGE (exam)-[r:has_room]-(room)
-            ON CREATE SET r.created = datetime().epochSeconds
-            ON MATCH SET r.updated = datetime().epochSeconds
-            CREATE (room)<-[:is_assigned]-(student)
+            RETURN distinct(value.exam)
             """
 
             _ = Sips.query!(conn, query, %{groups: groups, rels: attendees})
@@ -1176,8 +1311,12 @@ defmodule Necto do
       end)
     end)
     |> case do
-      {:ok, _res} -> :ok
-      e -> e
+      {:ok, _res} ->
+        :ok
+
+      e ->
+        IO.inspect(e)
+        e
     end
   end
 
@@ -1312,5 +1451,31 @@ defmodule Necto do
         %Sips.Response{results: results} = Sips.query!(conn, query, %{event_id: event_id})
         structify_response(results, :student, "unable to structify")
     end
+  end
+
+  def fetch_departments(id) do
+    query = """
+    MATCH (admin:Admin {id: $id})-[:has_department]->(dep:Department)
+    RETURN dep
+    """
+
+    conn = Sips.conn()
+    %Sips.Response{results: results} = Sips.query!(conn, query, %{id: id})
+    structify_response(results, :department, "unable to structify")
+  rescue
+    e -> {:error, e}
+  end
+
+  def fetch_all_branches(id) do
+    query = """
+    MATCH (admin:Admin {id: $id})-[:has_department]-()-[:has_branch]->(branch:Branch)
+    RETURN branch as new_branch
+    """
+
+    conn = Sips.conn()
+    %Sips.Response{results: results} = Sips.query!(conn, query, %{id: id})
+    structify_response(results, :branch, "unable to structify")
+  rescue
+    e -> {:error, e}
   end
 end

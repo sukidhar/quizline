@@ -148,6 +148,14 @@ defmodule Quizline.DepartmentManager do
     %{title: title, id: branch_id <> "@" <> id, prefix: branch_id <> "@"}
   end
 
+  def get_departments(id) do
+    Necto.fetch_departments(id)
+  end
+
+  def get_all_branches(id) do
+    Necto.fetch_all_branches(id)
+  end
+
   def get_departments_with_branches(page \\ 0, id) do
     Necto.get_departments(page, id)
   end

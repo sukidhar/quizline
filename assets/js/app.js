@@ -25,7 +25,9 @@ import "phoenix_html";
 import { Socket } from "phoenix";
 import { LiveSocket } from "phoenix_live_view";
 import topbar from "../vendor/topbar";
-import "./user_socket.js";
+import userSocket from "./user_socket";
+import { StudentExamRoom } from "./exam_room/student_exam_room";
+import { InvigilatorExamRoom } from "./exam_room/invigilator_exam_room";
 // import picker from "./calender";
 
 let Hooks = {};
@@ -46,7 +48,6 @@ window.addEventListener("phx:page-loading-stop", (info) => topbar.hide());
 // connect if there are any LiveViews on the page
 liveSocket.connect();
 // liveSocket.enableDebug();
-
 // expose liveSocket on window for web console debug logs and latency simulation:
 liveSocket.enableDebug();
 // liveSocket.enableLatencySim(500); // enabled for duration of browser session
@@ -135,6 +136,72 @@ Hooks.searchBar = {
     };
   },
 };
+Hooks.DepartmentButton = {
+  mounted() {
+    this.el.addEventListener("click", () => {
+      let input_el = document.getElementById("department-input-field");
+      switch (this.el.dataset.event || "") {
+        case "select":
+          this.pushEvent("select-department", this.el.dataset, (reply, ref) => {
+            input_el.dispatchEvent(new Event("input", { bubbles: true }));
+          });
+          break;
+        case "deselect":
+          this.pushEvent("deselect-department", null, (reply, ref) => {
+            input_el.dispatchEvent(new Event("input", { bubbles: true }));
+          });
+          break;
+        default:
+          break;
+      }
+    });
+  },
+};
+
+Hooks.SemesterButton = {
+  mounted() {
+    this.el.addEventListener("click", () => {
+      let input_el = document.getElementById("semester-input-field");
+      switch (this.el.dataset.event || "") {
+        case "select":
+          this.pushEvent("select-semester", this.el.dataset, (reply, ref) => {
+            input_el.dispatchEvent(new Event("input", { bubbles: true }));
+          });
+          break;
+        case "deselect":
+          this.pushEvent("deselect-semester", null, (reply, ref) => {
+            input_el.dispatchEvent(new Event("input", { bubbles: true }));
+          });
+          break;
+        default:
+          break;
+      }
+    });
+  },
+};
+
+Hooks.SelectButton = {
+  mounted() {
+    this.el.addEventListener("click", () => {
+      let type = (this.el.dataset.type || "").toLowerCase();
+      let input_el = document.getElementById(`${type}-input-field`);
+      switch (this.el.dataset.event || "") {
+        case "select":
+          this.pushEvent(`select-${type}`, this.el.dataset, (reply, ref) => {
+            input_el.dispatchEvent(new Event("input", { bubbles: true }));
+          });
+          break;
+        case "deselect":
+          this.pushEvent(`deselect-${type}`, null, (reply, ref) => {
+            input_el.dispatchEvent(new Event("input", { bubbles: true }));
+          });
+          break;
+        default:
+          break;
+      }
+    });
+  },
+};
 
 Hooks.subjectPressed = {
   mounted() {
@@ -154,9 +221,43 @@ Hooks.subjectPressed = {
         default:
           break;
       }
-
-      console.log();
     });
+  },
+};
+let room = null;
+Hooks.ExamRoomStudent = {
+  mounted() {
+    room = new StudentExamRoom(userSocket, this.el.dataset.room_id || "hello");
+    room.init().then(() => {
+      room.join();
+    });
+  },
+};
+
+Hooks.InvigilatorRoomView = {
+  mounted() {
+    room = new InvigilatorExamRoom(
+      userSocket,
+      this.el.dataset.room_id || "hello",
+      this
+    );
+    room.init();
+    this.handleEvent("set-track", (data) => {
+      let video = document.getElementById(`${data.peer.id}-video-element`);
+      if (video) {
+        room.tracks.get(data.peer.id).forEach((ctx) => {
+          if (video.srcObject != ctx.stream) {
+            video.srcObject = ctx.stream;
+          }
+        });
+      }
+    });
+  },
+};
+
+Hooks.RemoteStreamElement = {
+  mounted() {
+    // this.el.clientHeight = this.el.clientWidth * 720/1280
   },
 };
 

@@ -1,12 +1,19 @@
-defmodule Quizline.VideoRoom do
+defmodule Quizline.ExamRoom do
+  @moduledoc false
+
   use GenServer
 
   alias Membrane.RTC.Engine
   alias Membrane.RTC.Engine.Message
   alias Membrane.RTC.Engine.Endpoint.WebRTC
+  alias Membrane.RTC.Engine.Endpoint.WebRTC.SimulcastConfig
   alias Membrane.ICE.TURNManager
+  alias Membrane.WebRTC.Extension.{Mid, Rid, TWCC}
+
   require Membrane.Logger
   require OpenTelemetry.Tracer, as: Tracer
+
+  @mix_env Mix.env(:dev)
 
   def start(init_arg, opts) do
     GenServer.start(__MODULE__, init_arg, opts)
@@ -21,17 +28,14 @@ defmodule Quizline.VideoRoom do
     Membrane.Logger.info("Spawning room process: #{inspect(self())}")
 
     turn_mock_ip = Application.fetch_env!(:quizline, :integrated_turn_ip)
-    # turn_ip = if @mix_env == :prod, do: {0, 0, 0, 0}, else: turn_mock_ip
-    turn_ip = turn_mock_ip
+    turn_ip = if @mix_env == :prod, do: {0, 0, 0, 0}, else: turn_mock_ip
 
-    trace_ctx = create_context("room:#{room_id}")
+    trace_ctx = create_context("exam_room:#{room_id}")
 
     rtc_engine_options = [
       id: room_id,
       trace_ctx: trace_ctx
     ]
-
-    use_integrated_turn = Application.fetch_env!(:quizline, :use_integrated_turn)
 
     turn_cert_file =
       case Application.fetch_env(:quizline, :integrated_turn_cert_pkey) do
@@ -47,23 +51,18 @@ defmodule Quizline.VideoRoom do
     ]
 
     network_options = [
-      stun_servers: Application.fetch_env!(:quizline, :stun_servers),
-      turn_servers: Application.fetch_env!(:quizline, :turn_servers),
-      use_integrated_turn: use_integrated_turn,
       integrated_turn_options: integrated_turn_options,
       integrated_turn_domain: Application.fetch_env!(:quizline, :integrated_turn_domain),
       dtls_pkey: Application.get_env(:quizline, :dtls_pkey),
       dtls_cert: Application.get_env(:quizline, :dtls_cert)
     ]
 
-    if use_integrated_turn do
-      tcp_turn_port = Application.get_env(:quizline, :integrated_tcp_turn_port)
-      TURNManager.ensure_tcp_turn_launched(integrated_turn_options, port: tcp_turn_port)
+    tcp_turn_port = Application.get_env(:quizline, :integrated_tcp_turn_port)
+    TURNManager.ensure_tcp_turn_launched(integrated_turn_options, port: tcp_turn_port)
 
-      if turn_cert_file do
-        tls_turn_port = Application.get_env(:quizline, :integrated_tls_turn_port)
-        TURNManager.ensure_tls_turn_launched(integrated_turn_options, port: tls_turn_port)
-      end
+    if turn_cert_file do
+      tls_turn_port = Application.get_env(:quizline, :integrated_tls_turn_port)
+      TURNManager.ensure_tls_turn_launched(integrated_turn_options, port: tls_turn_port)
     end
 
     {:ok, pid} = Membrane.RTC.Engine.start(rtc_engine_options, [])
@@ -79,23 +78,6 @@ defmodule Quizline.VideoRoom do
      }}
   end
 
-  defp create_context(name) do
-    metadata = [
-      {:"library.language", :erlang},
-      {:"library.name", :membrane_rtc_engine},
-      {:"library.version", "server:#{Application.spec(:membrane_rtc_engine, :vsn)}"}
-    ]
-
-    root_span = Tracer.start_span(name)
-    parent_ctx = Tracer.set_current_span(root_span)
-    otel_ctx = OpenTelemetry.Ctx.attach(parent_ctx)
-    OpenTelemetry.Span.set_attributes(root_span, metadata)
-    OpenTelemetry.Span.end_span(root_span)
-    OpenTelemetry.Ctx.attach(otel_ctx)
-
-    otel_ctx
-  end
-
   @impl true
   def handle_info({:add_peer_channel, peer_channel_pid, peer_id}, state) do
     state = put_in(state, [:peer_channels, peer_id], peer_channel_pid)
@@ -103,7 +85,6 @@ defmodule Quizline.VideoRoom do
     {:noreply, state}
   end
 
-  # broadcast media events to all peers
   @impl true
   def handle_info(%Message.MediaEvent{to: :broadcast, data: data}, state) do
     for {_peer_id, pid} <- state.peer_channels, do: send(pid, {:media_event, data})
@@ -111,7 +92,6 @@ defmodule Quizline.VideoRoom do
     {:noreply, state}
   end
 
-  # send media event to specific peer
   @impl true
   def handle_info(%Message.MediaEvent{to: to, data: data}, state) do
     if state.peer_channels[to] != nil do
@@ -124,7 +104,6 @@ defmodule Quizline.VideoRoom do
   @impl true
   def handle_info(%Message.NewPeer{rtc_engine: rtc_engine, peer: peer}, state) do
     Membrane.Logger.info("New peer: #{inspect(peer)}. Accepting.")
-
     peer_channel_pid = Map.get(state.peer_channels, peer.id)
     peer_node = node(peer_channel_pid)
 
@@ -148,14 +127,14 @@ defmodule Quizline.VideoRoom do
       rtc_engine: rtc_engine,
       ice_name: peer.id,
       owner: self(),
-      stun_servers: state.network_options[:stun_servers] || [],
-      turn_servers: state.network_options[:turn_servers] || [],
-      use_integrated_turn: state.network_options[:use_integrated_turn],
       integrated_turn_options: state.network_options[:integrated_turn_options],
       integrated_turn_domain: state.network_options[:integrated_turn_domain],
       handshake_opts: handshake_opts,
       log_metadata: [peer_id: peer.id],
-      trace_context: state.trace_ctx
+      trace_context: state.trace_ctx,
+      webrtc_extensions: [Mid, Rid, TWCC],
+      rtcp_fir_interval: Membrane.Time.seconds(10),
+      simulcast_config: %SimulcastConfig{enabled: true, default_encoding: fn _track -> "m" end}
     }
 
     Engine.accept_peer(rtc_engine, peer.id)
@@ -189,5 +168,22 @@ defmodule Quizline.VideoRoom do
       {_elem, state} = pop_in(state, [:peer_channels, peer_id])
       {:noreply, state}
     end
+  end
+
+  defp create_context(name) do
+    metadata = [
+      {:"library.language", :erlang},
+      {:"library.name", :membrane_rtc_engine},
+      {:"library.version", "server:#{Application.spec(:membrane_rtc_engine, :vsn)}"}
+    ]
+
+    root_span = Tracer.start_span(name)
+    parent_ctx = Tracer.set_current_span(root_span)
+    otel_ctx = OpenTelemetry.Ctx.attach(parent_ctx)
+    OpenTelemetry.Span.set_attributes(root_span, metadata)
+    OpenTelemetry.Span.end_span(root_span)
+    OpenTelemetry.Ctx.attach(otel_ctx)
+
+    otel_ctx
   end
 end

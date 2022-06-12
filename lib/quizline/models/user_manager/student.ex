@@ -1,6 +1,7 @@
 defmodule Quizline.UserManager.Student do
   use Ecto.Schema
   import Ecto.Changeset
+  import Quizline.ChangesetHelper
 
   embedded_schema do
     field(:first_name, :string)
@@ -19,8 +20,23 @@ defmodule Quizline.UserManager.Student do
 
   def changeset(user, params) do
     user
-    |> cast(params, [:reg_no, :first_name, :last_name, :email, :semester, :branch])
-    |> validate_required([:reg_no, :first_name, :last_name, :email, :semester, :branch])
+    |> cast(params, [:rid, :first_name, :last_name, :email])
+    |> cast_embed(:semester, with: &Quizline.SemesterManager.Semester.changeset/2, required: true)
+    |> cast_embed(:branch, with: &Quizline.DepartmentManager.branch_changeset/2, required: true)
+    |> validate_required([:rid, :first_name, :last_name, :email])
+    |> validate_email()
+    |> validate_length(:first_name, min: 2)
+    |> validate_length(:last_name, min: 2)
+    |> put_change(:id, Ecto.UUID.generate())
+  end
+
+  def file_changeset(user, params) do
+    user
+    |> cast(params, [:first_name, :last_name, :email, :rid])
+    |> validate_required([:first_name, :last_name, :email, :rid])
+    |> validate_email()
+    |> validate_length(:first_name, min: 2)
+    |> validate_length(:last_name, min: 2)
     |> put_change(:id, Ecto.UUID.generate())
   end
 end

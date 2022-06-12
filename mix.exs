@@ -55,8 +55,14 @@ defmodule Quizline.MixProject do
       {:email_checker, "~> 0.2.4"},
       {:csv, "~> 2.4"},
       {:timex, "~> 3.0"},
-      {:membrane_rtc_engine, github: "membraneframework/membrane_rtc_engine"},
-      {:membrane_webrtc_plugin, github: "membraneframework/membrane_webrtc_plugin"}
+
+      # membrane
+      {:membrane_rtc_engine, "~> 0.3.0"},
+      # otel
+      {:opentelemetry, "~> 0.6.0", override: true},
+      {:opentelemetry_api, "~> 0.6.0", override: true},
+      {:opentelemetry_exporter, "~> 0.6.0"},
+      {:opentelemetry_zipkin, "~> 0.4.0"}
     ]
   end
 

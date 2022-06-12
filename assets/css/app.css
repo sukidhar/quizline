@@ -93,3 +93,17 @@
 .close-button{
   @apply stroke-gray-400 bg-white
 }
+
+.flip-horizontally {
+  transform: scaleX(-1);
+}
+
+.remote-grid>.remote-video-element{
+  @apply bg-white w-full h-fit
+}
+
+
+
+.remote-grid>.remote-video-element>video{
+  @apply bg-black w-full 
+}

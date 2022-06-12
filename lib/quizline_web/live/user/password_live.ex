@@ -7,7 +7,7 @@ defmodule QuizlineWeb.User.PasswordLive do
 
   def mount(%{"token" => token}, _session, socket) do
     case Guardian.resource_from_token(token) do
-      {:ok, %User{} = user, _claims} ->
+      {:ok, user, _claims} ->
         {:ok,
          socket
          |> assign(:password_changeset, UserManager.password_user_set(%User{}))

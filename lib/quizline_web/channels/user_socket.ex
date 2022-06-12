@@ -8,7 +8,7 @@ defmodule QuizlineWeb.UserSocket do
 
   ## Channels
 
-  channel "video_room:*", QuizlineWeb.VideoRoomChannel
+  channel "exam_room:*", QuizlineWeb.ExamRoomChannel
 
   # Socket params are passed from the client and can
   # be used to verify and authenticate a user. After

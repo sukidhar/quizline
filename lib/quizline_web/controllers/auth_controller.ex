@@ -37,8 +37,8 @@ defmodule QuizlineWeb.AuthController do
   def authenticate_user(conn, %{"token" => token}) do
     IO.inspect(token)
 
-    with {:verify, {:ok, admin, _}} <- {:verify, UserManager.Guardian.resource_from_token(token)} do
-      redirect(conn |> UserManager.Guardian.Plug.sign_in(admin), to: "/")
+    with {:verify, {:ok, user, _}} <- {:verify, UserManager.Guardian.resource_from_token(token)} do
+      redirect(conn |> UserManager.Guardian.Plug.sign_in(user), to: "/")
     else
       {:verify, error} ->
         IO.inspect(error)

@@ -12,7 +12,7 @@ defmodule Quizline.SemesterManager.Semester do
 
   def changeset(semester, params) do
     semester
-    |> cast(params, [:title, :sid, :common?])
+    |> cast(params, [:id, :title, :sid, :common?])
     |> validate_required([:title, :sid, :common?])
     |> update_change(:title, &String.trim/1)
     |> update_change(:sid, &String.trim/1)

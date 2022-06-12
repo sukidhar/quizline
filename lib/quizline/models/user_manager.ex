@@ -1,5 +1,7 @@
 defmodule Quizline.UserManager do
   alias Quizline.UserManager.UserMailer
+  alias Quizline.UserManager.Invigilator
+  alias Quizline.UserManager.Student
   alias Quizline.UserManager.User
   alias Quizline.UserManager.Guardian
   import Necto
@@ -9,38 +11,55 @@ defmodule Quizline.UserManager do
   alias Ecto.Changeset
 
   def create_accounts(account_data, id) do
-    [data | _] = account_data
+    case Necto.create_bulk_user_accounts(account_data, id) do
+      {:ok, {students, invigilators}} ->
+        IO.inspect(students)
+        IO.inspect(invigilators)
+        IO.inspect("mail them")
 
-    res =
-      Enum.map(data, fn account ->
-        %{
-          user: registration_user_set(%User{}, account.user)
-        }
-      end)
-      |> Necto.create_user_accounts(id)
-
-    IO.inspect(res)
-
-    case res do
-      {:ok, users} ->
-        users
-        |> Enum.map(fn user ->
-          UserMailer.deliver_password_settings(
-            user,
-            "http://lvh.me:4000/set-pw/#{tokenise_user(user)}"
-          )
-        end)
-
-        {:ok, users}
-
-      {:error, e} ->
+      e ->
         IO.inspect(e)
-        {:error, "failed to create accounts"}
     end
   end
 
-  def registration_user_set(%User{} = user, params \\ %{}) do
-    # User.changeset(user, params)
+  def create_student(changeset) do
+    case Necto.create(changeset, :student) do
+      :ok ->
+        send_fp_instructions(changeset)
+
+      {:error, e} ->
+        IO.inspect(e)
+    end
+  end
+
+  def create_invigilator(changeset) do
+    case Necto.create(changeset, :invigilator) do
+      :ok ->
+        send_fp_instructions(changeset)
+
+      {:error, e} ->
+        IO.inspect(e)
+    end
+  end
+
+  def registration_user_set(a, params \\ %{})
+
+  def registration_user_set(:invigilator, params) do
+    Invigilator.changeset(%Invigilator{}, params)
+  end
+
+  def registration_user_set(:student, params) do
+    Student.changeset(%Student{}, params)
+  end
+
+  def file_user_set(a, params \\ %{})
+
+  def file_user_set(:invigilator, params) do
+    Invigilator.file_changeset(%Invigilator{}, params)
+  end
+
+  def file_user_set(:student, params) do
+    Student.file_changeset(%Student{}, params)
   end
 
   def fp_change_user(%User{} = user, attrs \\ %{}) do
@@ -56,7 +75,7 @@ defmodule Quizline.UserManager do
   end
 
   def get_user_by_id(id) do
-    with {:ok, %User{} = user} <- get_user(:id, id) do
+    with {:ok, user} <- get_user(:id, id) do
       {:ok, user}
     else
       {:error, _} -> {:error, reason: "email not registered"}
@@ -64,7 +83,7 @@ defmodule Quizline.UserManager do
   end
 
   def get_user_by_email(email) do
-    with {:ok, %User{} = user} <- get_user(:email, email) do
+    with {:ok, user} <- get_user(:email, email) do
       {:ok, user}
     else
       {:error, _} -> {:error, reason: "email not registered"}
@@ -79,15 +98,23 @@ defmodule Quizline.UserManager do
 
     case changeset do
       %Changeset{valid?: true, changes: %{email: email, password: password}} ->
-        with {:ok, %User{hashed_password: hash} = user} <- get_user(:email, email) do
-          if Argon2.verify_pass(password, hash) do
-            {:access, user}
-          else
-            {:error, %{changeset: changeset, reason: "Invalid email or password"}}
-          end
-        else
-          {:error, _} ->
-            {:error, reason: "email not registered"}
+        case get_user(:email, email) do
+          {:ok, %Student{hashed_password: hash} = user} ->
+            if Argon2.verify_pass(password, hash) do
+              {:access, user}
+            else
+              {:error, %{changeset: changeset, reason: "Invalid email or password"}}
+            end
+
+          {:ok, %Invigilator{hashed_password: hash} = user} ->
+            if Argon2.verify_pass(password, hash) do
+              {:access, user}
+            else
+              {:error, %{changeset: changeset, reason: "Invalid email or password"}}
+            end
+
+          _ ->
+            {:error, reason: "unknown user email"}
         end
 
       %Changeset{valid?: false} ->
@@ -95,7 +122,7 @@ defmodule Quizline.UserManager do
     end
   end
 
-  def tokenise_user(%User{} = user) do
+  def tokenise_user(user) do
     {:ok, token, _claims} = Guardian.encode_and_sign(user)
     token
   end

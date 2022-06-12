@@ -4,7 +4,10 @@ defmodule QuizlineWeb.Admin.SessionLive do
   alias Quizline.AdminManager
   alias Quizline.AdminManager.Admin
   alias Quizline.UserManager.Student
+  alias Quizline.UserManager
   alias Quizline.EventManager
+  alias Quizline.DepartmentManager
+  alias Quizline.SemesterManager
   alias Quizline.EventManager.Exam
   alias Quizline.SubjectManager
   import Quizline.Calendar
@@ -16,8 +19,22 @@ defmodule QuizlineWeb.Admin.SessionLive do
     {:ok,
      socket
      |> assign(:admin, admin)
-     |> assign(:view, :events)
+     |> assign(:view, :users)
      |> allow_upload(:form_sheet, accept: ~w(.csv), max_entries: 1)
+     |> assign(:users_data, %{
+       form_mode: :file,
+       invigilator_form?: false,
+       student_form?: false,
+       invigilator_changeset: UserManager.registration_user_set(:invigilator),
+       student_changeset: UserManager.registration_user_set(:student),
+       departments: nil,
+       branches: nil,
+       semesters: nil,
+       selected_department: nil,
+       selected_semester: nil,
+       selected_branch: nil,
+       departments_filter: ""
+     })
      |> assign(:events_data, %{
        events: nil,
        primary_changeset: EventManager.exam_primary_changeset(%Exam{}),
@@ -158,9 +175,10 @@ defmodule QuizlineWeb.Admin.SessionLive do
   end
 
   @impl true
-  def handle_info({:form_mode, mode}, socket) do
+  def handle_info(%{form_mode: mode, map: map}, socket) do
     {:noreply,
-     socket |> assign(:events_data, socket.assigns.events_data |> Map.put(:form_mode, mode))}
+     socket
+     |> assign(map, Map.get(socket.assigns, map, %{}) |> Map.put(:form_mode, mode))}
   end
 
   @impl true
@@ -486,6 +504,236 @@ defmodule QuizlineWeb.Admin.SessionLive do
        :events_data,
        socket.assigns.events_data
        |> Map.put(:student_search_results, res)
+     )}
+  end
+
+  # user component
+
+  def handle_info(:load_data, socket) do
+    socket =
+      case DepartmentManager.get_departments(socket.assigns.admin.id) do
+        {:error, e} ->
+          IO.inspect(e)
+          socket
+
+        data ->
+          socket
+          |> assign(
+            :users_data,
+            socket.assigns.users_data
+            |> Map.put(:departments, data)
+          )
+      end
+
+    socket =
+      case DepartmentManager.get_all_branches(socket.assigns.admin.id) do
+        {:error, e} ->
+          IO.inspect(e)
+          socket
+
+        data ->
+          socket
+          |> assign(
+            :users_data,
+            socket.assigns.users_data
+            |> Map.put(:branches, data)
+          )
+      end
+
+    socket =
+      case SemesterManager.get_semesters(socket.assigns.admin.id) do
+        {:error, _, e} ->
+          IO.inspect(e)
+          socket
+
+        {:ok, data} ->
+          socket
+          |> assign(
+            :users_data,
+            socket.assigns.users_data
+            |> Map.put(:semesters, data)
+          )
+      end
+
+    {:noreply, socket}
+  end
+
+  def handle_info(%{show_form: type}, socket) do
+    {:noreply,
+     socket
+     |> assign(
+       :users_data,
+       socket.assigns.users_data
+       |> Map.put(:invigilator_form?, type == :invigilator)
+       |> Map.put(:student_form?, type == :student)
+     )}
+  end
+
+  def handle_info(%{users_data: data}, socket) do
+    {students, invigilators} =
+      data
+      |> Enum.reject(fn %{"type" => type} ->
+        String.downcase(type) not in ["s", "i"]
+      end)
+      |> Enum.split_with(fn %{"type" => type} ->
+        type == "s"
+      end)
+
+    {
+      students
+      |> Enum.map(fn %{
+                       "branch" => branch,
+                       "semester" => semester,
+                       "first_name" => first_name,
+                       "last_name" => last_name,
+                       "email" => email,
+                       "reg_no" => rid
+                     } ->
+        UserManager.file_user_set(:student, %{
+          "first_name" => first_name,
+          "last_name" => last_name,
+          "email" => email,
+          "rid" => rid
+        })
+        |> case do
+          %Ecto.Changeset{valid?: true, changes: changes} ->
+            changes |> Map.put(:semester, semester) |> Map.put(:branch, branch)
+
+          _ ->
+            raise "Invalid Data"
+        end
+      end),
+      invigilators
+      |> Enum.map(fn %{
+                       "department" => department,
+                       "first_name" => first_name,
+                       "last_name" => last_name,
+                       "email" => email
+                     } ->
+        UserManager.file_user_set(:invigilator, %{
+          "first_name" => first_name,
+          "last_name" => last_name,
+          "email" => email
+        })
+        |> case do
+          %Ecto.Changeset{valid?: true, changes: changes} ->
+            changes |> Map.put(:department, department)
+
+          _ ->
+            raise "Invalid Data"
+        end
+      end)
+    }
+    |> UserManager.create_accounts(socket.assigns.admin.id)
+
+    {:noreply, socket}
+  rescue
+    e ->
+      IO.inspect(e)
+      {:noreply, socket}
+  end
+
+  def handle_info(%{changeset: changeset, key: :student, action: :submit}, socket) do
+    UserManager.create_student(changeset)
+    {:noreply, socket}
+  end
+
+  def handle_info(%{changeset: changeset, key: :invigilator, action: :submit}, socket) do
+    UserManager.create_invigilator(changeset)
+    {:noreply, socket}
+  end
+
+  def handle_info(%{changeset: changeset, key: key}, socket) do
+    {:noreply,
+     socket
+     |> assign(
+       :users_data,
+       socket.assigns.users_data
+       |> Map.put(key, changeset)
+     )}
+  end
+
+  def handle_event("select-department", %{"depEmail" => email}, socket) do
+    {:noreply,
+     socket
+     |> assign(
+       :users_data,
+       socket.assigns.users_data
+       |> Map.put(
+         :selected_department,
+         Enum.find(socket.assigns.users_data.departments || [], nil, fn k ->
+           k.email == email
+         end)
+       )
+     )}
+  end
+
+  def handle_event("deselect-department", _, socket) do
+    {:noreply,
+     socket
+     |> assign(
+       :users_data,
+       socket.assigns.users_data
+       |> Map.put(
+         :selected_department,
+         nil
+       )
+     )}
+  end
+
+  def handle_event("select-semester", %{"semesterId" => sid}, socket) do
+    {:noreply,
+     socket
+     |> assign(
+       :users_data,
+       socket.assigns.users_data
+       |> Map.put(
+         :selected_semester,
+         Enum.find(socket.assigns.users_data.semesters || [], nil, fn k ->
+           k.sid == sid
+         end)
+       )
+     )}
+  end
+
+  def handle_event("deselect-semester", _, socket) do
+    {:noreply,
+     socket
+     |> assign(
+       :users_data,
+       socket.assigns.users_data
+       |> Map.put(
+         :selected_semester,
+         nil
+       )
+     )}
+  end
+
+  def handle_event("select-branch", %{"branchId" => bid}, socket) do
+    {:noreply,
+     socket
+     |> assign(
+       :users_data,
+       socket.assigns.users_data
+       |> Map.put(
+         :selected_branch,
+         Enum.find(socket.assigns.users_data.branches || [], nil, fn k ->
+           k.id == bid
+         end)
+       )
+     )}
+  end
+
+  def handle_event("deselect-branch", _, socket) do
+    {:noreply,
+     socket
+     |> assign(
+       :users_data,
+       socket.assigns.users_data
+       |> Map.put(
+         :selected_branch,
+         nil
+       )
      )}
   end
 end

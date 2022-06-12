@@ -69,7 +69,7 @@
     <% :departments -> %>
         <.live_component module={QuizlineWeb.Admin.SessionLive.DepartmentsComponent} id="departments-component" admin={@admin} />
     <% :users -> %>
-        <.live_component module={QuizlineWeb.Admin.SessionLive.UsersComponent} id="users-component" admin={@admin} />
+        <.live_component module={QuizlineWeb.Admin.SessionLive.UsersComponent} id="users-component" admin={@admin} users_data={@users_data}/>
     <% end %>
 </div>
                                 
