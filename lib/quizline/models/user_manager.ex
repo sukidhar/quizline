@@ -11,7 +11,15 @@ defmodule Quizline.UserManager do
   alias Ecto.Changeset
 
   def create_accounts(account_data, id) do
-    Necto.create_bulk_user_accounts(account_data, id)
+    case Necto.create_bulk_user_accounts(account_data, id) do
+      {:ok, {students, invigilators}} ->
+        IO.inspect(students)
+        IO.inspect(invigilators)
+        IO.inspect("mail them")
+
+      e ->
+        IO.inspect(e)
+    end
   end
 
   def create_student(changeset) do

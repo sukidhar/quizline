@@ -1059,10 +1059,52 @@ defmodule Necto do
       |> Enum.chunk_every(12)
 
     query = """
+    MATCH (admin:Admin{id: $id})-[:has_department]-()-[:has_invigilator]->(n:Invigilator)
+    OPTIONAL MATCH (n)-[:monitors]->(:Room)<-[:has_room]-(exam:Exam)
+    WHERE exam.date <> $date
+    RETURN n.email as email
+    LIMIT $limit
+    """
+
+    conn = Sips.conn()
+
+    %Sips.Response{results: res} =
+      Sips.query!(conn, query, %{id: id, date: date, limit: groups |> Enum.count()})
+
+    invigilators =
+      res
+      |> Enum.map(fn k ->
+        k["email"]
+      end)
+
+    if Enum.count(invigilators) < groups |> Enum.count() do
+      raise "insufficent invigilator count"
+    end
+
+    groups =
+      Enum.zip(groups, invigilators)
+      |> Enum.map(fn {k, inv} ->
+        %{students: k, invigilator: inv}
+      end)
+
+    IO.inspect(groups |> Enum.count())
+
+    query = """
     MATCH (admin:Admin{id: "#{id}"})
     WITH admin
     MATCH (sub:Subject{subject_code: "#{subject_code}"})
     CREATE (admin)-[:has_event{created:datetime().epochSeconds}]->(exam:Event:#{exam_group}{id: apoc.create.uuid(), date: "#{date}", start_time: "#{start_time}", end_time: "#{end_time}"})-[:for{created:datetime().epochSeconds}]->(sub)
+    with exam
+    UNWIND $groups as group
+    MATCH (inv:Invigilator {email: group.invigilator})
+    CREATE (inv)-[:monitors]->(room:Room{id: apoc.create.uuid()})
+    MERGE (exam)-[r:has_room]->(room)
+    ON CREATE SET r.created = datetime().epochSeconds
+    ON MATCH SET r.updated = datetime().epochSeconds
+    with group, room, exam
+    UNWIND group.students as email
+    MATCH (student:Student{email: email})
+    CREATE (room)<-[:is_assigned]-(student)
     with exam
     UNWIND $rels as rel
     CALL apoc.do.when(rel.branch is null,
@@ -1076,16 +1118,7 @@ defmodule Necto do
     RETURN exam',
     {rel: rel, exam: exam})
     YIELD value
-    with value.exam as exam
-    UNWIND $groups as group
-    CREATE (room:Room{id: apoc.create.uuid()})
-    with exam, group, room
-    UNWIND group as email
-    MATCH (student:Student{email: email})
-    MERGE (exam)-[r:has_room]-(room)
-    ON CREATE SET r.created = datetime().epochSeconds
-    ON MATCH SET r.updated = datetime().epochSeconds
-    CREATE (room)<-[:is_assigned]-(student)
+    RETURN distinct(value.exam) as exam
     """
 
     _ = Sips.query!(conn, query, %{groups: groups, rels: rels})
