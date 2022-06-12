@@ -25,7 +25,7 @@ defmodule Quizline.UserManager do
   def create_student(changeset) do
     case Necto.create(changeset, :student) do
       :ok ->
-        IO.inspect("mail them")
+        send_fp_instructions(changeset)
 
       {:error, e} ->
         IO.inspect(e)
@@ -35,7 +35,7 @@ defmodule Quizline.UserManager do
   def create_invigilator(changeset) do
     case Necto.create(changeset, :invigilator) do
       :ok ->
-        IO.inspect("mail them")
+        send_fp_instructions(changeset)
 
       {:error, e} ->
         IO.inspect(e)
@@ -75,7 +75,7 @@ defmodule Quizline.UserManager do
   end
 
   def get_user_by_id(id) do
-    with {:ok, %User{} = user} <- get_user(:id, id) do
+    with {:ok, user} <- get_user(:id, id) do
       {:ok, user}
     else
       {:error, _} -> {:error, reason: "email not registered"}
@@ -83,7 +83,7 @@ defmodule Quizline.UserManager do
   end
 
   def get_user_by_email(email) do
-    with {:ok, %User{} = user} <- get_user(:email, email) do
+    with {:ok, user} <- get_user(:email, email) do
       {:ok, user}
     else
       {:error, _} -> {:error, reason: "email not registered"}
@@ -98,15 +98,23 @@ defmodule Quizline.UserManager do
 
     case changeset do
       %Changeset{valid?: true, changes: %{email: email, password: password}} ->
-        with {:ok, %User{hashed_password: hash} = user} <- get_user(:email, email) do
-          if Argon2.verify_pass(password, hash) do
-            {:access, user}
-          else
-            {:error, %{changeset: changeset, reason: "Invalid email or password"}}
-          end
-        else
-          {:error, _} ->
-            {:error, reason: "email not registered"}
+        case get_user(:email, email) do
+          {:ok, %Student{hashed_password: hash} = user} ->
+            if Argon2.verify_pass(password, hash) do
+              {:access, user}
+            else
+              {:error, %{changeset: changeset, reason: "Invalid email or password"}}
+            end
+
+          {:ok, %Invigilator{hashed_password: hash} = user} ->
+            if Argon2.verify_pass(password, hash) do
+              {:access, user}
+            else
+              {:error, %{changeset: changeset, reason: "Invalid email or password"}}
+            end
+
+          _ ->
+            {:error, reason: "unknown user email"}
         end
 
       %Changeset{valid?: false} ->
@@ -114,7 +122,7 @@ defmodule Quizline.UserManager do
     end
   end
 
-  def tokenise_user(%User{} = user) do
+  def tokenise_user(user) do
     {:ok, token, _claims} = Guardian.encode_and_sign(user)
     token
   end

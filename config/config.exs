@@ -26,7 +26,10 @@ config :email_checker,
 config :quizline, Necto,
   modules: %{
     admin: Quizline.AdminManager.Admin,
-    user: Quizline.UserManager.User,
+    user: %{
+      invigilator: Quizline.UserManager.Invigilator,
+      student: Quizline.UserManager.Student
+    },
     student: Quizline.UserManager.Student,
     department: Quizline.DepartmentManager.Department,
     branch: Quizline.DepartmentManager.Department.Branch,

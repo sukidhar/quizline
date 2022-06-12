@@ -8,7 +8,6 @@ defmodule Quizline.UserManager.Guardian do
   end
 
   def resource_from_claims(%{"sub" => id}) do
-    IO.inspect(id)
     UserManager.get_user_by_id(id)
   rescue
     e ->

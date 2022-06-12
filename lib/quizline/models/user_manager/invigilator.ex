@@ -27,6 +27,8 @@ defmodule Quizline.UserManager.Invigilator do
     )
     |> validate_required([:first_name, :last_name, :email])
     |> validate_email()
+    |> validate_length(:first_name, min: 2)
+    |> validate_length(:last_name, min: 2)
     |> put_change(:id, Ecto.UUID.generate())
   end
 

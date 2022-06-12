@@ -127,34 +127,26 @@ defmodule Necto do
         MATCH (branch:Branch) WHERE branch.id STARTS WITH student.branch + "@"
         CREATE (user:Student:User {id: student.id, email: student.email, first_name: student.first_name, last_name: student.last_name, rid: student.rid })
         MERGE (sem)-[:has_student]->(user)-[:pursuing]->(branch)
-        RETURN user.email as email
+        RETURN user
         """
 
         %Sips.Response{results: students} =
           Sips.query!(conn, query, %{students: students, id: id})
 
-        students =
-          students
-          |> Enum.map(fn %{"email" => email} ->
-            email
-          end)
+        students = structify_response(students, :user, "unable to structify the user data")
 
         query = """
         UNWIND $invigilators as invigilator
         MATCH (dep:Department {email: invigilator.department })
         CREATE (user:Invigilator:User {id: invigilator.id, email: invigilator.email, first_name: invigilator.first_name, last_name: invigilator.last_name})
         MERGE (dep)-[:has_invigilator]->(user)
-        RETURN user.email as email
+        RETURN user
         """
 
         %Sips.Response{results: invigilators} =
           Sips.query!(conn, query, %{invigilators: invigilators})
 
-        invigilators =
-          invigilators
-          |> Enum.map(fn %{"email" => email} ->
-            email
-          end)
+        invigilators = structify_response(invigilators, :user, "unable to structify the user")
 
         {students, invigilators}
       end)
@@ -183,26 +175,37 @@ defmodule Necto do
           data -> {:ok, data}
         end
 
-      %{label: :user, modules: %{user: struct}} ->
-        case response do
-          %{"n" => node, "r" => r} ->
-            props =
-              convert_to_klist(node.properties)
-              |> Keyword.put(:account_type, String.downcase(hd(node.labels) || "student"))
-              |> Keyword.put(
-                :created_at,
-                "#{r.properties["created_at"] || DateTime.to_unix(DateTime.utc_now())}"
-              )
+      %{
+        label: :user,
+        modules: %{user: %{student: student_struct, invigilator: invigilator_struct}}
+      } ->
+        response
+        |> Enum.map(fn k ->
+          case k do
+            %{"user" => node, "r" => r} ->
+              props =
+                convert_to_klist(node.properties)
+                |> Keyword.put(
+                  :created_at,
+                  "#{r.properties["created_at"] || DateTime.to_unix(DateTime.utc_now())}"
+                )
 
-            {:ok, Kernel.struct!(struct, props)}
+              case String.downcase(hd(node.labels) || "student") do
+                "student" -> Kernel.struct!(student_struct, props)
+                "invigilator" -> Kernel.struct!(invigilator_struct, props)
+              end
 
-          %{"n" => node} ->
-            props =
-              convert_to_klist(node.properties)
-              |> Keyword.put(:account_type, String.downcase(hd(node.labels) || "student"))
+            %{"user" => node} ->
+              props =
+                convert_to_klist(node.properties)
+                |> Keyword.put(:account_type, String.downcase(hd(node.labels) || "student"))
 
-            {:ok, Kernel.struct!(struct, props)}
-        end
+              case String.downcase(hd(node.labels) || "student") do
+                "student" -> Kernel.struct!(student_struct, props)
+                "invigilator" -> Kernel.struct!(invigilator_struct, props)
+              end
+          end
+        end)
 
       %{label: :department, modules: %{department: struct}} ->
         response
@@ -584,22 +587,32 @@ defmodule Necto do
   end
 
   def get_user(:id, id) do
-    query = "MATCH (n : User)<-[r]-() WHERE n.id='#{id}' RETURN n,r"
+    query = "MATCH (user : User)<-[r]-() WHERE user.id='#{id}' RETURN user,r"
 
     conn = Sips.conn()
-    %Bolt.Sips.Response{results: [data | _]} = Sips.query!(conn, query)
+    %Bolt.Sips.Response{results: data} = Sips.query!(conn, query)
+
     structify_response(data, :user, "no such node found")
+    |> case do
+      [] -> raise "No such user exists"
+      [user | _] -> {:ok, user}
+    end
   rescue
     e -> {:error, reason: e.message}
   end
 
   def get_user(:email, email) do
-    query = "MATCH (n : User)<-[r]-() WHERE n.email='#{email}' RETURN n,r"
+    query = "MATCH (user : User)<-[r]-() WHERE user.email='#{email}' RETURN user,r"
 
     try do
       conn = Sips.conn()
-      %Bolt.Sips.Response{results: [data | _]} = Sips.query!(conn, query)
+      %Bolt.Sips.Response{results: data} = Sips.query!(conn, query)
+
       structify_response(data, :user, "no such node found")
+      |> case do
+        [] -> raise "No such user exists"
+        [user | _] -> {:ok, user}
+      end
     rescue
       e -> {:error, reason: e.message}
     end
