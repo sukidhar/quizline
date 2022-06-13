@@ -63,6 +63,7 @@ defmodule QuizlineWeb.Admin.SessionLive do
       "semesters" -> :semesters
       "departments" -> :departments
       "users" -> :users
+      _ -> :dashboard
     end
   end
 

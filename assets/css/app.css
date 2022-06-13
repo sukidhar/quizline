@@ -102,8 +102,6 @@
   @apply bg-white w-full h-fit
 }
 
-
-
 .remote-grid>.remote-video-element>video{
   @apply bg-black w-full 
 }
