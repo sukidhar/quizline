@@ -55,6 +55,7 @@ defmodule Quizline.MixProject do
       {:email_checker, "~> 0.2.4"},
       {:csv, "~> 2.4"},
       {:timex, "~> 3.0"},
+      {:xandra, "~> 0.11"},
 
       # membrane
       {:membrane_rtc_engine, "~> 0.3.0"},

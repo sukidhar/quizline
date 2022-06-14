@@ -44,4 +44,8 @@ defmodule Quizline.EventManager do
   def find_students(keyword, event_id) do
     Necto.get_students_fuzzy(keyword, event_id)
   end
+
+  def get_events_for_user(id) do
+    Necto.get_events_for_user(id)
+  end
 end

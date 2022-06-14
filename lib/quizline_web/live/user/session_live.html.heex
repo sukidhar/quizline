@@ -45,7 +45,7 @@
 <div class="ml-auto lg:w-[75%] xl:w-[80%] 2xl:w-[85%] h-screen">
     <%= case @view do %>
     <% :events -> %>
-        <.live_component module={QuizlineWeb.User.SessionLive.EventsComponent} id="events-component" user={@user}/>
+        <.live_component module={QuizlineWeb.User.SessionLive.EventsComponent} id="events-component" user={@user} events_data={@events_data}/>
     <% :messages -> %>
         <.live_component module={QuizlineWeb.User.SessionLive.ChatComponent} id="chat-component" user={@user} />
     <% :notifications -> %>

@@ -45,6 +45,12 @@ config :bolt_sips, Bolt,
   basic_auth: [username: "neo4j", password: "letmein"],
   pool_size: 10
 
+config :quizline, Xandra,
+  name: QXandra,
+  pool_size: 10,
+  nodes: ["localhost:9042"],
+  authentication: {Xandra.Authenticator.Password, [username: "cassandra", password: "cassandra"]}
+
 # Configures the endpoint
 config :quizline, QuizlineWeb.Endpoint,
   url: [host: "lvh.me"],

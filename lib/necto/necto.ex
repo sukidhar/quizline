@@ -307,22 +307,30 @@ defmodule Necto do
         case is_list(response) do
           true ->
             response
-            |> Enum.map(fn %{
-                             "subject" => %Bolt.Sips.Types.Node{properties: properties},
-                             "r" => %Bolt.Sips.Types.Relationship{properties: rel_props}
-                           } ->
-              props =
-                convert_to_klist(properties)
-                |> Keyword.put(
-                  :created,
-                  "#{rel_props["created"] || DateTime.to_unix(DateTime.utc_now())}"
-                )
-                |> Keyword.put(
-                  :updated,
-                  "#{rel_props["updated"] || nil}"
-                )
+            |> Enum.map(fn k ->
+              case k do
+                %{
+                  "subject" => %Bolt.Sips.Types.Node{properties: properties},
+                  "r" => %Bolt.Sips.Types.Relationship{properties: rel_props}
+                } ->
+                  props =
+                    convert_to_klist(properties)
+                    |> Keyword.put(
+                      :created,
+                      "#{rel_props["created"] || DateTime.to_unix(DateTime.utc_now())}"
+                    )
+                    |> Keyword.put(
+                      :updated,
+                      "#{rel_props["updated"] || nil}"
+                    )
 
-              Kernel.struct!(struct, props)
+                  Kernel.struct!(struct, props)
+
+                %{
+                  "subject" => %Bolt.Sips.Types.Node{properties: properties}
+                } ->
+                  props = convert_to_klist(properties)
+              end
             end)
 
           false ->
@@ -459,6 +467,39 @@ defmodule Necto do
                 |> Keyword.put(:students, students)
 
               Kernel.struct!(Module.concat([struct, Room]), props)
+
+            %{
+              "event" => %Bolt.Sips.Types.Node{labels: ["Event", label], properties: props},
+              "r" => %Sips.Types.Relationship{properties: rel_props},
+              "room" => %Sips.Types.Node{properties: room_props},
+              "subject" => subject
+            } ->
+              [subject] =
+                structify_response([%{"subject" => subject}], :subject, "unable to find subject")
+
+              props =
+                convert_to_klist(props)
+                |> Keyword.put(
+                  :exam_group,
+                  label |> String.split("_") |> Enum.map(&String.capitalize/1) |> Enum.join(" ")
+                )
+                |> Keyword.put(
+                  :created,
+                  "#{rel_props["created"] || DateTime.to_unix(DateTime.utc_now())}"
+                )
+                |> Keyword.put(
+                  :updated,
+                  "#{rel_props["updated"] || nil}"
+                )
+
+              Kernel.struct!(struct, props)
+              |> Map.put(:subject, subject)
+              |> Map.put(:rooms, [
+                Kernel.struct!(
+                  Module.concat([struct, Room]),
+                  room_props |> convert_to_klist()
+                )
+              ])
           end
         end)
         |> List.flatten()
@@ -1118,12 +1159,12 @@ defmodule Necto do
     UNWIND $rels as rel
     CALL apoc.do.when(rel.branch is null,
     'MATCH (sem:Semester{sid: rel.semester})
-    CREATE (sem)-[:participates]->(exam)
+    MERGE (sem)-[:participates]->(exam)
     RETURN exam',
     'MATCH (branch:Branch{id: rel.branch})
     with branch, rel, exam
     MATCH (sem:Semester{sid: rel.semester})
-    CREATE (sem)-[:participates]->(exam)<-[:participates]-(branch)
+    MERGE (sem)-[:participates]->(exam)<-[:participates]-(branch)
     RETURN exam',
     {rel: rel, exam: exam})
     YIELD value
@@ -1289,13 +1330,13 @@ defmodule Necto do
             UNWIND $rels as rel
             CALL apoc.do.when(rel.branch is null,
             'MATCH (sem:Semester{sid: rel.semester})
-            CREATE (sem)-[:participates]->(exam)
+            MERGE (sem)-[:participates]->(exam)
             RETURN exam',
             'MATCH (branch:Branch)
             WHERE branch.id STARTS WITH rel.branch + "@"
             with branch, rel,exam
             MATCH (sem:Semester{sid: rel.semester})
-            CREATE (sem)-[:participates]->(exam)<-[:participates]-(branch)
+            MERGE (sem)-[:participates]->(exam)<-[:participates]-(branch)
             RETURN exam',
             {rel: rel, exam: exam})
             YIELD value
@@ -1475,6 +1516,22 @@ defmodule Necto do
     conn = Sips.conn()
     %Sips.Response{results: results} = Sips.query!(conn, query, %{id: id})
     structify_response(results, :branch, "unable to structify")
+  rescue
+    e -> {:error, e}
+  end
+
+  def get_events_for_user(id) do
+    query = """
+    MATCH (user:User{id: $id})
+    OPTIONAL MATCH (user)-[:is_assigned]->(room:Room)<-[:has_room]-(event:Event)-[r:for]-(subject:Subject)
+    RETURN room, event, r, subject
+    """
+
+    conn = Sips.conn()
+
+    %Sips.Response{results: results} = Sips.query!(conn, query, %{id: id})
+
+    structify_response(results, :exam, "unable to structify")
   rescue
     e -> {:error, e}
   end

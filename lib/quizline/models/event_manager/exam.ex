@@ -18,6 +18,7 @@ defmodule Quizline.EventManager.Exam do
     end
 
     embeds_many :rooms, Room do
+      field(:is_active, :boolean, default: false)
       embeds_one(:invigilator, Quizline.UserManager.Invigilator)
       embeds_many(:students, Quizline.UserManager.Student)
       field(:created, :string)
