@@ -330,6 +330,7 @@ defmodule Necto do
                   "subject" => %Bolt.Sips.Types.Node{properties: properties}
                 } ->
                   props = convert_to_klist(properties)
+                  Kernel.struct!(struct, props)
               end
             end)
 
@@ -1523,7 +1524,7 @@ defmodule Necto do
   def get_events_for_user(id) do
     query = """
     MATCH (user:User{id: $id})
-    OPTIONAL MATCH (user)-[:is_assigned]->(room:Room)<-[:has_room]-(event:Event)-[r:for]-(subject:Subject)
+    OPTIONAL MATCH (user)-[:is_assigned|:monitors]->(room:Room)<-[:has_room]-(event:Event)-[r:for]-(subject:Subject)
     RETURN room, event, r, subject
     """
 
@@ -1531,7 +1532,11 @@ defmodule Necto do
 
     %Sips.Response{results: results} = Sips.query!(conn, query, %{id: id})
 
-    structify_response(results, :exam, "unable to structify")
+    structify_response(
+      results |> Enum.reject(&is_nil(&1["event"])),
+      :exam,
+      "unable to structify"
+    )
   rescue
     e -> {:error, e}
   end

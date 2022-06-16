@@ -47,7 +47,7 @@ defmodule Quizline.EventManager.Exam do
   def validate_date(%Changeset{valid?: true, changes: %{date: date}} = changeset) do
     Date.compare(Date.utc_today(), date)
     |> case do
-      x when x in [:gt, :eq] ->
+      x when x in [:gt] ->
         changeset |> add_error(:date, "exam date can't be today or in the past")
 
       _ ->

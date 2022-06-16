@@ -36,13 +36,15 @@ defmodule QuizlineWeb.User.SessionLive do
 
   def handle_info(:load_events, socket) do
     case EventManager.get_events_for_user(socket.assigns.user.id) do
+      {:error, e} ->
+        IO.inspect(e)
+
+        {:noreply,
+         socket |> assign(:events_data, socket.assigns.events_data |> Map.put(:events, []))}
+
       data ->
         {:noreply,
          socket |> assign(:events_data, socket.assigns.events_data |> Map.put(:events, data))}
-
-      {:error, e} ->
-        IO.inspect(e)
-        {:noreply, socket}
     end
   end
 end

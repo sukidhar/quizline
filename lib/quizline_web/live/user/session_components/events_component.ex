@@ -1,6 +1,9 @@
 defmodule QuizlineWeb.User.SessionLive.EventsComponent do
   use QuizlineWeb, :live_component
 
+  alias Quizline.UserManager.Student
+  alias Quizline.UserManager.Invigilator
+
   def update(%{user: _user, events_data: %{events: events} = events_data} = assigns, socket) do
     if is_nil(events) do
       send(self(), :load_events)

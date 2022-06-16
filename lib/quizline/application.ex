@@ -23,7 +23,7 @@ defmodule Quizline.Application do
       QuizlineWeb.Endpoint,
       # db connection supervisor
       {Bolt.Sips, Application.get_env(:bolt_sips, Bolt)},
-      {Xandra, Application.get_env(:quizline, Xandra)},
+      # {Xandra, Application.get_env(:quizline, Xandra)},
       # mailer
       {Finch, name: Swoosh.Finch},
       # presence

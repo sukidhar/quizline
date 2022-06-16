@@ -30,11 +30,20 @@
     </div>
     <div class="flex-1 mb-5 h-[calc(100%-theme(spacing.16))] bg-white">
         <div class="flex-grow w-full z-10 grid grid-cols-5 gap-4 p-5 h-full overflow-y-auto">
-            <%= for {event, index} <- (@events || []) |> Enum.with_index() do %> 
-                <div class="card bg-white shadow-md h-52 w-full flex items-center justify-end p-2">
-                    <%= "#{event.exam_group}"  %> 
-                </div>
-            <% end %> 
+            <%= case @user do  %>
+                <% %Student{} -> %>
+                    <%= for {event, index} <- (@events || []) |> Enum.with_index() do %> 
+                        <div class="card bg-white shadow-md h-52 w-full flex items-center justify-end p-2">
+                            <p><%= event.exam_group %></p> 
+                        </div>
+                    <% end %> 
+                <% %Invigilator{} -> %>
+                    <%= for event <- (@events || []) do %> 
+                        <div class="card bg-white shadow-md h-52 w-full flex items-center justify-end p-2">
+                            <p><%= event.exam_group %></p> 
+                        </div>
+                    <% end %> 
+            <% end %>  
         </div>
     </div>
 </div>
