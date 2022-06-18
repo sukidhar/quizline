@@ -261,6 +261,14 @@ Hooks.RemoteStreamElement = {
   },
 };
 
+Hooks.Timezone = {
+  mounted() {
+    console.log("hello");
+    let localTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    this.pushEvent("timezone-callback", { timezone: localTz });
+  },
+};
+
 function getFieldTypeFromError(id) {
   return id.replace("DOM-error-", "");
 }

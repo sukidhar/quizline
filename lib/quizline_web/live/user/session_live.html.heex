@@ -42,10 +42,10 @@
         </button>
     </div>
 </aside>
-<div class="ml-auto lg:w-[75%] xl:w-[80%] 2xl:w-[85%] h-screen">
+<div id="live-container" class="ml-auto lg:w-[75%] xl:w-[80%] 2xl:w-[85%] h-screen" phx-hook="Timezone">
     <%= case @view do %>
     <% :events -> %>
-        <.live_component module={QuizlineWeb.User.SessionLive.EventsComponent} id="events-component" user={@user} events_data={@events_data}/>
+        <.live_component module={QuizlineWeb.User.SessionLive.EventsComponent} id="events-component" user={@user} events_data={@events_data} current_time={@time}/>
     <% :messages -> %>
         <.live_component module={QuizlineWeb.User.SessionLive.ChatComponent} id="chat-component" user={@user} />
     <% :notifications -> %>

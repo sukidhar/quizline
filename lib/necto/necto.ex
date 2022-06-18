@@ -493,6 +493,20 @@ defmodule Necto do
                   "#{rel_props["updated"] || nil}"
                 )
 
+              props =
+                props
+                |> Keyword.put(
+                  :date,
+                  case Keyword.get(props, :date, nil) do
+                    nil ->
+                      nil
+
+                    date ->
+                      {date, ""} = Integer.parse(date)
+                      date |> DateTime.from_unix!() |> DateTime.to_date()
+                  end
+                )
+
               Kernel.struct!(struct, props)
               |> Map.put(:subject, subject)
               |> Map.put(:rooms, [
