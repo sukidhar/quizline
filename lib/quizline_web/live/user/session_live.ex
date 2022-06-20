@@ -75,16 +75,12 @@ defmodule QuizlineWeb.User.SessionLive do
   end
 
   def handle_info(:tick, socket) do
-    if socket.assigns.should_tick || false do
-      Process.send_after(self(), :tick, 5000)
-    end
-
     {:noreply,
      socket
      |> assign(
        :time,
        if is_nil(socket.assigns.timezone) do
-         Time.utc_now()
+         DateTime.utc_now()
        else
          Timex.now(socket.assigns.timezone)
        end

@@ -50,7 +50,7 @@
                                         <%= event.exam_group %>
                                     </p> 
                                     <div class="flex-grow"></div>
-                                    <button class={"btn btn-sm min-w-24 w-fit #{if should_show_join(event.start_time, event.date, @current_time, @current_tab), do: "ring-1 ring-cyan-400", else: "btn-disabled"}"}>
+                                    <button class={"btn btn-sm min-w-24 w-fit #{if should_show_join(event, @current_time, @current_tab), do: "ring-1 ring-cyan-400", else: "btn-disabled"}"} phx-click="start-exam-room" phx-value-room={get_room_id(event)} phx-target={@myself}>
                                         <p class="px-3">
                                             <%= if @current_tab == :tab_upcoming, do: "JOIN", else: "COMPLETED"  %> 
                                         </p>
@@ -95,7 +95,11 @@
                                     <%= event.exam_group %>
                                 </p> 
                                 <div class="flex-grow"></div>
-                                <button class="btn btn-outline btn-sm w-24">START</button>
+                                <button class={"btn btn-sm min-w-24 w-fit #{if should_show_join(event, @current_time, @current_tab), do: "ring-1 ring-cyan-400", else: "btn-disabled"}"} phx-click="start-exam-room" phx-value-room={get_room_id(event)} phx-target={@myself}>
+                                    <p class="px-3">
+                                        <%= if @current_tab == :tab_upcoming, do: "START", else: "COMPLETED"  %> 
+                                    </p>
+                                </button>
                             </div>
                             <div class="w-full flex items-center justify-center p-4 gap-4">
                                 <p>

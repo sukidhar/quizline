@@ -72,6 +72,16 @@ defmodule QuizlineWeb.User.SessionLive.EventsComponent do
     {:noreply, socket}
   end
 
+  def handle_event("start-exam-room", %{"room" => room_id}, socket) do
+    case socket.assigns.user do
+      %Invigilator{} ->
+        {:noreply, socket |> push_redirect(to: "/exam/i/#{room_id}")}
+
+      %Student{} ->
+        {:noreply, socket |> push_redirect(to: "/exam/#{room_id}")}
+    end
+  end
+
   def ftime(time) do
     {:ok, ftime} =
       Time.from_iso8601!(time)
@@ -100,29 +110,20 @@ defmodule QuizlineWeb.User.SessionLive.EventsComponent do
     %{d | day: d.day + 1}
   end
 
+  def get_room_id(%Exam{rooms: [%Exam.Room{id: room_id} | _]}) do
+    room_id
+  end
+
+  def get_room_id(_) do
+    nil
+  end
+
   # defp yesterday do
   #   d = Date.utc_today()
   #   %{d | day: d.day - 1}
   # end
 
-  def on_mount(:default, _params, _session, socket) do
-    {:cont,
-     socket
-     |> attach_hook(:local_tz, :handle_event, fn
-       "local-timezone", %{"local-timezone" => local_timezone}, socket ->
-         # Handle our "local-timezone" event and detach hook
-         socket =
-           socket
-           |> assign(:local_timezone, local_timezone)
-
-         {:halt, detach_hook(socket, :local_tz, :handle_event)}
-
-       _event, _params, socket ->
-         {:cont, socket}
-     end)}
-  end
-
-  def should_show_join(time, date, current_dt, :tab_upcoming) do
+  def should_show_join(event, current_dt, :tab_upcoming) do
     offset = current_dt.utc_offset
 
     kh = "#{div(offset, 3600)}"
@@ -132,15 +133,15 @@ defmodule QuizlineWeb.User.SessionLive.EventsComponent do
     m = if String.length(km) == 2, do: km, else: "0" <> km
 
     dt =
-      ((date |> Date.to_iso8601()) <>
-         "T" <> time <> "#{if offset < 0, do: "-", else: "+"}#{h}:#{m}")
+      ((event.date |> Date.to_iso8601()) <>
+         "T" <> event.start_time <> "#{if offset < 0, do: "-", else: "+"}#{h}:#{m}")
       |> Timex.parse!("{ISO:Extended}")
 
     dt = %DateTime{dt | minute: dt.minute - 15}
     DateTime.compare(current_dt, dt) in [:gt]
   end
 
-  def should_show_join(_time, _date, _current_dt, :tab_completed) do
+  def should_show_join(_event, _current_dt, :tab_completed) do
     false
   end
 end
