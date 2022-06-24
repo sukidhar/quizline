@@ -2,19 +2,40 @@ defmodule QuizlineWeb.User.SessionLive do
   use QuizlineWeb, :live_view
 
   alias Quizline.UserManager.Guardian
+  alias Quizline.UserManager.Invigilator
+  alias Quizline.UserManager.Student
   alias Quizline.EventManager
+  alias QuizlineWeb.Presence
+  alias Quizline.PubSub
 
   @impl true
   def mount(_params, %{"guardian_default_token" => token}, socket) do
     case Guardian.resource_from_token(token) do
-      {:ok, user, _} ->
+      {:ok, user, %{"deviceId" => deviceId}} ->
+        Presence.track(self(), "user_session", user.id, %{
+          deviceId: deviceId,
+          user_type:
+            case user do
+              %Invigilator{} ->
+                :invigilator
+
+              %Student{} ->
+                :student
+            end,
+          pid: self(),
+          session_start: DateTime.utc_now()
+        })
+
+        Phoenix.PubSub.subscribe(PubSub, "user_session")
+
         {:ok,
          socket
+         |> assign(:deviceId, deviceId)
          |> assign(:time, DateTime.utc_now())
          |> assign(:timezone, nil)
          |> assign(:should_tick, true)
          |> assign(:user, user)
-         |> assign(:view, :events)
+         |> assign(:view, :messages)
          |> assign(:events_data, %{
            events: nil,
            current_tab: :tab_upcoming
@@ -85,5 +106,27 @@ defmodule QuizlineWeb.User.SessionLive do
          Timex.now(socket.assigns.timezone)
        end
      )}
+  end
+
+  def handle_info(
+        %Phoenix.Socket.Broadcast{
+          event: "presence_diff",
+          payload: %{joins: joins, leaves: _leaves}
+        },
+        socket
+      ) do
+    case Map.keys(joins) |> Enum.find(nil, &(&1 == socket.assigns.user.id)) do
+      nil ->
+        nil
+
+      key ->
+        %{metas: sessions} = Presence.get_by_key("user_session", key)
+
+        if Enum.count(sessions |> Enum.frequencies_by(&(&1.deviceId || nil)) |> Map.keys()) > 1 do
+          IO.inspect("show error message and make page inacessible")
+        end
+    end
+
+    {:noreply, socket}
   end
 end

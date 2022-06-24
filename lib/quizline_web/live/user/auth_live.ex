@@ -5,6 +5,10 @@ defmodule QuizlineWeb.User.AuthLive do
   alias Quizline.UserManager
   alias Quizline.UserManager.User
 
+  def mount(_params, %{"guardian_default_token" => _token}, socket) do
+    {:ok, socket |> redirect(to: "/")}
+  end
+
   def mount(_params, _session, socket) do
     {:ok,
      socket
