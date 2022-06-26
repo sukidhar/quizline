@@ -48,4 +48,8 @@ defmodule Quizline.EventManager do
   def get_events_for_user(id) do
     Necto.get_events_for_user(id)
   end
+
+  def room_exists?(id) do
+    Necto.room_exists?(id)
+  end
 end

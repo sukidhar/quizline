@@ -1,17 +1,35 @@
-<div class="relative h-screen overflow-y-hidden" id="student-exam-room-view" phx-hook="ExamRoomStudent" data-room_id={@room_id}>
-    <div class="sticky z-10 top-0 h-16 border-b bg-white">
-        <div class="px-6 py-2">
+<%= if @show_multiple_session_error do  %>
+    <div class="absolute h-full w-full flex items-center justify-center z-50 bg-black/20">
+        <div class="absolute navbar bg-white z-30 top-0 left-0 right-0">
             <button class="btn btn-ghost normal-case text-xl">Quizline</button>
         </div>
-    </div>
-    <div class="flex-1 mb-5 h-[calc(100%-theme(spacing.16))] bg-white flex">
-        <div class="flex w-full h-full bg-black/5">
-
+        <div id="simulataneous-session-error-container" class="card p-10 min-h-[30%] min-w-[40%] max-w-[40%] bg-white" phx-hook="SessionError">
+            <div class="flex items-start justify-center w-full h-fit pb-6">
+                <p class="text-2xl font-semibold">
+                    Session Error
+                </p>
+            </div>
+            <p id="error-text" class="text-lg">
+                There is a session running already on other device or browser. Please close the previous session to continue using this new session, This tab will close itself in 15 seconds if not closed.
+            </p>
         </div>
-        <div class="flex flex-col w-[35%] h-full rounded-md">
-            <div class="p-5 w-full h-fit">
-                <video id="student-video-preview" class="w-full rounded-lg flip-horizontally"></video>
+    </div>
+<% else %>
+    <div class="relative h-screen overflow-y-hidden" id="student-exam-room-view" phx-hook="ExamRoomStudent" data-room_id={@room_id}>
+        <div class="sticky z-10 top-0 h-16 border-b bg-white">
+            <div class="px-6 py-2">
+                <button class="btn btn-ghost normal-case text-xl">Quizline</button>
+            </div>
+        </div>
+        <div class="flex-1 mb-5 h-[calc(100%-theme(spacing.16))] bg-white flex">
+            <div class="flex w-full h-full bg-black/5">
+
+            </div>
+            <div class="flex flex-col w-[35%] h-full rounded-md">
+                <div class="p-5 w-full h-fit">
+                    <video id="student-video-preview" class="w-full rounded-lg flip-horizontally"></video>
+                </div>
             </div>
         </div>
     </div>
-</div>
+<% end %> 

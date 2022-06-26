@@ -1554,4 +1554,16 @@ defmodule Necto do
   rescue
     e -> {:error, e}
   end
+
+  def room_exists?(id) do
+    query = """
+    MATCH (room:Room{id: $id})
+    RETURN count(room) >= 1 as result
+    """
+
+    conn = Sips.conn()
+
+    %Sips.Response{results: [%{"result" => value} | _]} = Sips.query!(conn, query, %{id: id})
+    value
+  end
 end

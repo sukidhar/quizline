@@ -56,6 +56,7 @@ defmodule Quizline.MixProject do
       {:csv, "~> 2.4"},
       {:timex, "~> 3.0"},
       {:xandra, "~> 0.11"},
+      {:eqrcode, "~> 0.1.10"},
 
       # membrane
       {:membrane_rtc_engine, "~> 0.3.0"},

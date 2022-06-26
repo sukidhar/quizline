@@ -12,6 +12,8 @@ defmodule QuizlineWeb.User.SessionLive do
   def mount(_params, %{"guardian_default_token" => token}, socket) do
     case Guardian.resource_from_token(token) do
       {:ok, user, %{"deviceId" => deviceId}} ->
+        Phoenix.PubSub.subscribe(PubSub, "user_session")
+
         Presence.track(self(), "user_session", user.id, %{
           deviceId: deviceId,
           user_type:
@@ -26,8 +28,6 @@ defmodule QuizlineWeb.User.SessionLive do
           session_start: DateTime.utc_now()
         })
 
-        Phoenix.PubSub.subscribe(PubSub, "user_session")
-
         {:ok,
          socket
          |> assign(:deviceId, deviceId)
@@ -36,10 +36,14 @@ defmodule QuizlineWeb.User.SessionLive do
          |> assign(:should_tick, true)
          |> assign(:user, user)
          |> assign(:view, :messages)
+         |> assign(:show_multiple_session_error, false)
          |> assign(:events_data, %{
            events: nil,
            current_tab: :tab_upcoming
          })}
+
+      _ ->
+        {:noreply, socket |> redirect(to: "/error")}
     end
   end
 
@@ -111,22 +115,33 @@ defmodule QuizlineWeb.User.SessionLive do
   def handle_info(
         %Phoenix.Socket.Broadcast{
           event: "presence_diff",
-          payload: %{joins: joins, leaves: _leaves}
+          payload: %{joins: joins, leaves: leaves}
         },
         socket
       ) do
-    case Map.keys(joins) |> Enum.find(nil, &(&1 == socket.assigns.user.id)) do
-      nil ->
-        nil
+    case {Map.keys(joins) |> Enum.find(nil, &(&1 == socket.assigns.user.id)),
+          Map.keys(leaves) |> Enum.find(nil, &(&1 == socket.assigns.user.id))} do
+      {nil, nil} ->
+        {:noreply, socket}
 
-      key ->
-        %{metas: sessions} = Presence.get_by_key("user_session", key)
+      {jkey, lkey} ->
+        if not is_nil(jkey) do
+          %{metas: sessions} = Presence.get_by_key("user_session", jkey)
 
-        if Enum.count(sessions |> Enum.frequencies_by(&(&1.deviceId || nil)) |> Map.keys()) > 1 do
-          IO.inspect("show error message and make page inacessible")
+          if Enum.count(sessions |> Enum.frequencies_by(&(&1.deviceId || nil)) |> Map.keys()) > 1 do
+            {:noreply, socket |> assign(:show_multiple_session_error, true)}
+          else
+            {:noreply, socket}
+          end
+        else
+          %{metas: sessions} = Presence.get_by_key("user_session", lkey)
+
+          if Enum.count(sessions |> Enum.frequencies_by(&(&1.deviceId || nil)) |> Map.keys()) <= 1 do
+            {:noreply, socket |> assign(:show_multiple_session_error, false)}
+          else
+            {:noreply, socket}
+          end
         end
     end
-
-    {:noreply, socket}
   end
 end

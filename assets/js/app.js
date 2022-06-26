@@ -31,7 +31,7 @@ import { InvigilatorExamRoom } from "./exam_room/invigilator_exam_room";
 // import picker from "./calender";
 
 let Hooks = {};
-
+console.log(new URL(window.location.href));
 let csrfToken = document
   .querySelector("meta[name='csrf-token']")
   .getAttribute("content");
@@ -226,10 +226,11 @@ Hooks.subjectPressed = {
 };
 let room = null;
 Hooks.ExamRoomStudent = {
-  mounted() {
+  async mounted() {
     room = new StudentExamRoom(userSocket, this.el.dataset.room_id || "hello");
-    room.init().then(() => {
-      room.join();
+    await room.init();
+    this.handleEvent("start-exam-room", (data) => {
+      console.log(data);
     });
   },
 };
@@ -266,6 +267,28 @@ Hooks.Timezone = {
     console.log("hello");
     let localTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
     this.pushEvent("timezone-callback", { timezone: localTz });
+  },
+};
+
+Hooks.SessionError = {
+  refreshInterval: null,
+  mounted() {
+    let p = document.getElementById("error-text");
+    let count = 15;
+    this.refreshInterval = setInterval(() => {
+      count -= 1;
+      if (count == 0) {
+        document.location.replace("https://google.com");
+      }
+      if (p) {
+        p.innerText = `There is a session running already on other device or browser. Please close the previous session to continue using this new session, This tab will close itself in ${count} seconds if not closed.`;
+      }
+    }, 1000);
+  },
+  destroyed() {
+    if (this.refreshInterval) {
+      clearInterval(this.refreshInterval);
+    }
   },
 };
 

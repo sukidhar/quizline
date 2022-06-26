@@ -30,13 +30,14 @@ defmodule QuizlineWeb.ExamRoomChannel do
   end
 
   defp do_join(socket, room_pid, room_id) do
-    peer_id = "#{UUID.uuid4()}"
-    # TODO handle crash of room?
     Process.monitor(room_pid)
-    send(room_pid, {:add_peer_channel, self(), peer_id})
+    {:ok, Phoenix.Socket.assign(socket, %{room_id: room_id, room_pid: room_pid})}
+  end
 
-    {:ok,
-     Phoenix.Socket.assign(socket, %{room_id: room_id, room_pid: room_pid, peer_id: peer_id})}
+  def handle_in("start-exam", %{"peer_id" => peer_id}, socket) do
+    Process.monitor(socket.assigns.room_pid)
+    send(socket.assigns.room_pid, {:add_peer_channel, self(), peer_id})
+    {:noreply, Phoenix.Socket.assign(socket, %{peer_id: peer_id})}
   end
 
   @impl true

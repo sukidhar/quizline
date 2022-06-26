@@ -1,13 +1,34 @@
 defmodule QuizlineWeb.User.Invigilator.ExamRoomLive do
   use QuizlineWeb, :live_view
 
-  def mount(%{"room" => room_id}, _, socket) do
-    {:ok,
-     socket
-     |> assign(:room_id, room_id)
-     |> assign(:peers, [])
-     |> assign(:is_mic_enabled, true)
-     |> assign(:is_video_enabled, true)}
+  alias Quizline.UserManager.Guardian
+  alias QuizlineWeb.Presence
+
+  def mount(%{"room" => room_id}, %{"guardian_default_token" => token}, socket) do
+    case Guardian.resource_from_token(token) do
+      {:ok, user, %{"deviceId" => deviceId}} ->
+        Phoenix.PubSub.subscribe(PubSub, "exam_session_" <> room_id)
+
+        Presence.track(self(), "exam_session_" <> room_id, user.id, %{
+          deviceId: deviceId,
+          user_type: :invigilator,
+          pid: self(),
+          session_start: DateTime.utc_now(),
+          approved: false
+        })
+
+        {:ok,
+         socket
+         |> assign(:user, user)
+         |> assign(:deviceId, deviceId)
+         |> assign(:room_id, room_id)
+         |> assign(:peers, [])
+         |> assign(:is_mic_enabled, true)
+         |> assign(:is_video_enabled, true)}
+
+      _ ->
+        {:noreply, socket |> redirect(to: "/error")}
+    end
   end
 
   def handle_event("joined-rtc-engine", %{"peers" => peers}, socket) do

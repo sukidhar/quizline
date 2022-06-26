@@ -13,7 +13,7 @@ export class StudentExamRoom {
 
   private socket;
   private webrtcSocketRefs: string[] = [];
-  private webrtcChannel;
+  webrtcChannel;
 
   localVideoStream: MediaStream;
   localAudioStream: MediaStream;
@@ -128,7 +128,8 @@ export class StudentExamRoom {
     await this.phoenixChannelPushResult(this.webrtcChannel.join());
   };
 
-  public join = () => {
+  public join = (cb: () => void) => {
+    cb();
     this.webrtc.join({ userType: "student", name: "test-user" });
   };
 
