@@ -29,7 +29,8 @@ defmodule Quizline.Application do
       # presence
       QuizlineWeb.Presence,
       # membrane registry
-      {Registry, keys: :unique, name: Videoroom.Room.Registry}
+      {Registry, keys: :unique, name: ExamRoom.Registry},
+      {Registry, keys: :unique, name: Quizline.SessionRegistry}
     ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html

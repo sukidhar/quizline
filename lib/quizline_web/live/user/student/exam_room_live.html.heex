@@ -49,7 +49,7 @@
                     <div class="flex flex-col lg:flex-row justify-center items-center w-full h-full lg:h-fit">
                         <div class="flex items-center justify-center h-1/2 lg:h-[33.75rem] lg:w-3/5 w-full">
                             <div class="w-3/4 overflow-hidden aspect-video rounded-lg flex items-center bg-black justify-center relative">
-                                <div id="ignored-video-container" class="flex items-center justify-center w-full h-full bg-white" phx-update="ignore">
+                                <div id="ignored-video-container" class="flex items-center justify-center w-full h-full bg-black" phx-update="ignore">
                                     <video id="student-video-preview" class="flip-horizontally w-full bg-black rounded-lg z-10"></video>
                                 </div>
                                 <div class="absolute h-full w-full z-20 flex items-center justify-center">
@@ -64,29 +64,45 @@
                                 <div class="absolute h-full w-full z-30 flex items-end justify-center">
                                     <div class="flex items-center justify-center w-full h-fit gap-5 mb-5">
                                         <%= if @is_video_enabled do  %> 
-                                            <button class="h-14 w-14 stroke-white border-2 rounded-full p-3 hover:bg-white/40" phx-click="toggle-video">
+                                            <button id="video-active-button" class="h-14 w-14 stroke-white border-2 rounded-full p-3 hover:bg-white/40" phx-click="toggle-video" phx-hook="VideoStreamButton" data-value-video="true">
                                                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-video"><polygon points="23 7 16 12 23 17 23 7"></polygon><rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect></svg>
                                             </button>
                                         <% else %> 
-                                            <button class="h-14 w-14 stroke-white border-2 rounded-full p-3 bg-red-600 hover:bg-red-700" phx-click="toggle-video">
-                                                <svg xmlns="http://www.w3.org/2000/svg"   viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-video-off"><path d="M16 16v1a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h2m5.66 0H14a2 2 0 0 1 2 2v3.34l1 1L23 7v10"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>
+                                            <button id="video-inactive-button" class="h-14 w-14 stroke-white border-2 rounded-full p-3 bg-red-600 hover:bg-red-700" phx-click="toggle-video" phx-hook="VideoStreamButton" data-value-video="false">
+                                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-video-off"><path d="M16 16v1a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h2m5.66 0H14a2 2 0 0 1 2 2v3.34l1 1L23 7v10"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>
                                             </button>
                                         <% end %> 
                                         <%= if @is_mic_enabled do %>
-                                            <button class="h-14 w-14 stroke-white border-2 rounded-full p-3 hover:bg-white/40" phx-click="toggle-audio">
+                                            <button id="audio-active-button" class="h-14 w-14 stroke-white border-2 rounded-full p-3 hover:bg-white/40" phx-click="toggle-audio" phx-hook="AudioStreamButton" data-value-audio="true">
                                                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-mic"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>
                                             </button>
                                         <% else %>
-                                            <button class="h-14 w-14 stroke-white border-2 rounded-full p-3 bg-red-600 hover:bg-red-700" phx-click="toggle-audio">
-                                                <svg xmlns="http://www.w3.org/2000/svg"   viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-mic-off"><line x1="1" y1="1" x2="23" y2="23"></line><path d="M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6"></path><path d="M17 16.95A7 7 0 0 1 5 12v-2m14 0v2a7 7 0 0 1-.11 1.23"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>
+                                            <button id="audio-inactive-button" class="h-14 w-14 stroke-white border-2 rounded-full p-3 bg-red-600 hover:bg-red-700" phx-click="toggle-audio" phx-hook="AudioStreamButton" data-value-audio="false">
+                                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-mic-off"><line x1="1" y1="1" x2="23" y2="23"></line><path d="M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6"></path><path d="M17 16.95A7 7 0 0 1 5 12v-2m14 0v2a7 7 0 0 1-.11 1.23"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>
                                             </button>
                                         <% end %>   
                                     </div>
                                 </div>
                             </div>
                         </div>
-                        <div class="h-1/2 lg:h-[33.75rem] lg:w-2/5 w-full flex justify-center items-start pt-10 lg:p-5 lg:items-center">
-                            <p class="text-lg font-semibold">Ready To Join?</p>
+                        <div class="h-1/2 lg:h-[33.75rem] lg:w-2/5 w-full flex flex-col justify-start items-center gap-5 pt-10 lg:-ml-24 lg:mr-24 lg:justify-center ">
+                            <div class="w-full text-center font-bold text-xl">
+                                <p><%= @exam.exam_group  %> </p>
+                            </div>
+                            <div class="w-full text-center font-bold text-xl">
+                                <p><%= "#{@exam.subject.title} - #{@exam.subject.subject_code}"  %> </p>
+                            </div>
+                            <div class="w-full text-center font-semibold">
+                                <%= "starts at #{ftime(@exam.start_time)} and ends at #{ftime(@exam.end_time)}" %> 
+                            </div>
+                            <div class="w-full text-center font-semibold text-lg">
+                                <p>Ready to begin the exam?</p>
+                            </div>
+                            <div class="flex items-center justify-center w-full h-fit">
+                                <button class="btn btn-outline btn-wide" phx-click="request-invigilator">
+                                    <p class="normal-case text-lg px-3">Request to Join</p>
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>

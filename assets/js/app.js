@@ -243,14 +243,22 @@ Hooks.StudentStartUpPreview = {
         .init(false, "student-video-preview")
         .then((value) => {
           this.pushEvent("video-stream-started", {});
-          this.handleEvent("toggle-stream", (data) => {
-            room.toggleStream(data.audio, data.video);
-          });
         })
         .catch((error) => {
           this.pushEvent("frontend-error", { error: error.message });
         });
     }
+  },
+};
+
+Hooks.VideoStreamButton = {
+  mounted() {
+    console.log(this.el.dataset);
+  },
+};
+Hooks.AudioStreamButton = {
+  mounted() {
+    console.log(this.el.dataset);
   },
 };
 

@@ -38,8 +38,12 @@ defmodule QuizlineWeb.User.Student.ExamRoomLive do
         end
 
       _ ->
-        {:noreply, socket |> redirect(to: "/error")}
+        {:ok, socket |> redirect(to: "/error")}
     end
+  end
+
+  def mount(_, _, socket) do
+    {:ok, socket |> redirect(to: "/error")}
   end
 
   def handle_event("video-stream-started", _, socket) do
@@ -75,6 +79,18 @@ defmodule QuizlineWeb.User.Student.ExamRoomLive do
      )}
   end
 
+  def handle_event("request-invigilator", _, socket) do
+    {:noreply,
+     socket
+     |> push_event("request-invigilator", %{
+       user: socket.assigns.user,
+       stream: %{
+         audio: socket.assigns.is_mic_enabled,
+         video: socket.assigns.is_video_enabled
+       }
+     })}
+  end
+
   def handle_info(
         %Phoenix.Socket.Broadcast{
           event: "presence_diff",
@@ -106,5 +122,15 @@ defmodule QuizlineWeb.User.Student.ExamRoomLive do
           end
         end
     end
+  end
+
+  def ftime(time) do
+    {:ok, ftime} =
+      Time.from_iso8601!(time)
+      |> Timex.format("{h12}:{0m} {am}")
+
+    ftime
+  rescue
+    _ -> time
   end
 end
