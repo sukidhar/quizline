@@ -15,9 +15,6 @@ export class StudentExamRoom {
   private webrtcSocketRefs: string[] = [];
   webrtcChannel;
 
-  isAudioMuted = false;
-  isVideoMuted = false;
-
   localVideoStream: MediaStream;
   localAudioStream: MediaStream;
   localVideoTrackId: string;
@@ -145,6 +142,18 @@ export class StudentExamRoom {
     cb();
     this.webrtc.join({ userType: "student", name: "test-user" });
   };
+
+  public setVideoStreamState(cb: (stream: MediaStream) => void) {
+    if (this.localVideoStream) {
+      cb(this.localVideoStream);
+    }
+  }
+
+  public setAudioStreamState(cb: (stream: MediaStream) => void) {
+    if (this.localAudioStream) {
+      cb(this.localAudioStream);
+    }
+  }
 
   private socketOff = () => {
     this.socket.off(this.webrtcSocketRefs);

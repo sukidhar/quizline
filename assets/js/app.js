@@ -253,12 +253,28 @@ Hooks.StudentStartUpPreview = {
 
 Hooks.VideoStreamButton = {
   mounted() {
-    console.log(this.el.dataset);
+    this.el.addEventListener("click", () => {
+      if (room) {
+        room.setVideoStreamState((stream) => {
+          stream.getTracks().forEach((track) => {
+            track.enabled = !track.enabled;
+          });
+        });
+      }
+    });
   },
 };
 Hooks.AudioStreamButton = {
   mounted() {
-    console.log(this.el.dataset);
+    this.el.addEventListener("click", () => {
+      if (room) {
+        room.setAudioStreamState((stream) => {
+          stream.getTracks().forEach((track) => {
+            track.enabled = !track.enabled;
+          });
+        });
+      }
+    });
   },
 };
 

@@ -60,11 +60,7 @@ defmodule QuizlineWeb.User.Student.ExamRoomLive do
 
     {:noreply,
      socket
-     |> assign(:is_video_enabled, !is_enabled)
-     |> push_event(
-       "toggle-stream",
-       %{video: !is_enabled, audio: socket.assigns.is_mic_enabled}
-     )}
+     |> assign(:is_video_enabled, !is_enabled)}
   end
 
   def handle_event("toggle-audio", _, socket) do
@@ -72,11 +68,7 @@ defmodule QuizlineWeb.User.Student.ExamRoomLive do
 
     {:noreply,
      socket
-     |> assign(:is_mic_enabled, !is_enabled)
-     |> push_event(
-       "toggle-stream",
-       %{video: socket.assigns.is_video_enabled, audio: !is_enabled}
-     )}
+     |> assign(:is_mic_enabled, !is_enabled)}
   end
 
   def handle_event("request-invigilator", _, socket) do
