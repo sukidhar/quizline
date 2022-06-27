@@ -1,35 +1,95 @@
-<%= if @show_multiple_session_error do  %>
-    <div class="absolute h-full w-full flex items-center justify-center z-50 bg-black/20">
-        <div class="absolute navbar bg-white z-30 top-0 left-0 right-0">
-            <button class="btn btn-ghost normal-case text-xl">Quizline</button>
-        </div>
-        <div id="simulataneous-session-error-container" class="card p-10 min-h-[30%] min-w-[40%] max-w-[40%] bg-white" phx-hook="SessionError">
-            <div class="flex items-start justify-center w-full h-fit pb-6">
-                <p class="text-2xl font-semibold">
-                    Session Error
-                </p>
-            </div>
-            <p id="error-text" class="text-lg">
-                There is a session running already on other device or browser. Please close the previous session to continue using this new session, This tab will close itself in 15 seconds if not closed.
-            </p>
-        </div>
-    </div>
-<% else %>
-    <div class="relative h-screen overflow-y-hidden" id="student-exam-room-view" phx-hook="ExamRoomStudent" data-room_id={@room_id}>
-        <div class="sticky z-10 top-0 h-16 border-b bg-white">
-            <div class="px-6 py-2">
+<%= cond do %>
+    <% @show_multiple_session_error -> %> 
+        <div class="absolute h-full w-full flex items-center justify-center z-50 bg-black/20">
+            <div class="absolute navbar bg-white z-30 top-0 left-0 right-0">
                 <button class="btn btn-ghost normal-case text-xl">Quizline</button>
             </div>
-        </div>
-        <div class="flex-1 mb-5 h-[calc(100%-theme(spacing.16))] bg-white flex">
-            <div class="flex w-full h-full bg-black/5">
-
+            <div id="simulataneous-session-error-container" class="card p-10 min-h-[30%] min-w-[40%] max-w-[40%] bg-white" phx-hook="SessionError">
+                <div class="flex items-start justify-center w-full h-fit pb-6">
+                    <p class="text-2xl font-semibold">
+                        Session Error
+                    </p>
+                </div>
+                <p id="error-text" class="text-lg">
+                    There is a session running already on other device or browser. Please close the previous session to continue using this new session, This tab will close itself in 15 seconds if not closed.
+                </p>
             </div>
-            <div class="flex flex-col w-[35%] h-full rounded-md">
-                <div class="p-5 w-full h-fit">
-                    <video id="student-video-preview" class="w-full rounded-lg flip-horizontally"></video>
+        </div>
+    
+
+
+    <% @approved  -> %> 
+        <div class="relative h-screen overflow-y-hidden" id="student-exam-room-view" phx-hook="ExamRoomStudent" data-room_id={@room_id}>
+            <div class="sticky z-10 top-0 h-16 border-b bg-white">
+                <div class="px-6 py-2">
+                    <button class="btn btn-ghost normal-case text-xl">Quizline</button>
+                </div>
+            </div>
+            <div class="flex-1 mb-5 h-[calc(100%-theme(spacing.16))] bg-white flex">
+                <div class="flex w-full h-full bg-black/5">
+
+                </div>
+                <div class="flex flex-col w-[35%] h-full rounded-md">
+                    <div class="p-5 w-full h-fit">
+                        <video id="student-video-preview" class="w-full rounded-lg flip-horizontally"></video>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
-<% end %> 
+
+    <% not(@approved) -> %> 
+        <div class="relative h-screen overflow-y-hidden">
+            <div class="sticky z-10 top-0 h-16 border-b bg-white">
+                <div class="px-6 py-2">
+                    <button class="btn btn-ghost normal-case text-xl">Quizline</button>
+                </div>
+            </div>
+            <div id="student-start-up-preview" class="flex-1 mb-5 h-[calc(100%-theme(spacing.16))] bg-white flex" phx-hook="StudentStartUpPreview" data-room_id={@room_id}>
+                <div class="flex items-center justify-center h-full w-full">
+                    <div class="flex flex-col lg:flex-row justify-center items-center w-full h-full lg:h-fit">
+                        <div class="flex items-center justify-center h-1/2 lg:h-[33.75rem] lg:w-3/5 w-full">
+                            <div class="w-3/4 overflow-hidden aspect-video rounded-lg flex items-center bg-black justify-center relative">
+                                <div id="ignored-video-container" class="flex items-center justify-center w-full h-full bg-white" phx-update="ignore">
+                                    <video id="student-video-preview" class="flip-horizontally w-full bg-black rounded-lg z-10"></video>
+                                </div>
+                                <div class="absolute h-full w-full z-20 flex items-center justify-center">
+                                    <%= cond do  %>
+                                        <% is_nil(@stream_started) -> %>
+                                            <p class="text-lg text-white bg-transparent">Starting Camera and Microphone</p>
+                                        <% not @stream_started -> %>
+                                            <p class="text-lg text-white bg-transparent">Camera is OFF</p>
+                                        <% @stream_started -> %> 
+                                    <% end %>
+                                </div>
+                                <div class="absolute h-full w-full z-30 flex items-end justify-center">
+                                    <div class="flex items-center justify-center w-full h-fit gap-5 mb-5">
+                                        <%= if @is_video_enabled do  %> 
+                                            <button class="h-14 w-14 stroke-white border-2 rounded-full p-3 hover:bg-white/40" phx-click="toggle-video">
+                                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-video"><polygon points="23 7 16 12 23 17 23 7"></polygon><rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect></svg>
+                                            </button>
+                                        <% else %> 
+                                            <button class="h-14 w-14 stroke-white border-2 rounded-full p-3 bg-red-600 hover:bg-red-700" phx-click="toggle-video">
+                                                <svg xmlns="http://www.w3.org/2000/svg"   viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-video-off"><path d="M16 16v1a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h2m5.66 0H14a2 2 0 0 1 2 2v3.34l1 1L23 7v10"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>
+                                            </button>
+                                        <% end %> 
+                                        <%= if @is_mic_enabled do %>
+                                            <button class="h-14 w-14 stroke-white border-2 rounded-full p-3 hover:bg-white/40" phx-click="toggle-audio">
+                                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-mic"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>
+                                            </button>
+                                        <% else %>
+                                            <button class="h-14 w-14 stroke-white border-2 rounded-full p-3 bg-red-600 hover:bg-red-700" phx-click="toggle-audio">
+                                                <svg xmlns="http://www.w3.org/2000/svg"   viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-mic-off"><line x1="1" y1="1" x2="23" y2="23"></line><path d="M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6"></path><path d="M17 16.95A7 7 0 0 1 5 12v-2m14 0v2a7 7 0 0 1-.11 1.23"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>
+                                            </button>
+                                        <% end %>   
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="h-1/2 lg:h-[33.75rem] lg:w-2/5 w-full flex justify-center items-start pt-10 lg:p-5 lg:items-center">
+                            <p class="text-lg font-semibold">Ready To Join?</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+<% end %>  

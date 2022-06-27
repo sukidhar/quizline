@@ -52,11 +52,8 @@ export class StudentExamRoom {
               { enabled: true, active_encodings: ["m"] }
             );
           });
-          console.log("hillow hillow");
         },
         onJoinError: (_metadata) => {
-          console.log("error occured");
-
           throw `Peer denied.`;
         },
       },
@@ -67,13 +64,20 @@ export class StudentExamRoom {
     );
   }
 
-  public init = async () => {
+  public init = async (
+    joinChannel: Boolean = true,
+    videoElement: string = "student-video-preview"
+  ) => {
     const hasVideoInput: boolean = (
       await navigator.mediaDevices.enumerateDevices()
     ).some((device) => device.kind === "videoinput");
 
     if (!hasVideoInput) {
-      console.log("show error message");
+      Promise.reject(
+        new Error(
+          "Unable to find camera in the current device, please check your preferences or use a different device"
+        )
+      );
       return;
     }
 
@@ -102,7 +106,10 @@ export class StudentExamRoom {
 
         break;
       } catch (error) {
-        console.error("Error while getting local video stream", error);
+        Promise.reject({
+          error: error,
+          device: "camera",
+        });
         return;
       }
     }
@@ -112,25 +119,41 @@ export class StudentExamRoom {
         audio: AUDIO_TRACK_CONSTRAINTS,
       });
     } catch (error) {
-      console.error("Error while getting local audio stream", error);
+      Promise.reject({
+        error: error,
+        device: "camera",
+      });
       return;
     }
 
-    let video = document.getElementById(
-      "student-video-preview"
-    ) as HTMLVideoElement;
+    let video = document.getElementById(videoElement) as HTMLVideoElement;
 
     video.autoplay = true;
     video.playsInline = true;
     video.srcObject = this.localVideoStream;
     video.style.height = video.style.width;
 
-    await this.phoenixChannelPushResult(this.webrtcChannel.join());
+    if (joinChannel) {
+      await this.phoenixChannelPushResult(this.webrtcChannel.join());
+    }
   };
 
   public join = (cb: () => void) => {
     cb();
     this.webrtc.join({ userType: "student", name: "test-user" });
+  };
+
+  public toggleStream = (audio: boolean = true, video: boolean = true) => {
+    if (this.localAudioStream) {
+      this.localAudioStream.getTracks().forEach((track) => {
+        track.enabled = audio;
+      });
+    }
+    if (this.localVideoStream) {
+      this.localVideoStream.getTracks().forEach((track) => {
+        track.enabled = video;
+      });
+    }
   };
 
   private socketOff = () => {

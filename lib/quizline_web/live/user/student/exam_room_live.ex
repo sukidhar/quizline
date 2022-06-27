@@ -9,11 +9,11 @@ defmodule QuizlineWeb.User.Student.ExamRoomLive do
   def mount(%{"room" => room_id}, %{"guardian_default_token" => token}, socket) do
     case Guardian.resource_from_token(token) do
       {:ok, user, %{"deviceId" => deviceId}} ->
-        case EventManager.room_exists?(room_id) do
-          false ->
+        case EventManager.get_event(room_id) do
+          nil ->
             {:ok, socket |> redirect(to: "/error")}
 
-          true ->
+          exam ->
             Phoenix.PubSub.subscribe(PubSub, "exam_session_" <> room_id)
 
             Presence.track(self(), "exam_session_" <> room_id, user.id, %{
@@ -28,9 +28,11 @@ defmodule QuizlineWeb.User.Student.ExamRoomLive do
              socket
              |> assign(:show_multiple_session_error, false)
              |> assign(:user, user)
+             |> assign(:exam, exam)
              |> assign(:deviceId, deviceId)
              |> assign(:approved, false)
              |> assign(:room_id, room_id)
+             |> assign(:stream_started, nil)
              |> assign(:is_mic_enabled, true)
              |> assign(:is_video_enabled, true)}
         end
@@ -38,6 +40,39 @@ defmodule QuizlineWeb.User.Student.ExamRoomLive do
       _ ->
         {:noreply, socket |> redirect(to: "/error")}
     end
+  end
+
+  def handle_event("video-stream-started", _, socket) do
+    {:noreply, socket |> assign(:stream_started, true)}
+  end
+
+  def handle_event("frontend-error", error, socket) do
+    IO.inspect(error)
+    {:noreply, socket |> assign(:stream_started, false)}
+  end
+
+  def handle_event("toggle-video", _, socket) do
+    is_enabled = socket.assigns.is_video_enabled
+
+    {:noreply,
+     socket
+     |> assign(:is_video_enabled, !is_enabled)
+     |> push_event(
+       "toggle-stream",
+       %{video: !is_enabled, audio: socket.assigns.is_mic_enabled}
+     )}
+  end
+
+  def handle_event("toggle-audio", _, socket) do
+    is_enabled = socket.assigns.is_mic_enabled
+
+    {:noreply,
+     socket
+     |> assign(:is_mic_enabled, !is_enabled)
+     |> push_event(
+       "toggle-stream",
+       %{video: socket.assigns.is_video_enabled, audio: !is_enabled}
+     )}
   end
 
   def handle_info(

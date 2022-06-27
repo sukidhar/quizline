@@ -31,7 +31,7 @@ import { InvigilatorExamRoom } from "./exam_room/invigilator_exam_room";
 // import picker from "./calender";
 
 let Hooks = {};
-console.log(new URL(window.location.href));
+
 let csrfToken = document
   .querySelector("meta[name='csrf-token']")
   .getAttribute("content");
@@ -227,11 +227,30 @@ Hooks.subjectPressed = {
 let room = null;
 Hooks.ExamRoomStudent = {
   async mounted() {
-    room = new StudentExamRoom(userSocket, this.el.dataset.room_id || "hello");
+    room = new StudentExamRoom(userSocket, this.el.dataset.room_id);
     await room.init();
     this.handleEvent("start-exam-room", (data) => {
       console.log(data);
     });
+  },
+};
+
+Hooks.StudentStartUpPreview = {
+  mounted() {
+    if (this.el.dataset.room_id) {
+      room = new StudentExamRoom(userSocket, this.el.dataset.room_id);
+      room
+        .init(false, "student-video-preview")
+        .then((value) => {
+          this.pushEvent("video-stream-started", {});
+          this.handleEvent("toggle-stream", (data) => {
+            room.toggleStream(data.audio, data.video);
+          });
+        })
+        .catch((error) => {
+          this.pushEvent("frontend-error", { error: error.message });
+        });
+    }
   },
 };
 
@@ -253,12 +272,6 @@ Hooks.InvigilatorRoomView = {
         });
       }
     });
-  },
-};
-
-Hooks.RemoteStreamElement = {
-  mounted() {
-    // this.el.clientHeight = this.el.clientWidth * 720/1280
   },
 };
 

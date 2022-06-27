@@ -1565,5 +1565,25 @@ defmodule Necto do
 
     %Sips.Response{results: [%{"result" => value} | _]} = Sips.query!(conn, query, %{id: id})
     value
+  rescue
+    e -> {:error, e}
+  end
+
+  def get_event(id) do
+    query = """
+    MATCH (room:Room{id: $id})<-[:has_room]-(event:Event)-[r:for]-(subject:Subject)
+    RETURN room, event, r, subject
+    """
+
+    conn = Sips.conn()
+    %Sips.Response{results: res} = Sips.query!(conn, query, %{id: id})
+
+    structify_response(res, :exam, "unable to structify the response")
+    |> case do
+      [] -> nil
+      [head | _] -> head
+    end
+  rescue
+    e -> {:error, e}
   end
 end
