@@ -5,6 +5,7 @@ defmodule QuizlineWeb.User.Student.ExamRoomLive do
   alias Quizline.PubSub
   alias Quizline.EventManager
   alias Quizline.UserManager.{Guardian}
+  import QuizlineWeb.Live.Utilities.BookLoader
 
   def mount(%{"room" => room_id}, %{"guardian_default_token" => token}, socket) do
     case Guardian.resource_from_token(token) do
@@ -20,8 +21,7 @@ defmodule QuizlineWeb.User.Student.ExamRoomLive do
               deviceId: deviceId,
               user_type: :student,
               pid: self(),
-              session_start: DateTime.utc_now(),
-              approved: false
+              session_start: DateTime.utc_now()
             })
 
             {:ok,
@@ -30,11 +30,17 @@ defmodule QuizlineWeb.User.Student.ExamRoomLive do
              |> assign(:user, user)
              |> assign(:exam, exam)
              |> assign(:deviceId, deviceId)
-             |> assign(:approved, false)
+             |> assign(:approval_status, :waiting)
              |> assign(:room_id, room_id)
              |> assign(:stream_started, nil)
              |> assign(:is_mic_enabled, true)
-             |> assign(:is_video_enabled, true)}
+             |> assign(:show_upload_form, false)
+             |> assign(:is_video_enabled, true)
+             |> allow_upload(:photo_id,
+               accept: ~w(.pdf .jpg .png .svg),
+               max_entries: 1,
+               external: &presign_upload/2
+             )}
         end
 
       _ ->
@@ -44,6 +50,42 @@ defmodule QuizlineWeb.User.Student.ExamRoomLive do
 
   def mount(_, _, socket) do
     {:ok, socket |> redirect(to: "/error")}
+  end
+
+  @bucket "quizline"
+  defp spaces_host(), do: "//#{@bucket}.ams3.digitaloceanspaces.com"
+  defp spaces_key(socket), do: "#{socket.assigns.room_id}.#{socket.assigns.user.id}"
+
+  def presign_upload(entry, socket) do
+    uploads = socket.assigns.uploads
+    key = spaces_key(socket)
+
+    config = %{
+      scheme: "https://",
+      host: "ams3.digitaloceanspaces.com",
+      region: "us-east-1",
+      access_key_id: System.fetch_env!("SPACES_KEY"),
+      secret_access_key: System.fetch_env!("SPACES_SECRET")
+    }
+
+    {:ok, fields} =
+      SimpleS3Upload.sign_form_upload(config, @bucket,
+        key: key,
+        content_type: entry.client_type,
+        max_file_size: uploads.photo_id.max_file_size,
+        expires_in: :timer.hours(12)
+      )
+
+    meta =
+      %{
+        uploader: "S3",
+        key: key,
+        url: spaces_host(),
+        fields: fields
+      }
+      |> IO.inspect()
+
+    {:ok, meta, socket}
   end
 
   def handle_event("video-stream-started", _, socket) do
@@ -63,6 +105,14 @@ defmodule QuizlineWeb.User.Student.ExamRoomLive do
      |> assign(:is_video_enabled, !is_enabled)}
   end
 
+  def handle_event("id-file-changed", _, socket) do
+    {:noreply, socket}
+  end
+
+  def handle_event("id-file-uploaded", _, socket) do
+    {:noreply, socket |> assign(:show_upload_form, false) |> assign(:approval_status, :waiting)}
+  end
+
   def handle_event("toggle-audio", _, socket) do
     is_enabled = socket.assigns.is_mic_enabled
 
@@ -74,13 +124,7 @@ defmodule QuizlineWeb.User.Student.ExamRoomLive do
   def handle_event("request-invigilator", _, socket) do
     {:noreply,
      socket
-     |> push_event("request-invigilator", %{
-       user: socket.assigns.user,
-       stream: %{
-         audio: socket.assigns.is_mic_enabled,
-         video: socket.assigns.is_video_enabled
-       }
-     })}
+     |> assign(:show_upload_form, true)}
   end
 
   def handle_info(

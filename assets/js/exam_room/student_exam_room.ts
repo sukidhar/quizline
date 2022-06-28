@@ -143,15 +143,19 @@ export class StudentExamRoom {
     this.webrtc.join({ userType: "student", name: "test-user" });
   };
 
-  public setVideoStreamState(cb: (stream: MediaStream) => void) {
+  public setVideoStreamState(enabled: boolean) {
     if (this.localVideoStream) {
-      cb(this.localVideoStream);
+      this.localVideoStream.getTracks().forEach((track) => {
+        track.enabled = enabled;
+      });
     }
   }
 
-  public setAudioStreamState(cb: (stream: MediaStream) => void) {
+  public setAudioStreamState(enabled: boolean) {
     if (this.localAudioStream) {
-      cb(this.localAudioStream);
+      this.localAudioStream.getTracks().forEach((track) => {
+        track.enabled = enabled;
+      });
     }
   }
 

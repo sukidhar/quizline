@@ -81,7 +81,7 @@
                             </p>
                             <form class="flex gap-2 w-full justify-center items-center" id="upload-form" phx-target={@myself} phx-submit="department-file-uploaded" phx-change="department-file-changed">
                                 <%= live_file_input @uploads.department_file, class: "focus:outline-none block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100" %>
-                                <button type="submit" class={if (@uploads.department_file.entries |> Enum.count() == 0), do: "btn text-sm font-normal btn-sm btn-disabled", else: "btn text-sm font-normal btn-sm btn-outline"}>
+                                <button type="submit"  phx-disable-with="uploading" class={if (@uploads.department_file.entries |> Enum.count() == 0), do: "btn text-sm font-normal btn-sm btn-disabled", else: "btn text-sm font-normal btn-sm btn-outline"}>
                                     submit
                                 </button>
                             </form>
@@ -251,7 +251,7 @@
                                             </p>
                                             <form class="flex gap-2 w-full justify-center items-center" id="upload-form" phx-target={@myself} phx-submit="department-details-file-uploaded" phx-change="department-details-file-changed">
                                                 <%= live_file_input @uploads.department_details_file, class: "focus:outline-none block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100" %>
-                                                <button type="submit" class={if (@uploads.department_details_file.entries |> Enum.count() == 0), do: "btn text-sm font-normal btn-sm btn-disabled", else: "btn text-sm font-normal btn-sm btn-outline"}>
+                                                <button type="submit"  phx-disable-with="uploading"  class={if (@uploads.department_details_file.entries |> Enum.count() == 0), do: "btn text-sm font-normal btn-sm btn-disabled", else: "btn text-sm font-normal btn-sm btn-outline"}>
                                                     submit
                                                 </button>
                                             </form>
@@ -308,7 +308,7 @@
                                             </p>
                                             <form class="flex gap-2 w-full justify-center items-center" id="upload-form" phx-target={@myself} phx-submit="department-details-file-uploaded" phx-change="department-details-file-changed">
                                                 <%= live_file_input @uploads.department_details_file, class: "focus:outline-none block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100" %>
-                                                <button type="submit" class={if (@uploads.department_details_file.entries |> Enum.count() == 0), do: "btn text-sm font-normal btn-sm btn-disabled", else: "btn text-sm font-normal btn-sm btn-outline"}>
+                                                <button type="submit"  phx-disable-with="uploading" class={if (@uploads.department_details_file.entries |> Enum.count() == 0), do: "btn text-sm font-normal btn-sm btn-disabled", else: "btn text-sm font-normal btn-sm btn-outline"}>
                                                     submit
                                                 </button>
                                             </form>

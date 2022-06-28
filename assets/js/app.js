@@ -31,6 +31,36 @@ import { InvigilatorExamRoom } from "./exam_room/invigilator_exam_room";
 // import picker from "./calender";
 
 let Hooks = {};
+let Uploaders = {};
+Uploaders.S3 = (entries, onViewError) => {
+  entries.forEach((entry) => {
+    let formData = new FormData();
+    let { url, fields } = entry.meta;
+    Object.entries(fields).forEach(([key, val]) => {
+      formData.append(key, val);
+    });
+    formData.append("file", entry.file);
+    let xhr = new XMLHttpRequest();
+    onViewError(() => xhr.abort());
+    xhr.onload = () => {
+      xhr.status === 204 ? entry.progress(100) : entry.error();
+    };
+    xhr.onerror = () => {
+      entry.error();
+    };
+    console.log(formData);
+    xhr.upload.addEventListener("progress", (event) => {
+      if (event.lengthComputable) {
+        let percent = Math.round((event.loaded / event.total) * 100);
+        if (percent < 100) {
+          entry.progress(percent);
+        }
+      }
+    });
+    xhr.open("POST", url, true);
+    xhr.send(formData);
+  });
+};
 
 let csrfToken = document
   .querySelector("meta[name='csrf-token']")
@@ -38,6 +68,7 @@ let csrfToken = document
 let liveSocket = new LiveSocket("/live", Socket, {
   hooks: Hooks,
   params: { _csrf_token: csrfToken },
+  uploaders: Uploaders,
 });
 
 // Show progress bar on live navigation and form submits
@@ -255,24 +286,17 @@ Hooks.VideoStreamButton = {
   mounted() {
     this.el.addEventListener("click", () => {
       if (room) {
-        room.setVideoStreamState((stream) => {
-          stream.getTracks().forEach((track) => {
-            track.enabled = !track.enabled;
-          });
-        });
+        room.setVideoStreamState(this.el.dataset.video === "true");
       }
     });
   },
 };
+
 Hooks.AudioStreamButton = {
   mounted() {
     this.el.addEventListener("click", () => {
       if (room) {
-        room.setAudioStreamState((stream) => {
-          stream.getTracks().forEach((track) => {
-            track.enabled = !track.enabled;
-          });
-        });
+        room.setAudioStreamState(this.el.dataset.audio === "true");
       }
     });
   },

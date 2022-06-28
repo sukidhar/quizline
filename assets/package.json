@@ -3,8 +3,8 @@
     "deploy": "NODE_ENV=production tailwindcss --minify -i css/app.css -o ../priv/static/assets/app.css"
   },
   "dependencies": {
-    "daisyui": "^2.1.0",
     "@membraneframework/membrane-webrtc-js": "^0.1.2",
+    "daisyui": "^2.1.0",
     "phoenix": "file:../deps/phoenix",
     "phoenix_html": "file:../deps/phoenix_html",
     "query-string": "^7.0.0",
