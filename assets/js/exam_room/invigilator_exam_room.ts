@@ -18,21 +18,8 @@ export class InvigilatorExamRoom {
   public tracks: Map<string, TrackContext[]> = new Map();
   private hookRef: any;
 
-  constructor(userSocket: Socket, roomId: String, hookRef: any) {
+  constructor(hookRef: any) {
     this.hookRef = hookRef;
-    this.socket = userSocket;
-    this.webrtcChannel = this.socket.channel(`exam_room:${roomId}`);
-    this.webrtcChannel.onError(() => {
-      this.socketOff();
-      window.location.reload();
-    });
-    this.webrtcChannel.onClose(() => {
-      this.socketOff();
-      window.location.reload();
-    });
-
-    this.webrtcSocketRefs.push(this.socket.onError(this.leave));
-    this.webrtcSocketRefs.push(this.socket.onClose(this.leave));
 
     this.webrtc = new MembraneWebRTC({
       callbacks: {
@@ -88,9 +75,31 @@ export class InvigilatorExamRoom {
         onPeerUpdated: (_ctx) => {},
       },
     });
+  }
+
+  public async joinChannel(socket: Socket, roomId: string, user) {
+    this.socket = socket;
+    this.webrtcChannel = this.socket.channel(`exam_room:${roomId}`, {
+      user: user,
+    });
+    this.webrtcChannel.onError(() => {
+      this.socketOff();
+      window.location.reload();
+    });
+    this.webrtcChannel.onClose(() => {
+      this.socketOff();
+      window.location.reload();
+    });
+
+    this.webrtcSocketRefs.push(this.socket.onError(this.leave));
+    this.webrtcSocketRefs.push(this.socket.onClose(this.leave));
+
     this.webrtcChannel.on("mediaEvent", (event: any) =>
       this.webrtc.receiveMediaEvent(event.data)
     );
+
+    await this.phoenixChannelPushResult(this.webrtcChannel.join());
+    // this.webrtc.join({ userType: "invigilator" });
   }
 
   public init = async () => {
@@ -107,10 +116,11 @@ export class InvigilatorExamRoom {
         track.enabled = false;
       });
     } catch (error) {
-      console.error("Error while getting local audio stream", error);
+      Promise.reject({
+        error: error,
+        device: "microphone",
+      });
     }
-    await this.phoenixChannelPushResult(this.webrtcChannel.join());
-    this.webrtc.join({ userType: "invigilator" });
   };
 
   private socketOff = () => {

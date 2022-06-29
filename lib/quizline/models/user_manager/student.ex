@@ -3,6 +3,7 @@ defmodule Quizline.UserManager.Student do
   import Ecto.Changeset
   import Quizline.ChangesetHelper
 
+  @derive {Jason.Encoder, only: [:rid, :id, :first_name, :last_name, :email]}
   embedded_schema do
     field(:first_name, :string)
     field(:last_name, :string)

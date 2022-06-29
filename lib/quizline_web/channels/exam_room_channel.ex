@@ -2,8 +2,10 @@ defmodule QuizlineWeb.ExamRoomChannel do
   use QuizlineWeb, :channel
   require Logger
 
+  alias QuizlineWeb.Presence
+
   @impl true
-  def join("exam_room:" <> room_id, _payload, socket) do
+  def join("exam_room:" <> room_id, %{"user" => user}, socket) do
     case :global.whereis_name(room_id) do
       :undefined ->
         Quizline.ExamRoom.start(room_id, name: {:global, room_id})
@@ -13,10 +15,10 @@ defmodule QuizlineWeb.ExamRoomChannel do
     end
     |> case do
       {:ok, room_pid} ->
-        do_join(socket, room_pid, room_id)
+        do_join(socket, room_pid, room_id, user)
 
       {:error, {:already_started, room_pid}} ->
-        do_join(socket, room_pid, room_id)
+        do_join(socket, room_pid, room_id, user)
 
       {:error, reason} ->
         Logger.error("""
@@ -29,9 +31,16 @@ defmodule QuizlineWeb.ExamRoomChannel do
     end
   end
 
-  defp do_join(socket, room_pid, room_id) do
+  defp do_join(socket, room_pid, room_id, user) do
     Process.monitor(room_pid)
-    {:ok, Phoenix.Socket.assign(socket, %{room_id: room_id, room_pid: room_pid})}
+    send(self(), :after_join)
+
+    {:ok,
+     Phoenix.Socket.assign(socket, %{
+       room_id: room_id,
+       room_pid: room_pid,
+       user: user |> Jason.encode!() |> Jason.decode!(keys: :atoms)
+     })}
   end
 
   def handle_in("start-exam", %{"peer_id" => peer_id}, socket) do
@@ -58,6 +67,24 @@ defmodule QuizlineWeb.ExamRoomChannel do
   @impl true
   def handle_info({:media_event, event}, socket) do
     push(socket, "mediaEvent", %{data: event})
+
+    {:noreply, socket}
+  end
+
+  @impl true
+  def handle_info(:after_join, socket) do
+    Presence.track(self(), "exam-channel:" <> socket.assigns.room_id, socket.assigns.user.id, %{
+      pid: self(),
+      user: socket.assigns.user
+    })
+
+    if socket.assigns.user.type == "invigilator" do
+      [{_pid, lv_pid}] = Registry.lookup(Quizline.SessionRegistry, socket.assigns.user.id)
+      send(lv_pid, {:presence_state, Presence.list("exam-channel:" <> socket.assigns.room_id)})
+    end
+
+    # IO.inspect(Presence.list("exam-channel:" <> socket.assigns.room_id))
+    # # push(socket, "presence_state", Presence.list("exam-channel:" <> socket.assigns.room_id))
 
     {:noreply, socket}
   end

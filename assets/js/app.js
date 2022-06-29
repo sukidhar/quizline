@@ -48,7 +48,6 @@ Uploaders.S3 = (entries, onViewError) => {
     xhr.onerror = () => {
       entry.error();
     };
-    console.log(formData);
     xhr.upload.addEventListener("progress", (event) => {
       if (event.lengthComputable) {
         let percent = Math.round((event.loaded / event.total) * 100);
@@ -256,29 +255,31 @@ Hooks.subjectPressed = {
   },
 };
 let room = null;
-Hooks.ExamRoomStudent = {
-  async mounted() {
-    room = new StudentExamRoom(userSocket, this.el.dataset.room_id);
-    await room.init();
-    this.handleEvent("start-exam-room", (data) => {
-      console.log(data);
-    });
-  },
-};
+// Hooks.ExamRoomStudent = {
+//   async mounted() {
+//     room = new StudentExamRoom();
+//     await room.init();
+//     this.handleEvent("start-exam-room", (data) => {
+//       console.log(data);
+//     });
+//   },
+// };
 
 Hooks.StudentStartUpPreview = {
   mounted() {
-    if (this.el.dataset.room_id) {
-      room = new StudentExamRoom(userSocket, this.el.dataset.room_id);
-      room
-        .init(false, "student-video-preview")
-        .then((value) => {
-          this.pushEvent("video-stream-started", {});
-        })
-        .catch((error) => {
-          this.pushEvent("frontend-error", { error: error.message });
+    room = new StudentExamRoom(userSocket, this.el.dataset.room_id);
+    room
+      .init("student-video-preview")
+      .then((_) => {
+        this.pushEvent("video-stream-started", {});
+        this.handleEvent("join-exam-channel", (data) => {
+          let { room_id, user } = data;
+          room.joinChannel(userSocket, room_id, { ...user, type: "student" });
         });
-    }
+      })
+      .catch((error) => {
+        this.pushEvent("frontend-error", { error: error.message });
+      });
   },
 };
 
@@ -302,24 +303,45 @@ Hooks.AudioStreamButton = {
   },
 };
 
+Hooks.InvigilatorRoomStartUp = {
+  mounted() {
+    room = new InvigilatorExamRoom(this);
+    room
+      .init()
+      .then((_) => {
+        this.pushEvent("started-room");
+        this.handleEvent("join-exam-channel", (data) => {
+          let { room_id, user } = data;
+          room.joinChannel(userSocket, room_id, {
+            ...user,
+            type: "invigilator",
+          });
+        });
+      })
+      .catch((err) => {
+        console.log(err);
+      });
+  },
+};
+
 Hooks.InvigilatorRoomView = {
   mounted() {
-    room = new InvigilatorExamRoom(
-      userSocket,
-      this.el.dataset.room_id || "hello",
-      this
-    );
-    room.init();
-    this.handleEvent("set-track", (data) => {
-      let video = document.getElementById(`${data.peer.id}-video-element`);
-      if (video) {
-        room.tracks.get(data.peer.id).forEach((ctx) => {
-          if (video.srcObject != ctx.stream) {
-            video.srcObject = ctx.stream;
-          }
-        });
-      }
-    });
+    // room = new InvigilatorExamRoom(
+    //   userSocket,
+    //   this.el.dataset.room_id || "hello",
+    //   this
+    // );
+    // room.init();
+    // this.handleEvent("set-track", (data) => {
+    //   let video = document.getElementById(`${data.peer.id}-video-element`);
+    //   if (video) {
+    //     room.tracks.get(data.peer.id).forEach((ctx) => {
+    //       if (video.srcObject != ctx.stream) {
+    //         video.srcObject = ctx.stream;
+    //       }
+    //     });
+    //   }
+    // });
   },
 };
 

@@ -1,21 +1,44 @@
-<div class="relative h-screen overflow-y-hidden" id="exam-room-view" phx-hook="InvigilatorRoomView" data-room_id={@room_id}>
-    <div class="sticky z-10 top-0 h-16 border-b bg-white">
-        <div class="px-6 py-2">
-            <button class="btn btn-ghost normal-case text-xl">Quizline</button>
-        </div>
-    </div>
-    <div class="flex-1 mb-5 h-[calc(100%-theme(spacing.16))] bg-white flex">
-        <div id="grid-holder" class="flex w-full h-full">
-            <div id="streams-container" class="remote-grid grid w-full h-fit grid-cols-4 bg-white gap-4 p-5 overflow-y-auto">
-                <%= for peer <- @peers do  %>
-                    <div class="aspect-video w-full">
-                        <video id={"#{peer["id"]}-video-element"} autoplay playsinline class="w-full h-full object-cover" phx-hook="RemoteStreamElement"></video>
-                    </div>
-                <% end %> 
+<%= cond do %>
+    <% @show_multiple_session_error -> %>
+        <div class="absolute h-full w-full flex items-center justify-center z-50 bg-black/20">
+            <div class="absolute navbar bg-white z-30 top-0 left-0 right-0">
+                <button class="btn btn-ghost normal-case text-xl">Quizline</button>
+            </div>
+            <div id="simulataneous-session-error-container" class="card p-10 min-h-[30%] min-w-[40%] max-w-[40%] bg-white" phx-hook="SessionError">
+                <div class="flex items-start justify-center w-full h-fit pb-6">
+                    <p class="text-2xl font-semibold">
+                        Session Error
+                    </p>
+                </div>
+                <p id="error-text" class="text-lg">
+                    There is a session running already on other device or browser. Please close the previous session to continue using this new session, This tab will close itself in 15 seconds if not closed.
+                </p>
             </div>
         </div>
-        <div class="flex flex-col w-[35%] h-full rounded-md border-l-[1px]">
+    <% not @started -> %>
+        <div class="flex items-center justify-center" id="start-up-container" phx-hook="InvigilatorRoomStartUp">
             
         </div>
-    </div>
-</div>
+    <% true -> %>
+        <div class="relative h-screen overflow-y-hidden" id="exam-room-view" phx-hook="InvigilatorRoomView" data-room_id={@room_id}>
+            <div class="sticky z-10 top-0 h-16 border-b bg-white">
+                <div class="px-6 py-2">
+                    <button class="btn btn-ghost normal-case text-xl">Quizline</button>
+                </div>
+            </div>
+            <div class="flex-1 mb-5 h-[calc(100%-theme(spacing.16))] bg-white flex">
+                <div id="grid-holder" class="flex w-full h-full">
+                    <div id="streams-container" class="remote-grid grid w-full h-fit grid-cols-4 bg-white gap-4 p-5 overflow-y-auto">
+                        <%= for peer <- @peers do  %>
+                            <div class="aspect-video w-full">
+                                <video id={"#{peer["id"]}-video-element"} autoplay playsinline class="w-full h-full object-cover" phx-hook="RemoteStreamElement"></video>
+                            </div>
+                        <% end %> 
+                    </div>
+                </div>
+                <div class="flex flex-col w-[35%] h-full rounded-md border-l-[1px]">
+                    
+                </div>
+            </div>
+        </div>
+<% end %> 

@@ -4,12 +4,12 @@ defmodule QuizlineWeb.User.Student.ExamRoomLive do
   alias QuizlineWeb.Presence
   alias Quizline.PubSub
   alias Quizline.EventManager
-  alias Quizline.UserManager.{Guardian}
+  alias Quizline.UserManager.{Guardian, Student}
   import QuizlineWeb.Live.Utilities.BookLoader
 
   def mount(%{"room" => room_id}, %{"guardian_default_token" => token}, socket) do
     case Guardian.resource_from_token(token) do
-      {:ok, user, %{"deviceId" => deviceId}} ->
+      {:ok, %Student{} = user, %{"deviceId" => deviceId}} ->
         case EventManager.get_event(room_id) do
           nil ->
             {:ok, socket |> redirect(to: "/error")}
@@ -19,10 +19,11 @@ defmodule QuizlineWeb.User.Student.ExamRoomLive do
 
             Presence.track(self(), "exam_session_" <> room_id, user.id, %{
               deviceId: deviceId,
-              user_type: :student,
               pid: self(),
               session_start: DateTime.utc_now()
             })
+
+            Registry.register(Quizline.SessionRegistry, user.id, self())
 
             {:ok,
              socket
@@ -30,14 +31,14 @@ defmodule QuizlineWeb.User.Student.ExamRoomLive do
              |> assign(:user, user)
              |> assign(:exam, exam)
              |> assign(:deviceId, deviceId)
-             |> assign(:approval_status, :waiting)
+             |> assign(:approval_status, :apply)
              |> assign(:room_id, room_id)
              |> assign(:stream_started, nil)
              |> assign(:is_mic_enabled, true)
              |> assign(:show_upload_form, false)
              |> assign(:is_video_enabled, true)
              |> allow_upload(:photo_id,
-               accept: ~w(.pdf .jpg .png .svg),
+               accept: ~w(.pdf .jpg .png .jpeg),
                max_entries: 1,
                external: &presign_upload/2
              )}
@@ -76,14 +77,12 @@ defmodule QuizlineWeb.User.Student.ExamRoomLive do
         expires_in: :timer.hours(12)
       )
 
-    meta =
-      %{
-        uploader: "S3",
-        key: key,
-        url: spaces_host(),
-        fields: fields
-      }
-      |> IO.inspect()
+    meta = %{
+      uploader: "S3",
+      key: key,
+      url: spaces_host(),
+      fields: fields
+    }
 
     {:ok, meta, socket}
   end
@@ -95,6 +94,12 @@ defmodule QuizlineWeb.User.Student.ExamRoomLive do
   def handle_event("frontend-error", error, socket) do
     IO.inspect(error)
     {:noreply, socket |> assign(:stream_started, false)}
+  end
+
+  def handle_event("hide-upload-form", _, socket) do
+    {:noreply,
+     socket
+     |> assign(:show_upload_form, false)}
   end
 
   def handle_event("toggle-video", _, socket) do
@@ -110,7 +115,14 @@ defmodule QuizlineWeb.User.Student.ExamRoomLive do
   end
 
   def handle_event("id-file-uploaded", _, socket) do
-    {:noreply, socket |> assign(:show_upload_form, false) |> assign(:approval_status, :waiting)}
+    {:noreply,
+     socket
+     |> assign(:show_upload_form, false)
+     |> assign(:approval_status, :waiting)
+     |> push_event("join-exam-channel", %{
+       user: socket.assigns.user,
+       room_id: socket.assigns.room_id
+     })}
   end
 
   def handle_event("toggle-audio", _, socket) do

@@ -19,25 +19,13 @@ export class StudentExamRoom {
   localAudioStream: MediaStream;
   localVideoTrackId: string;
 
-  constructor(userSocket: Socket, roomId: String) {
-    this.socket = userSocket;
-    this.webrtcChannel = this.socket.channel(`exam_room:${roomId}`);
-    this.webrtcChannel.onError(() => {
-      this.socketOff();
-      window.location.reload();
-    });
-    this.webrtcChannel.onClose(() => {
-      this.socketOff();
-      window.location.reload();
-    });
-
-    this.webrtcSocketRefs.push(this.socket.onError(this.leave));
-    this.webrtcSocketRefs.push(this.socket.onClose(this.leave));
-
+  constructor() {
     this.webrtc = new MembraneWebRTC({
       callbacks: {
         onSendMediaEvent: (mediaEvent: SerializedMediaEvent) => {
-          this.webrtcChannel.push("mediaEvent", { data: mediaEvent });
+          if (this.webrtcChannel) {
+            this.webrtcChannel.push("mediaEvent", { data: mediaEvent });
+          }
         },
         onConnectionError: this.handleError,
         onJoinSuccess: (_peerId, peers) => {
@@ -58,16 +46,9 @@ export class StudentExamRoom {
         },
       },
     });
-
-    this.webrtcChannel.on("mediaEvent", (event: any) =>
-      this.webrtc.receiveMediaEvent(event.data)
-    );
   }
 
-  public init = async (
-    joinChannel: Boolean = true,
-    videoElement: string = "student-video-preview"
-  ) => {
+  public init = async (videoElement: string = "student-video-preview") => {
     const hasVideoInput: boolean = (
       await navigator.mediaDevices.enumerateDevices()
     ).some((device) => device.kind === "videoinput");
@@ -132,15 +113,38 @@ export class StudentExamRoom {
     video.playsInline = true;
     video.srcObject = this.localVideoStream;
     video.style.height = video.style.width;
-
-    if (joinChannel) {
-      await this.phoenixChannelPushResult(this.webrtcChannel.join());
-    }
   };
 
-  public join = (cb: () => void) => {
-    cb();
-    this.webrtc.join({ userType: "student", name: "test-user" });
+  public async joinChannel(socket: Socket, roomId: string, user) {
+    this.socket = socket;
+    this.webrtcChannel = this.socket.channel(`exam_room:${roomId}`, {
+      user: user,
+    });
+    this.webrtcChannel.onError(() => {
+      this.socketOff();
+      window.location.reload();
+    });
+    this.webrtcChannel.onClose(() => {
+      this.socketOff();
+      window.location.reload();
+    });
+
+    this.webrtcSocketRefs.push(this.socket.onError(this.leave));
+    this.webrtcSocketRefs.push(this.socket.onClose(this.leave));
+
+    this.webrtcChannel.on("mediaEvent", (event: any) =>
+      this.webrtc.receiveMediaEvent(event.data)
+    );
+
+    this.webrtcChannel.on("presence_state", (data: any) => {
+      console.log(data);
+    });
+
+    await this.phoenixChannelPushResult(this.webrtcChannel.join());
+  }
+
+  public join = (meta) => {
+    this.webrtc.join(meta);
   };
 
   public setVideoStreamState(enabled: boolean) {

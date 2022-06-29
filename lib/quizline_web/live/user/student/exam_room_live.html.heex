@@ -43,7 +43,7 @@
                 <div class="card rounded-lg p-5 h-fit w-2/5 bg-white">
                     <div class="flex w-full justify-center items-center mb-3">
                         <p class="text-2xl w-full px-5">Provide Photo ID of University/Institue</p>
-                        <button phx-click="hide-form" class="btn bg-white btn-sm btn-square btn-outline m-2">
+                        <button phx-click="hide-upload-form" class="btn bg-white btn-sm btn-square btn-outline m-2">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
                         </button>
                     </div>
@@ -51,6 +51,7 @@
                         <p class="text-md font-medium"> This will help your invigilator identify you as a student of the University or Institute</p>
                         <form class="flex gap-5 w-full justify-center items-center" id="upload-form" phx-submit="id-file-uploaded" phx-change="id-file-changed">
                             <%= live_file_input @uploads.photo_id, class: "focus:outline-none block w-fit text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100" %>
+                            <div class="flex-grow"></div>
                             <button type="submit" phx-disable-with="uploading" class={if (@uploads.photo_id.entries |> Enum.count() == 0), do: "btn text-sm font-normal btn-sm btn-disabled", else: "btn text-sm font-normal btn-sm btn-outline"}>
                                 submit
                             </button>

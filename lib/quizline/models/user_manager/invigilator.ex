@@ -4,6 +4,7 @@ defmodule Quizline.UserManager.Invigilator do
   import Quizline.ChangesetHelper
 
   # alias Ecto.Changeset
+  @derive {Jason.Encoder, only: [:id, :first_name, :last_name, :email]}
 
   embedded_schema do
     field(:first_name, :string)
