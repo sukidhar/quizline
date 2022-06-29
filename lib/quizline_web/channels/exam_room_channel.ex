@@ -3,6 +3,7 @@ defmodule QuizlineWeb.ExamRoomChannel do
   require Logger
 
   alias QuizlineWeb.Presence
+  alias Quizline.PubSub
 
   @impl true
   def join("exam_room:" <> room_id, %{"user" => user}, socket) do
@@ -73,18 +74,44 @@ defmodule QuizlineWeb.ExamRoomChannel do
 
   @impl true
   def handle_info(:after_join, socket) do
-    Presence.track(self(), "exam-channel:" <> socket.assigns.room_id, socket.assigns.user.id, %{
-      pid: self(),
-      user: socket.assigns.user
-    })
+    Phoenix.PubSub.subscribe(PubSub, "exam-channel:" <> socket.assigns.room_id)
+
+    Presence.track(
+      self(),
+      "exam-channel:" <> socket.assigns.room_id,
+      socket.assigns.user.id,
+      case socket.assigns.user.type do
+        "invigilator" ->
+          %{
+            pid: self(),
+            user: socket.assigns.user
+          }
+
+        "student" ->
+          %{
+            pid: self(),
+            user: socket.assigns.user,
+            status: :requested
+          }
+      end
+    )
 
     if socket.assigns.user.type == "invigilator" do
       [{_pid, lv_pid}] = Registry.lookup(Quizline.SessionRegistry, socket.assigns.user.id)
       send(lv_pid, {:presence_state, Presence.list("exam-channel:" <> socket.assigns.room_id)})
     end
 
-    # IO.inspect(Presence.list("exam-channel:" <> socket.assigns.room_id))
-    # # push(socket, "presence_state", Presence.list("exam-channel:" <> socket.assigns.room_id))
+    {:noreply, socket}
+  end
+
+  def handle_info(
+        %Phoenix.Socket.Broadcast{
+          event: "presence_diff"
+        },
+        socket
+      ) do
+    [{_pid, lv_pid}] = Registry.lookup(Quizline.SessionRegistry, socket.assigns.user.id)
+    send(lv_pid, {:presence_diff, Presence.list("exam-channel:" <> socket.assigns.room_id)})
 
     {:noreply, socket}
   end

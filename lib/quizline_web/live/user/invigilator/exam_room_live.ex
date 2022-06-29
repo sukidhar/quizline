@@ -30,7 +30,11 @@ defmodule QuizlineWeb.User.Invigilator.ExamRoomLive do
              |> assign(:deviceId, deviceId)
              |> assign(:room_id, room_id)
              |> assign(:exam, exam)
+             |> assign(:selected_users, :requests)
              |> assign(:started, false)
+             |> assign(:selected_request, nil)
+             |> assign(:requests, [])
+             |> assign(:attendees, [])
              |> assign(:peers, [])
              |> assign(:show_multiple_session_error, false)
              |> assign(:is_mic_enabled, true)
@@ -38,11 +42,17 @@ defmodule QuizlineWeb.User.Invigilator.ExamRoomLive do
         end
 
       _ ->
-        {:ok, socket |> redirect(to: "/error")}
+        {:ok, socket |> redirect(to: "/auth")}
     end
   end
 
+  def mount(_, _, socket) do
+    {:ok, socket |> redirect(to: "/auth")}
+  end
+
   def handle_event("started-room", _, socket) do
+    send(self(), :after_started_room)
+
     {:noreply,
      socket
      |> push_event("join-exam-channel", %{
@@ -71,6 +81,120 @@ defmodule QuizlineWeb.User.Invigilator.ExamRoomLive do
       end)
 
     {:noreply, socket |> assign(:peers, peers)}
+  end
+
+  def handle_event("select-users", %{"type" => type}, socket) do
+    {:noreply,
+     socket
+     |> assign(
+       :selected_users,
+       case type do
+         "attendees" -> :attendees
+         _ -> :requests
+       end
+     )}
+  end
+
+  @bucket "quizline"
+  def generate_query(roomId, userId) do
+    client =
+      AWS.Client.create(
+        System.fetch_env!("SPACES_KEY"),
+        System.fetch_env!("SPACES_SECRET"),
+        "us-east-1"
+      )
+
+    client =
+      AWS.Client.put_endpoint(client, "ams3.digitaloceanspaces.com") |> Map.put(:service, "s3")
+
+    url =
+      "https://#{client.endpoint}/#{AWS.Util.encode_uri(@bucket)}/#{AWS.Util.encode_uri(roomId)}.#{AWS.Util.encode_uri(userId)}"
+
+    %{
+      query: %{
+        headers:
+          AWS.Signature.sign_v4(
+            client,
+            NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second),
+            :get,
+            url,
+            [{"Content-Type", "text/xml"}],
+            ""
+          )
+          |> Map.new(),
+        url: url
+      }
+    }
+  end
+
+  def handle_event("respond-to-request", %{"response" => res}, socket) do
+    req = socket.assigns.selected_request
+
+    case {res, req} do
+      {"accept", req} when not is_nil(req) ->
+        Presence.update(
+          req.pid,
+          "exam-channel:" <> socket.assigns.room_id,
+          req.user.id,
+          req |> Map.put(:status, :approved)
+        )
+
+      {"refuse", req} when not is_nil(req) ->
+        Presence.update(
+          req.pid,
+          "exam-channel:" <> socket.assigns.room_id,
+          req.user.id,
+          req |> Map.put(:status, :refused)
+        )
+
+      {_, nil} ->
+        nil
+    end
+
+    {:noreply, socket |> assign(:selected_request, nil)}
+  end
+
+  def handle_event("select-request", %{"id" => id}, socket) do
+    request =
+      Enum.find(socket.assigns.requests, nil, fn k ->
+        k.user.id == id
+      end)
+
+    {:noreply, socket |> assign(:selected_request, request)}
+  end
+
+  def query_data(request) do
+    request.query |> Jason.encode!()
+  end
+
+  defp sync_presences(presences, socket) do
+    presences =
+      presences
+      |> Map.delete(socket.assigns.user.id)
+      |> Map.values()
+      |> Enum.map(fn v ->
+        [[h] | _] = v |> Map.values()
+
+        Map.merge(h, generate_query(socket.assigns.room_id, h.user.id))
+      end)
+
+    {requests, attendees} = Enum.split_with(presences, &(&1.status == :requested))
+
+    socket
+    |> assign(:attendees, attendees)
+    |> assign(:requests, requests)
+  end
+
+  def handle_info(:after_started_room, socket) do
+    {:noreply, socket |> assign(:started, true)}
+  end
+
+  def handle_info({:presence_state, presences}, socket) do
+    {:noreply, sync_presences(presences, socket)}
+  end
+
+  def handle_info({:presence_diff, presences}, socket) do
+    {:noreply, sync_presences(presences, socket)}
   end
 
   def handle_info(

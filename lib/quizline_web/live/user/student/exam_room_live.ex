@@ -139,6 +139,26 @@ defmodule QuizlineWeb.User.Student.ExamRoomLive do
      |> assign(:show_upload_form, true)}
   end
 
+  defp sync_presences(presences, socket) do
+    case presences[socket.assigns.user.id] do
+      nil ->
+        socket
+
+      %{metas: [%{status: :approved}]} ->
+        socket |> assign(:approval_status, :approved)
+
+      %{metas: [%{status: :refused}]} ->
+        socket
+
+      _ ->
+        socket
+    end
+  end
+
+  def handle_info({:presence_diff, presences}, socket) do
+    {:noreply, sync_presences(presences, socket)}
+  end
+
   def handle_info(
         %Phoenix.Socket.Broadcast{
           event: "presence_diff",

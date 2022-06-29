@@ -37,6 +37,7 @@ Uploaders.S3 = (entries, onViewError) => {
     let formData = new FormData();
     let { url, fields } = entry.meta;
     Object.entries(fields).forEach(([key, val]) => {
+      console.log(key, val);
       formData.append(key, val);
     });
     formData.append("file", entry.file);
@@ -350,6 +351,35 @@ Hooks.Timezone = {
     console.log("hello");
     let localTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
     this.pushEvent("timezone-callback", { timezone: localTz });
+  },
+};
+
+Hooks.DocumentViewer = {
+  mounted() {
+    request = JSON.parse(this.el.dataset.request);
+    console.log(request);
+    let xhr = new XMLHttpRequest();
+    el = this.el;
+    xhr.responseType = "blob";
+    xhr.open("GET", request.url);
+    Object.entries(request.headers).forEach((entry) => {
+      let [key, value] = entry;
+      xhr.setRequestHeader(key, value);
+    });
+    xhr.onreadystatechange = xhr.onreadystatechange = function () {
+      // In local files, status is 0 upon success in Mozilla Firefox
+      if (xhr.readyState === XMLHttpRequest.DONE) {
+        var status = xhr.status;
+        if (status === 0 || (status >= 200 && status < 400)) {
+          // The request has been completed successfully
+          let url = URL.createObjectURL(xhr.response);
+          el.src = url;
+        } else {
+          // Oh no! There has been an error with the request!
+        }
+      }
+    };
+    xhr.send();
   },
 };
 
