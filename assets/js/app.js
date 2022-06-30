@@ -373,9 +373,10 @@ Hooks.DocumentViewer = {
         if (status === 0 || (status >= 200 && status < 400)) {
           // The request has been completed successfully
           let url = URL.createObjectURL(xhr.response);
-          el.src = url;
+          el.src = `${url}#toolbar=0&navpanes=0&scrollbar=0`;
+          //? add customisation for firefox
         } else {
-          // Oh no! There has been an error with the request!
+          //! Oh no! There has been an error with the request!
         }
       }
     };

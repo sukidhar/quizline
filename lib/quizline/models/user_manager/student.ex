@@ -28,7 +28,7 @@ defmodule Quizline.UserManager.Student do
     |> validate_email()
     |> validate_length(:first_name, min: 2)
     |> validate_length(:last_name, min: 2)
-    |> put_change(:id, Ecto.UUID.generate())
+    |> add_id()
   end
 
   def file_changeset(user, params) do
@@ -38,6 +38,6 @@ defmodule Quizline.UserManager.Student do
     |> validate_email()
     |> validate_length(:first_name, min: 2)
     |> validate_length(:last_name, min: 2)
-    |> put_change(:id, Ecto.UUID.generate())
+    |> add_id()
   end
 end

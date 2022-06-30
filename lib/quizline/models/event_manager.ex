@@ -9,8 +9,14 @@ defmodule Quizline.EventManager do
     Exam.secondary_changeset(exam, params)
   end
 
+  def qp_changeset(%Exam.QuestionPaper{} = qp, params \\ %{}) do
+    Exam.qp_changeset(qp, params)
+  end
+
   def create_exam(data, id) do
     Necto.create_exam_event(data, id)
+    # ? schedule emails using oban
+    :ok
   end
 
   def delete_exam(id) do
@@ -19,6 +25,8 @@ defmodule Quizline.EventManager do
 
   def create_exams(data, id) do
     Necto.create_multiple_exams(data, id)
+    # ? schedule emails using oban
+    :ok
   end
 
   def fetch_exams(id) do
@@ -51,5 +59,9 @@ defmodule Quizline.EventManager do
 
   def get_event(room_id) do
     Necto.get_event(room_id)
+  end
+
+  def fetch_question_papers(event) do
+    Necto.fetch_question_papers(event)
   end
 end

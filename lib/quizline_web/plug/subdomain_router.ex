@@ -37,6 +37,8 @@ defmodule QuizlineWeb.SubdomainRouter do
     get("/file/department_details_template", SessionController, :get_department_details_sample)
     get("/file/events_template", SessionController, :get_events_sample)
     get("/file/users_template", SessionController, :get_users_sample)
+
+    live "/qpm/:token", User.Incharge.InchargeLive
   end
 
   import Phoenix.LiveDashboard.Router

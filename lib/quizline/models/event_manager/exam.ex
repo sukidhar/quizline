@@ -25,8 +25,9 @@ defmodule Quizline.EventManager.Exam do
     end
 
     embeds_many :question_papers, QuestionPaper do
-      field(:set, :integer)
+      field(:set, :string)
       field(:uploader, :string)
+      field(:created, :string)
     end
 
     field(:created, :string)
@@ -39,6 +40,7 @@ defmodule Quizline.EventManager.Exam do
     |> validate_required([:exam_group, :date, :start_time, :end_time, :uploader])
     |> validate_date()
     |> validate_time()
+    |> Quizline.ChangesetHelper.add_id()
     |> validate_uploader()
   end
 
@@ -48,6 +50,14 @@ defmodule Quizline.EventManager.Exam do
     |> cast_embed(:subject, with: &Quizline.SubjectManager.Subject.changeset/2, required: true)
     |> cast_embed(:attendees, with: &attendee_changeset/2, required: true)
     |> attendees_updated()
+  end
+
+  def qp_changeset(qp, params) do
+    qp
+    |> cast(params, [:set, :uploader, :created])
+    |> validate_required([:set, :uploader])
+    |> Quizline.ChangesetHelper.add_id()
+    |> validate_uploader()
   end
 
   def validate_uploader(%Changeset{valid?: true, changes: %{uploader: email}} = changeset) do

@@ -59,6 +59,8 @@ defmodule Quizline.MixProject do
       {:eqrcode, "~> 0.1.10"},
       {:aws, "~> 0.11.0"},
       {:hackney, "~> 1.18"},
+      {:pigeon, "~> 1.6.1"},
+      {:kadabra, "~> 0.6.0"},
 
       # membrane
       {:membrane_rtc_engine, "~> 0.3.0"},

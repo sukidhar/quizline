@@ -264,6 +264,7 @@ defmodule QuizlineWeb.Admin.SessionLive.EventsComponent do
                  is_bitstring(email) ->
             if is_valid_date(date) and is_valid_timings(start_time, end_time) do
               %{
+                id: UUID.uuid4(),
                 subject: subject,
                 exam_group: exam_group,
                 attendees: [
@@ -297,6 +298,7 @@ defmodule QuizlineWeb.Admin.SessionLive.EventsComponent do
                  is_bitstring(email) ->
             if is_valid_date(date) and is_valid_timings(start_time, end_time) do
               %{
+                id: UUID.uuid4(),
                 subject: subject,
                 exam_group: exam_group,
                 attendees:

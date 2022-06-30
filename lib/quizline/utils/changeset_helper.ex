@@ -42,4 +42,12 @@ defmodule Quizline.ChangesetHelper do
     |> Enum.join()
     |> String.upcase()
   end
+
+  def add_id(%Changeset{changes: %{id: _id}} = changeset) do
+    changeset
+  end
+
+  def add_id(changeset) do
+    changeset |> put_change(:id, Ecto.UUID.generate())
+  end
 end

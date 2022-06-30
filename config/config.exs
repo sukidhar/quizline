@@ -15,6 +15,10 @@ config :quizline, Quizline.UserManager.Guardian,
   issuer: "quizline",
   secret_key: "AqbchZHVvzTKwlrpFeQr0lm1OcTUyPZZCx1db3vzu4mF5nSvLO8Ozw/vS2/8Nbnt"
 
+config :quizline, Quizline.Guardian,
+  issuer: "quizline",
+  secret_key: "H/Bc+GEsakr7CHe35Kzdl14PBjciMgWR5HrP2biPtVNyqMnDWJUTdFuMAypuJfqF"
+
 # email validator
 config :email_checker,
   default_dns: :system,

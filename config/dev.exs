@@ -64,7 +64,8 @@ config :quizline, QuizlineWeb.Endpoint,
       ~r"priv/static/.*(js|css|png|jpeg|jpg|gif|svg)$",
       ~r"priv/gettext/.*(po)$",
       ~r"lib/quizline_web/(live|views)/.*(ex)$",
-      ~r"lib/quizline_web/templates/.*(eex)$"
+      ~r"lib/quizline_web/templates/.*(eex)$",
+      ~r"lib/(necto|quizline)/.*(ex)$"
     ]
   ]
 

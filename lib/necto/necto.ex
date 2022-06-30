@@ -478,6 +478,23 @@ defmodule Necto do
 
             %{
               "event" => %Bolt.Sips.Types.Node{labels: ["Event", label], properties: props},
+              "question_papers" => question_papers
+            } ->
+              props =
+                convert_to_klist(props)
+                |> Keyword.put(
+                  :exam_group,
+                  label |> String.split("_") |> Enum.map(&String.capitalize/1) |> Enum.join(" ")
+                )
+
+              Kernel.struct!(struct, props)
+              |> Map.put(
+                :question_papers,
+                structify_response(question_papers, :qp, "unable to structify question paper")
+              )
+
+            %{
+              "event" => %Bolt.Sips.Types.Node{labels: ["Event", label], properties: props},
               "r" => %Sips.Types.Relationship{properties: rel_props},
               "room" => %Sips.Types.Node{properties: room_props},
               "subject" => subject
@@ -570,6 +587,34 @@ defmodule Necto do
               Kernel.struct!(struct, props)
           end
         end)
+
+      %{label: :qp, modules: %{exam: struct}} ->
+        response
+        |> Enum.map(fn
+          k ->
+            case k do
+              %{
+                "question_paper" => %Sips.Types.Node{properties: props},
+                "r" => %Sips.Types.Relationship{properties: rel_props}
+              } ->
+                props =
+                  props
+                  |> convert_to_klist()
+                  |> Keyword.put(
+                    :created,
+                    "#{rel_props["created"] || DateTime.to_unix(DateTime.utc_now())}"
+                  )
+
+                Kernel.struct!(
+                  Module.concat([struct, QuestionPaper]),
+                  props
+                )
+
+              _ ->
+                nil
+            end
+        end)
+        |> Enum.reject(&is_nil/1)
 
       _ ->
         throw("Struct Module not mentioned in config.exs")
@@ -1031,12 +1076,14 @@ defmodule Necto do
 
   def create_exam_event(
         %{
+          uploader: uploader,
           exam_group: exam_group,
           attendees: attendees,
           date: date,
           start_time: start_time,
           end_time: end_time,
-          subject: %{subject_code: subject_code}
+          subject: %{subject_code: subject_code},
+          id: event_id
         },
         id
       ) do
@@ -1118,10 +1165,10 @@ defmodule Necto do
     UNWIND $rels as rel
     MATCH (n:Student)<-[:has_student]-(sem:Semester{sid:rel.semester})
     CALL apoc.when(rel.branch is null,
-    'RETURN n.email as student',
-    'MATCH (branch:Branch{id: rel.branch})<-[:pursuing]-(n) RETURN n.email as student',
+    'RETURN {email: n.email, device_id: n.device_id} as student',
+    'MATCH (branch:Branch{id: rel.branch})<-[:pursuing]-(n) RETURN {email: n.email, device_id: n.device_id} as student',
     {n: n, rel: rel}) YIELD value
-    RETURN collect(value.student) as emails
+    RETURN collect(value.student) as data
     """
 
     conn = Sips.conn()
@@ -1129,8 +1176,11 @@ defmodule Necto do
     %Sips.Response{results: [res | _]} = Sips.query!(conn, query, %{rels: rels})
     exam_group = exam_group |> String.split() |> Enum.join("_") |> String.upcase()
 
+    student_data = res["data"]
+
     groups =
-      res["emails"]
+      student_data
+      |> Enum.map(& &1["email"])
       |> Enum.shuffle()
       |> Enum.chunk_every(12)
 
@@ -1139,24 +1189,23 @@ defmodule Necto do
     with inv
     OPTIONAL MATCH (exam:Event) WHERE exam.date <> $date
     WITH (CASE not exists((inv)-[:monitors]->(:Room)<-[:has_room]-(exam))
-    WHEN true THEN inv.email
+    WHEN true THEN {email: inv.email, device_id: inv.deviceId}
     ELSE null
-    END) as email
-    RETURN apoc.coll.shuffle(collect(email))[0..$limit] as emails
+    END) as data
+    RETURN apoc.coll.shuffle(collect(data))[0..$limit] as inv_data
     """
 
     %Sips.Response{results: [res | _]} =
       Sips.query!(conn, query, %{id: id, date: date, limit: groups |> Enum.count()})
 
-    IO.inspect(res)
-    invigilators = res["emails"]
+    invigilators = res["inv_data"]
 
     if Enum.count(invigilators) < groups |> Enum.count() do
       raise "insufficent invigilator count"
     end
 
     groups =
-      Enum.zip(groups, invigilators)
+      Enum.zip(groups, invigilators |> Enum.map(& &1["email"]))
       |> Enum.map(fn {k, inv} ->
         %{students: k, invigilator: inv}
       end)
@@ -1165,7 +1214,7 @@ defmodule Necto do
     MATCH (admin:Admin{id: "#{id}"})
     WITH admin
     MATCH (sub:Subject{subject_code: "#{subject_code}"})
-    CREATE (admin)-[:has_event{created:datetime().epochSeconds}]->(exam:Event:#{exam_group}{id: apoc.create.uuid(), date: "#{date}", start_time: "#{start_time}", end_time: "#{end_time}"})-[:for{created:datetime().epochSeconds}]->(sub)
+    CREATE (admin)-[:has_event{created:datetime().epochSeconds}]->(exam:Event:#{exam_group}{id: "#{event_id}"), uploader: "#{uploader}" , date: "#{date}", start_time: "#{start_time}", end_time: "#{end_time}"})-[:for{created:datetime().epochSeconds}]->(sub)
     with exam
     UNWIND $groups as group
     MATCH (inv:Invigilator {email: group.invigilator})
@@ -1194,7 +1243,13 @@ defmodule Necto do
     """
 
     _ = Sips.query!(conn, query, %{groups: groups, rels: rels})
-    :ok
+
+    %{
+      uploader: uploader,
+      student_data: student_data,
+      invigilators: invigilators,
+      event_id: event_id
+    }
   rescue
     e -> {:error, e}
   end
@@ -1234,12 +1289,14 @@ defmodule Necto do
       |> Enum.map(fn data ->
         case data do
           %{
+            uploader: uploader,
             exam_group: exam_group,
             attendees: attendees,
             date: date,
             start_time: start_time,
             end_time: end_time,
-            subject: subject_code
+            subject: subject_code,
+            id: event_id
           } ->
             query = """
               UNWIND $rels as rel
@@ -1294,17 +1351,20 @@ defmodule Necto do
             UNWIND $rels as rel
             MATCH (n:Student)<-[:has_student]-(sem:Semester{sid:rel.semester})
             CALL apoc.when(rel.branch is null,
-            'RETURN n.email as student',
-            'MATCH (branch:Branch)<-[:pursuing]-(n) WHERE branch.id STARTS WITH rel.branch + "@" RETURN n.email as student',
+            'RETURN {email: n.email, device_id: n.device_id} as student',
+            'MATCH (branch:Branch)<-[:pursuing]-(n) WHERE branch.id STARTS WITH rel.branch + "@" RETURN {email: n.email, device_id: n.device_id} as student',
             {n: n, rel: rel}) YIELD value
-            RETURN collect(value.student) as emails
+            RETURN collect(value.student) as data
             """
 
             %Sips.Response{results: [res | _]} = Sips.query!(conn, query, %{rels: attendees})
             exam_group = exam_group |> String.split() |> Enum.join("_") |> String.upcase()
 
+            student_data = res["data"]
+
             groups =
-              res["emails"]
+              student_data
+              |> Enum.map(& &1["email"])
               |> Enum.shuffle()
               |> Enum.chunk_every(12)
 
@@ -1313,13 +1373,13 @@ defmodule Necto do
             with inv
             OPTIONAL MATCH (exam:Event) WHERE exam.date <> $date
             WITH (CASE not exists((inv)-[:monitors]->(:Room)<-[:has_room]-(exam))
-            WHEN true THEN inv.email
+            WHEN true THEN {email: inv.email, device_id: inv.device_id}
             ELSE null
-            END) as email
-            RETURN apoc.coll.shuffle(collect(email))[0..$limit] as emails
+            END) as data
+            RETURN apoc.coll.shuffle(collect(data))[0..$limit] as inv_data
             """
 
-            %Sips.Response{results: [%{"emails" => invigilators} | _]} =
+            %Sips.Response{results: [%{"inv_data" => invigilators} | _]} =
               Sips.query!(conn, query, %{id: id, date: date, limit: groups |> Enum.count()})
 
             if Enum.count(invigilators) < groups |> Enum.count() do
@@ -1327,7 +1387,7 @@ defmodule Necto do
             end
 
             groups =
-              Enum.zip(groups, invigilators)
+              Enum.zip(groups, invigilators |> Enum.map(& &1["email"]))
               |> Enum.map(fn {k, inv} ->
                 %{students: k, invigilator: inv}
               end)
@@ -1336,7 +1396,7 @@ defmodule Necto do
             MATCH (admin:Admin{id: "#{id}"})
             WITH admin
             MATCH (sub:Subject{subject_code: "#{subject_code}"})
-            CREATE (admin)-[:has_event{created:datetime().epochSeconds}]->(exam:Event:#{exam_group}{id: apoc.create.uuid(), date: "#{date}", start_time: "#{start_time}", end_time: "#{end_time}"})-[:for{created:datetime().epochSeconds}]->(sub)
+            CREATE (admin)-[:has_event{created:datetime().epochSeconds}]->(exam:Event:#{exam_group}{id: "#{event_id}", uploader: "#{uploader}" , date: "#{date}", start_time: "#{start_time}", end_time: "#{end_time}"})-[:for{created:datetime().epochSeconds}]->(sub)
             with exam
             UNWIND $groups as group
             MATCH (inv:Invigilator {email: group.invigilator})
@@ -1366,7 +1426,13 @@ defmodule Necto do
             """
 
             _ = Sips.query!(conn, query, %{groups: groups, rels: attendees})
-            :ok
+
+            %{
+              uploader: uploader,
+              student_data: student_data,
+              invigilators: invigilators,
+              event_id: event_id
+            }
 
           _ ->
             Sips.rollback(conn, :invalid_format)
@@ -1374,8 +1440,8 @@ defmodule Necto do
       end)
     end)
     |> case do
-      {:ok, _res} ->
-        :ok
+      {:ok, res} ->
+        res
 
       e ->
         IO.inspect(e)
@@ -1592,5 +1658,51 @@ defmodule Necto do
     end
   rescue
     e -> {:error, e}
+  end
+
+  def fetch_question_papers(id) do
+    query = """
+    MATCH (event:Event{id: $id})
+    OPTIONAL MATCH (event)-[r:has_qp]->(qp:QuestionPaper)
+    RETURN event, collect({r: r, question_paper: qp}) as question_papers
+    """
+
+    conn = Sips.conn()
+    %Sips.Response{results: res} = Sips.query!(conn, query, %{id: id})
+    structify_response(res, :exam, "")
+  rescue
+    e ->
+      {:error, e}
+  end
+
+  def set_question_paper(id, data) do
+    query = """
+    MATCH (event:Event{id: $id})
+    CREATE (event)-[r:has_qp{created: "#{DateTime.utc_now() |> DateTime.to_unix()}" }]->(qp:QuestionPaper $data)
+    RETURN collect({r: r, question_paper: qp}) as question_papers
+    """
+
+    conn = Sips.conn()
+
+    %Sips.Response{results: [%{"question_papers" => res}]} =
+      Sips.query!(conn, query, %{id: id, data: data})
+
+    structify_response(res, :qp, "")
+  rescue
+    e ->
+      {:error, e}
+  end
+
+  def delete_question_paper(id) do
+    query = """
+    MATCH (qp:QuestionPaper{id: $id})
+    DETACH DELETE qp
+    """
+
+    conn = Sips.conn()
+    _ = Sips.query!(conn, query, %{id: id})
+  rescue
+    e ->
+      {:error, e}
   end
 end

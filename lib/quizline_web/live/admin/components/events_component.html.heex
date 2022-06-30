@@ -34,9 +34,9 @@
                                         <%= error_tag f, :date  %> 
                                         <%= if @calendar_open do  %>
                                             <div class="bg-white rounded-lg p-4 shadow-lg absolute -top-24 left-32 w-fit border-[0.5px]" phx-click-away="toggle-calendar" phx-target={@myself}>
-                                                <button class="absolute top-5 left-7" phx-click="change_month" phx-value-month={@calendar.previous_month} phx-target={@myself}><svg width="5" height="8" viewBox="0 0 5 8" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4 7L1 4L4 1" stroke="#829AB1" stroke-width="1"/></svg></button>
+                                                <button class="absolute top-5 left-7" type="button" phx-click="change_month" phx-value-month={@calendar.previous_month} phx-target={@myself}><svg width="5" height="8" viewBox="0 0 5 8" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4 7L1 4L4 1" stroke="#829AB1" stroke-width="1"/></svg></button>
                                                 <h3 class="text-center text-sb-gray-900 text-xs pb-2"><%= @calendar.selected_month %></h3>
-                                                <button class="absolute top-5 right-7" phx-click="change_month" phx-value-month={@calendar.next_month} phx-target={@myself}><svg width="5" height="8" viewBox="0 0 5 8" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M1 1L4 4L1 7" stroke="#829AB1" stroke-width="1"/></svg></button>
+                                                <button class="absolute top-5 right-7" type="button" phx-click="change_month" phx-value-month={@calendar.next_month} phx-target={@myself}><svg width="5" height="8" viewBox="0 0 5 8" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M1 1L4 4L1 7" stroke="#829AB1" stroke-width="1"/></svg></button>
                                                 <ul class="text-xs text-sb-gray-500 grid grid-cols-7 gap-2">
                                                     <li class="block w-6 h-6 text-center">S</li>
                                                     <li class="block w-6 h-6 text-center">M</li>

@@ -54,12 +54,4 @@ defmodule Quizline.DepartmentManager.Department do
   defp update_branch_id(changeset) do
     changeset
   end
-
-  defp add_id(%Changeset{changes: %{id: _id}} = changeset) do
-    changeset
-  end
-
-  defp add_id(changeset) do
-    changeset |> put_change(:id, Ecto.UUID.generate())
-  end
 end
