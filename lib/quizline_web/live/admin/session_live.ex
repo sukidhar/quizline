@@ -19,7 +19,7 @@ defmodule QuizlineWeb.Admin.SessionLive do
     {:ok,
      socket
      |> assign(:admin, admin)
-     |> assign(:view, :users)
+     |> assign(:view, :events)
      |> allow_upload(:form_sheet, accept: ~w(.csv), max_entries: 1)
      |> assign(:users_data, %{
        form_mode: :file,
@@ -260,6 +260,7 @@ defmodule QuizlineWeb.Admin.SessionLive do
            |> Map.put(:events, nil)
            |> Map.put(:primary_changeset, EventManager.exam_primary_changeset(%Exam{}))
            |> Map.put(:secondary_changeset, EventManager.exam_secondary_changeset(%Exam{}))
+           |> Map.put(:selected_subject, nil)
            |> Map.put(:show_event_form?, false)
          )}
 

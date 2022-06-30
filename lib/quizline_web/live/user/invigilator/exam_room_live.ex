@@ -180,9 +180,18 @@ defmodule QuizlineWeb.User.Invigilator.ExamRoomLive do
 
     {requests, attendees} = Enum.split_with(presences, &(&1.status == :requested))
 
+    selected_request =
+      if not is_nil(socket.assigns.selected_request),
+        do:
+          Enum.find(requests, nil, fn k ->
+            k.user.id == socket.assigns.selected_request.user.id
+          end),
+        else: nil
+
     socket
     |> assign(:attendees, attendees)
     |> assign(:requests, requests)
+    |> assign(:selected_request, selected_request)
   end
 
   def handle_info(:after_started_room, socket) do

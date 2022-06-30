@@ -168,8 +168,6 @@ defmodule QuizlineWeb.Admin.SessionLive.EventsComponent do
             :attendees,
             Map.get(data, :attendees, [])
             |> Enum.map(fn k ->
-              IO.inspect(k)
-
               case k do
                 %Ecto.Changeset{
                   valid?: true,
@@ -259,9 +257,11 @@ defmodule QuizlineWeb.Admin.SessionLive.EventsComponent do
              "End Time" => end_time,
              "Subject Code" => subject,
              "Semester" => semesters,
+             "Incharge" => email,
              "Exam Group" => exam_group
            }}
-          when is_bitstring(semesters) and is_bitstring(branches) ->
+          when is_bitstring(semesters) and is_bitstring(branches) and not is_nil(email) and
+                 is_bitstring(email) ->
             if is_valid_date(date) and is_valid_timings(start_time, end_time) do
               %{
                 subject: subject,
@@ -272,6 +272,7 @@ defmodule QuizlineWeb.Admin.SessionLive.EventsComponent do
                     semester: semesters
                   }
                 ],
+                uploader: email,
                 date: parse_date(date),
                 start_time: parse_time(start_time),
                 end_time: parse_time(end_time)
@@ -288,10 +289,12 @@ defmodule QuizlineWeb.Admin.SessionLive.EventsComponent do
              "End Time" => end_time,
              "Subject Code" => subject,
              "Semester" => semesters,
+             "Incharge" => email,
              "Exam Group" => exam_group
            }}
           when is_list(semesters) and is_list(branches) and
-                 length(semesters) == length(branches) ->
+                 length(semesters) == length(branches) and not is_nil(email) and
+                 is_bitstring(email) ->
             if is_valid_date(date) and is_valid_timings(start_time, end_time) do
               %{
                 subject: subject,
@@ -314,6 +317,7 @@ defmodule QuizlineWeb.Admin.SessionLive.EventsComponent do
                     end
                   end)
                   |> Enum.reject(&is_nil/1),
+                uploader: email,
                 date: parse_date(date),
                 start_time: parse_time(start_time),
                 end_time: parse_time(end_time)

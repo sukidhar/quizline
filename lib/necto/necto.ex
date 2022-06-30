@@ -196,9 +196,8 @@ defmodule Necto do
               end
 
             %{"user" => node} ->
-              props =
-                convert_to_klist(node.properties)
-                |> Keyword.put(:account_type, String.downcase(hd(node.labels) || "student"))
+              props = convert_to_klist(node.properties)
+              # |> Keyword.put(:account_type, String.downcase(hd(node.labels) || "student"))
 
               case String.downcase(hd(node.labels) || "student") do
                 "student" -> Kernel.struct!(student_struct, props)
@@ -458,14 +457,22 @@ defmodule Necto do
                 Kernel.struct!(Module.concat([struct, Room]), props)
               end)
 
-            %{"room" => %Bolt.Sips.Types.Node{properties: props}, "students" => students} ->
+            %{
+              "room" => %Bolt.Sips.Types.Node{properties: props},
+              "students" => students,
+              "invigilator" => invigilator
+            } ->
               students =
                 students
                 |> structify_response(:student, "unable to structify students")
 
+              [invigilator] =
+                structify_response([%{"user" => invigilator}], :user, "unable to structify")
+
               props =
                 convert_to_klist(props)
                 |> Keyword.put(:students, students)
+                |> Keyword.put(:invigilator, invigilator)
 
               Kernel.struct!(Module.concat([struct, Room]), props)
 
@@ -1408,9 +1415,9 @@ defmodule Necto do
 
   def fetch_room_details(id) do
     query = """
-    MATCH (room:Room{id: $id})<-[:is_assigned]-(student:Student)
+    MATCH (invigilator:Invigilator)-[:monitors]->(room:Room{id: $id})<-[:is_assigned]-(student:Student)
     OPTIONAL MATCH (semester:Semester)-[:has_student]->(student:Student)-[:pursuing]-(branch:Branch)
-    RETURN room, collect({student: student, branch: branch, semester: semester}) as students
+    RETURN room, collect({student: student, branch: branch, semester: semester}) as students, invigilator
     """
 
     conn = Sips.conn()

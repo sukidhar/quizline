@@ -39,10 +39,13 @@ defmodule QuizlineWeb.SubdomainRouter do
     get("/file/users_template", SessionController, :get_users_sample)
   end
 
+  import Phoenix.LiveDashboard.Router
+
   scope "/", QuizlineWeb do
     pipe_through([:browser, :auth, :ensure_auth])
 
     live("/", Admin.SessionLive)
+    live_dashboard "/dashboard", metrics: QuizlineWeb.Telemetry
   end
 
   # Other scopes may use custom stacks.

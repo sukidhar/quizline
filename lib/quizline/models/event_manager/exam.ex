@@ -9,6 +9,7 @@ defmodule Quizline.EventManager.Exam do
     field(:date, :date)
     field(:start_time, :time)
     field(:end_time, :time)
+    field(:uploader, :string)
     embeds_one(:subject, Quizline.SubjectManager.Subject)
 
     embeds_many :attendees, Attendee do
@@ -23,16 +24,22 @@ defmodule Quizline.EventManager.Exam do
       field(:created, :string)
     end
 
+    embeds_many :question_papers, QuestionPaper do
+      field(:set, :integer)
+      field(:uploader, :string)
+    end
+
     field(:created, :string)
     field(:updated, :string)
   end
 
   def primary_changeset(exam, params) do
     exam
-    |> cast(params, [:exam_group, :date, :start_time, :end_time])
-    |> validate_required([:exam_group, :date, :start_time, :end_time])
+    |> cast(params, [:exam_group, :date, :start_time, :end_time, :uploader])
+    |> validate_required([:exam_group, :date, :start_time, :end_time, :uploader])
     |> validate_date()
     |> validate_time()
+    |> validate_uploader()
   end
 
   def secondary_changeset(exam, params) do
@@ -41,6 +48,20 @@ defmodule Quizline.EventManager.Exam do
     |> cast_embed(:subject, with: &Quizline.SubjectManager.Subject.changeset/2, required: true)
     |> cast_embed(:attendees, with: &attendee_changeset/2, required: true)
     |> attendees_updated()
+  end
+
+  def validate_uploader(%Changeset{valid?: true, changes: %{uploader: email}} = changeset) do
+    case EmailChecker.valid?(email) do
+      true ->
+        changeset
+
+      false ->
+        changeset |> add_error(:uploader, "invalid email format or suspected temporary domain")
+    end
+  end
+
+  def validate_uploader(changeset) do
+    changeset
   end
 
   def validate_date(%Changeset{valid?: true, changes: %{date: date}} = changeset) do

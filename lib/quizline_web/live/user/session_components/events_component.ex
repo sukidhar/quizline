@@ -137,7 +137,7 @@ defmodule QuizlineWeb.User.SessionLive.EventsComponent do
          "T" <> event.start_time <> "#{if offset < 0, do: "-", else: "+"}#{h}:#{m}")
       |> Timex.parse!("{ISO:Extended}")
 
-    dt = %DateTime{dt | minute: dt.minute - 15}
+    dt = %DateTime{dt | minute: dt.minute - 60}
     DateTime.compare(current_dt, dt) in [:gt]
   end
 

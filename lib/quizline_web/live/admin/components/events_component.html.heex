@@ -20,8 +20,9 @@
                     <%= if @form_mode == :form do  %>
                         <%= case @form_step do %>
                             <% :primary -> %>
-                                <.form let = {f} for={@primary_changeset} id="event_form", class="flex flex-col w-full gap-y-10 pb-5 px-5" phx-target={@myself} phx-change="primary-change" phx-submit="primary-submit">
-                                    <%= floating_input f, :exam_group, wrapper: ["relative"], placeholder: "Exam Group", phx_debounce: 0 %>
+                                <.form let = {f} for={@primary_changeset} id="event_form", class="flex flex-col w-full gap-y-7 pb-5 px-5" phx-target={@myself} phx-change="primary-change" phx-submit="primary-submit">
+                                    <%= floating_input f, :exam_group, wrapper: ["relative"], placeholder: "Exam Group Label", phx_debounce: 0 %>
+                                    <%= floating_input f, :uploader, wrapper: ["relative"], placeholder: "Exam Incharge " %>
                                     <%= hidden_input f, :date, id: "date-input", value: @calendar.selected_day  %> 
                                     <div class="relative z-50">
                                         <div class="w-full border-[1px] rounded-md pb-1 px-2 calendar-button">
@@ -101,7 +102,7 @@
                                     </button>
                                 </.form>
                             <% :secondary -> %>
-                            <.form let = {f} for={@secondary_changeset} id="event_form", class="flex flex-col w-full gap-y-5 pb-5 px-5" phx-target={@myself} phx-change="secondary-change" phx-submit="secondary-submit">
+                            <.form let = {f} for={@secondary_changeset} id="event_form", class="flex flex-col w-full w-max-[100%] gap-y-5 pb-5 px-5" phx-target={@myself} phx-change="secondary-change" phx-submit="secondary-submit">
                                 <%= hidden_input f, :subject, id: "subject-input-field", value: "getmefromsocket"  %> 
                                 <div class="flex justify-center items-center">
                                     <p class="text-black font-semibold text-base">Select subject</p>
@@ -131,28 +132,33 @@
                                             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
                                         </button>
                                     </div>
-                                    <table class="table w-full">
-                                        <thead>
-                                          <tr>
-                                            <th>Branch</th>
-                                            <th>Semester</th>
-                                            <th>Assigned</th>
-                                          </tr>
-                                        </thead>
-                                        <tbody>
-                                            <%= inputs_for f, :attendees, fn attendee -> %> 
-                                                <tr>
-                                                    <th class="text-base font-normal"><%= "#{branch_title(attendee)}" %></th>
-                                                    <th class="text-base font-normal"><%= "#{semester_id(attendee)}" %></th>
-                                                    <th class="text-base font-normal">
-                                                        <div class="flex items-center justify-center">
-                                                            <%= checkbox attendee, :assigned, class: "checkbox focus:outline-none" %> 
-                                                        </div>
-                                                    </th>
-                                                </tr>
-                                            <% end %> 
-                                        </tbody>
-                                    </table>
+                                    <div class="overflow-x-auto">
+                                        <table class="table w-fit bg-white">
+                                            <thead>
+                                              <tr>
+                                                <th></th>
+                                                <th>Branch</th>
+                                                <th>Semester</th>
+                                                <th>Assigned</th>
+                                              </tr>
+                                            </thead>
+                                            <tbody class="mb-2">
+                                                <%= inputs_for f, :attendees, fn attendee -> %> 
+                                                    <tr>
+                                                        <th class="text-base font-normal bg-white"><%= attendee.index + 1 %> </th>
+                                                        <th class="text-base font-normal bg-white"><%= "#{branch_title(attendee)}" %></th>
+                                                        <th class="text-base font-normal bg-white"><%= "#{semester_id(attendee)}" %></th>
+                                                        <th class="text-base font-normal bg-white">
+                                                            <div class="flex items-center justify-center">
+                                                                <%= checkbox attendee, :assigned, class: "checkbox focus:outline-none" %> 
+                                                            </div>
+                                                        </th>
+                                                    </tr>
+                                                <% end %> 
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    
                                     <%= error_tag f, :attendees %> 
                                 <% end %>
                                 <div class="flex gap-5">
@@ -345,6 +351,17 @@
                                        <div class="flex w-full justify-center items-center h-fit">
                                             <p class="text-xs font-extralight text-gray-400 py-5"><%= "#{(@selected_room.students || []) |> Enum.count()} of 12 students filled"  %> </p>
                                        </div>
+                                    </div>
+                                <% else %> 
+                                    <div class="h-full overflow-y-auto w-full">
+                                        <%= for invigilator <- [@selected_room.invigilator]  do %> 
+                                            <div class="flex w-full border-b-[0.5px] card-parent">
+                                                <div class="flex flex-col w-full px-5 py-3">
+                                                    <p class="font-normal text-sm"><%= invigilator.first_name <> " " <> invigilator.last_name %></p> 
+                                                    <p class="font-thin text-xs"><%= invigilator.email %></p> 
+                                                </div>
+                                            </div>
+                                        <% end %>
                                     </div>
                                 <% end %>  
                             </div>

@@ -1,6 +1,6 @@
 ##,Make sure subject exists,At least one day prior to exam. Ensure the format to be in (DD/MM/YYYY). Year to be fully typed as well,Exam Start Time. Format should be HH:MM (24 hours),Exam End Time (Make sure the timings are in the same day),Branch Short Label,Semester ID,Repeat as many as this pairs are required. Leaving a Pair of data with missing data will be considered faulty data and will be rejected,
-Exam Group,Subject Code,Date,Start Time,End Time,Branch,Semester,Branch,Semester
-End Semester Examination,ICT4301,27/6/2022,9:00,12:00,IT,MIT0003C,,
-End Semester Examination,CSE1040,28/6/2022,9:00,12:00,IT,MIT0003C,CCE,MIT0003C
-Mid Term Examination,ICT3504,30/6/2022,9:00,12:00,IT,MIT003OC,,
+Exam Group,Incharge,Subject Code,Date,Start Time,End Time,Branch,Semester,Branch,Semester
+End Semester Examination,sukidhar@gmail.com,ICT4301,27/7/2022,9:00,12:00,IT,MIT0003C,,
+End Semester Examination,sukdihar@gmail.com,CSE1040,28/7/2022,9:00,12:00,IT,MIT0003C,CCE,MIT0003C
+Mid Term Examination,sukdihar@gmail.com,ICT3504,30/7/2022,9:00,12:00,IT,MIT003OC,,
 ,,,,,,,,,
