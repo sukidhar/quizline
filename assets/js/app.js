@@ -357,11 +357,11 @@ Hooks.Timezone = {
 Hooks.DocumentViewer = {
   mounted() {
     request = JSON.parse(this.el.dataset.request);
-    console.log(request);
     let xhr = new XMLHttpRequest();
     el = this.el;
     xhr.responseType = "blob";
     xhr.open("GET", request.url);
+    console.log(request);
     Object.entries(request.headers).forEach((entry) => {
       let [key, value] = entry;
       xhr.setRequestHeader(key, value);

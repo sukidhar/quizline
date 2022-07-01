@@ -54,7 +54,7 @@ defmodule Quizline.EventManager.Exam do
 
   def qp_changeset(qp, params) do
     qp
-    |> cast(params, [:set, :uploader, :created])
+    |> cast(params, [:set, :uploader, :created, :id])
     |> validate_required([:set, :uploader])
     |> Quizline.ChangesetHelper.add_id()
     |> validate_uploader()

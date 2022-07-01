@@ -64,4 +64,12 @@ defmodule Quizline.EventManager do
   def fetch_question_papers(event) do
     Necto.fetch_question_papers(event)
   end
+
+  def set_qp(id, data) do
+    Necto.set_question_paper(id, data)
+  end
+
+  def delete_qp(id) do
+    Necto.delete_question_paper(id)
+  end
 end

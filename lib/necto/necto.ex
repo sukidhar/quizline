@@ -1687,7 +1687,8 @@ defmodule Necto do
     %Sips.Response{results: [%{"question_papers" => res}]} =
       Sips.query!(conn, query, %{id: id, data: data})
 
-    structify_response(res, :qp, "")
+    [qp] = structify_response(res, :qp, "")
+    qp
   rescue
     e ->
       {:error, e}
@@ -1701,6 +1702,7 @@ defmodule Necto do
 
     conn = Sips.conn()
     _ = Sips.query!(conn, query, %{id: id})
+    :ok
   rescue
     e ->
       {:error, e}
