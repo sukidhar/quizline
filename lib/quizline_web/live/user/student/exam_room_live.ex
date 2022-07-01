@@ -5,7 +5,7 @@ defmodule QuizlineWeb.User.Student.ExamRoomLive do
   alias Quizline.PubSub
   alias Quizline.EventManager
   alias Quizline.UserManager.{Guardian, Student}
-  import QuizlineWeb.Live.Utilities.BookLoader
+  import QuizlineWeb.Live.Utilities.{BookLoader, DashLoader}
 
   def mount(%{"room" => room_id}, %{"guardian_default_token" => token}, socket) do
     case Guardian.resource_from_token(token) do
@@ -30,6 +30,7 @@ defmodule QuizlineWeb.User.Student.ExamRoomLive do
              |> assign(:show_multiple_session_error, false)
              |> assign(:user, user)
              |> assign(:exam, exam)
+             |> assign(:camera_timer, :off)
              |> assign(:deviceId, deviceId)
              |> assign(:approval_status, :apply)
              |> assign(:room_id, room_id)
@@ -41,6 +42,11 @@ defmodule QuizlineWeb.User.Student.ExamRoomLive do
                accept: ~w(.pdf .jpg .png .jpeg),
                max_entries: 1,
                external: &presign_upload/2
+             )
+             |> allow_upload(:user_photo,
+               accept: ~w(.jpg .jpeg),
+               max_entries: 1,
+               external: &presign_upload_image/2
              )}
         end
 
@@ -55,11 +61,16 @@ defmodule QuizlineWeb.User.Student.ExamRoomLive do
 
   @bucket "quizline"
   defp spaces_host(), do: "//#{@bucket}.ams3.digitaloceanspaces.com"
-  defp spaces_key(socket), do: "#{socket.assigns.room_id}.#{socket.assigns.user.id}"
+
+  defp spaces_key(socket, :photo_id),
+    do: "room-#{socket.assigns.room_id}/#{socket.assigns.user.id}"
+
+  defp spaces_key(socket, :user_photo),
+    do: "room-#{socket.assigns.room_id}/user-photo/#{socket.assigns.user.id}"
 
   def presign_upload(entry, socket) do
     uploads = socket.assigns.uploads
-    key = spaces_key(socket)
+    key = spaces_key(socket, :photo_id)
 
     config = %{
       scheme: "https://",
@@ -87,6 +98,36 @@ defmodule QuizlineWeb.User.Student.ExamRoomLive do
     {:ok, meta, socket}
   end
 
+  def presign_upload_image(entry, socket) do
+    uploads = socket.assigns.uploads
+    key = spaces_key(socket, :user_photo)
+
+    config = %{
+      scheme: "https://",
+      host: "ams3.digitaloceanspaces.com",
+      region: "us-east-1",
+      access_key_id: System.fetch_env!("SPACES_KEY"),
+      secret_access_key: System.fetch_env!("SPACES_SECRET")
+    }
+
+    {:ok, fields} =
+      SimpleS3Upload.sign_form_upload(config, @bucket,
+        key: key,
+        content_type: entry.client_type,
+        max_file_size: uploads.user_photo.max_file_size,
+        expires_in: :timer.hours(12)
+      )
+
+    meta = %{
+      uploader: "S3",
+      key: key,
+      url: spaces_host(),
+      fields: fields
+    }
+
+    {:ok, meta, socket}
+  end
+
   def handle_event("video-stream-started", _, socket) do
     {:noreply, socket |> assign(:stream_started, true)}
   end
@@ -99,7 +140,8 @@ defmodule QuizlineWeb.User.Student.ExamRoomLive do
   def handle_event("hide-upload-form", _, socket) do
     {:noreply,
      socket
-     |> assign(:show_upload_form, false)}
+     |> assign(:show_upload_form, false)
+     |> cancel_upload(:user_photo, photo_ref(socket.assigns.uploads.user_photo.entries))}
   end
 
   def handle_event("toggle-video", _, socket) do
@@ -114,6 +156,10 @@ defmodule QuizlineWeb.User.Student.ExamRoomLive do
     {:noreply, socket}
   end
 
+  def handle_event("user-photo-changed", _, socket) do
+    {:noreply, socket |> assign(:camera_timer, :stand_by)}
+  end
+
   def handle_event("id-file-uploaded", _, socket) do
     {:noreply,
      socket
@@ -125,6 +171,10 @@ defmodule QuizlineWeb.User.Student.ExamRoomLive do
      })}
   end
 
+  def handle_event("user-photo-uploaded", _, socket) do
+    {:noreply, socket |> assign(:show_upload_form, true) |> assign(:camera_timer, :off)}
+  end
+
   def handle_event("toggle-audio", _, socket) do
     is_enabled = socket.assigns.is_mic_enabled
 
@@ -133,10 +183,25 @@ defmodule QuizlineWeb.User.Student.ExamRoomLive do
      |> assign(:is_mic_enabled, !is_enabled)}
   end
 
+  def handle_event("retake-photo", %{"ref" => ref}, socket) do
+    {:noreply,
+     cancel_upload(socket, :user_photo, ref)
+     |> assign(:camera_timer, :start)
+     |> push_event("remove-image", %{})}
+  end
+
   def handle_event("request-invigilator", _, socket) do
     {:noreply,
      socket
-     |> assign(:show_upload_form, true)}
+     |> assign(:camera_timer, :start)}
+  end
+
+  def photo_ref([entry | _]) do
+    entry.ref
+  end
+
+  def photo_ref([]) do
+    ""
   end
 
   defp sync_presences(presences, socket) do

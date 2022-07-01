@@ -5,6 +5,7 @@ defmodule QuizlineWeb.User.Invigilator.ExamRoomLive do
   alias Quizline.EventManager
   alias QuizlineWeb.Presence
   alias Quizline.PubSub
+  import QuizlineWeb.Live.Utilities.DashLoader
 
   def mount(%{"room" => room_id}, %{"guardian_default_token" => token}, socket) do
     case Guardian.resource_from_token(token) do
@@ -96,7 +97,13 @@ defmodule QuizlineWeb.User.Invigilator.ExamRoomLive do
   end
 
   @bucket "quizline"
-  def generate_query(roomId, userId) do
+  defp spaces_key(room_id, user_id, :photo_id),
+    do: "room-#{room_id}/#{user_id}"
+
+  defp spaces_key(room_id, user_id, :user_photo),
+    do: "room-#{room_id}/user-photo/#{user_id}"
+
+  def generate_queries(room_id, user_id) do
     client =
       AWS.Client.create(
         System.fetch_env!("SPACES_KEY"),
@@ -107,23 +114,40 @@ defmodule QuizlineWeb.User.Invigilator.ExamRoomLive do
     client =
       AWS.Client.put_endpoint(client, "ams3.digitaloceanspaces.com") |> Map.put(:service, "s3")
 
-    url =
-      "https://#{client.endpoint}/#{AWS.Util.encode_uri(@bucket)}/#{AWS.Util.encode_uri(roomId)}.#{AWS.Util.encode_uri(userId)}"
+    base_url = "https://#{client.endpoint}/#{AWS.Util.encode_uri(@bucket)}/"
+
+    photo_id_url = base_url <> spaces_key(room_id, user_id, :photo_id)
+    user_photo_url = base_url <> spaces_key(room_id, user_id, :user_photo)
 
     %{
-      query: %{
-        headers:
-          AWS.Signature.sign_v4(
-            client,
-            NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second),
-            :get,
-            url,
-            [{"Content-Type", "text/xml"}],
-            ""
-          )
-          |> Map.new(),
-        url: url
-      }
+      queries: [
+        %{
+          headers:
+            AWS.Signature.sign_v4(
+              client,
+              NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second),
+              :get,
+              user_photo_url,
+              [{"Content-Type", "text/xml"}],
+              ""
+            )
+            |> Map.new(),
+          url: user_photo_url
+        },
+        %{
+          headers:
+            AWS.Signature.sign_v4(
+              client,
+              NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second),
+              :get,
+              photo_id_url,
+              [{"Content-Type", "text/xml"}],
+              ""
+            )
+            |> Map.new(),
+          url: photo_id_url
+        }
+      ]
     }
   end
 
@@ -163,8 +187,8 @@ defmodule QuizlineWeb.User.Invigilator.ExamRoomLive do
     {:noreply, socket |> assign(:selected_request, request)}
   end
 
-  def query_data(request) do
-    request.query |> Jason.encode!()
+  def query_data(request, index) do
+    request.queries |> Enum.at(index) |> Jason.encode!()
   end
 
   defp sync_presences(presences, socket) do
@@ -175,7 +199,7 @@ defmodule QuizlineWeb.User.Invigilator.ExamRoomLive do
       |> Enum.map(fn v ->
         [[h] | _] = v |> Map.values()
 
-        Map.merge(h, generate_query(socket.assigns.room_id, h.user.id))
+        Map.merge(h, generate_queries(socket.assigns.room_id, h.user.id))
       end)
 
     {requests, attendees} = Enum.split_with(presences, &(&1.status == :requested))

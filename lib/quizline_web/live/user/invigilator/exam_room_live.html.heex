@@ -29,7 +29,13 @@
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
                         </button>
                     </div>
-                    <iframe id="document-viewer" class="w-full h-full" phx-hook="DocumentViewer" data-request={query_data(@selected_request)}></iframe>
+                    <div class="user-image-viewer w-60 aspect-video absolute bottom-[4.75rem] left-5" id="ignore-photo-container" phx-update="ignore">
+                        <img id="document-viewer-user-photo" class="w-full h-full object-cover" phx-hook="DocumentViewer" src="" data-request={query_data(@selected_request, 0)}/>
+                        <div class="loader flex items-center justify-center w-full h-full">
+                            <%= dash_loader(%{text: ""})  %>
+                        </div>
+                    </div>
+                    <iframe id="document-viewer-photo-id" class="w-full h-full" phx-hook="DocumentViewer" data-request={query_data(@selected_request, 1)}></iframe>
                     <div class="flex justify-end items-center w-full gap-3 mt-3">
                         <button class="btn btn-outline" phx-click="respond-to-request" phx-value-response="accept">
                             accept

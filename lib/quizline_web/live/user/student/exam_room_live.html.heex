@@ -71,7 +71,7 @@
                     <div class="flex flex-col lg:flex-row justify-center items-center w-full h-full lg:h-fit">
                         <div class="flex items-center justify-center h-1/2 lg:h-[33.75rem] lg:w-3/5 w-full">
                             <div class="w-3/4 overflow-hidden aspect-video rounded-lg flex items-center bg-black justify-center relative">
-                                <div id="ignored-video-container" class="flex items-center justify-center w-full h-full bg-black" phx-update="ignore">
+                                <div id="ignored-video-container" class="flex items-center justify-center w-full h-full bg-black z-10" phx-update="ignore">
                                     <video id="student-video-preview" class="flip-horizontally w-full bg-black rounded-lg z-10"></video>
                                 </div>
                                 <div class="absolute h-full w-full z-20 flex items-center justify-center">
@@ -80,7 +80,9 @@
                                             <p class="text-lg text-white bg-transparent">Starting Camera and Microphone</p>
                                         <% not @stream_started -> %>
                                             <p class="text-lg text-white bg-transparent">Camera is OFF</p>
-                                        <% @stream_started -> %> 
+                                        <% @stream_started and @camera_timer in [:start] -> %>
+                                            <p id="capture-photo" class="text-lg font-bold animate-bounce text-white bg-transparent" phx-hook="CapturePhoto">Taking a potrait in 5 seconds</p>
+                                        <% true ->%> 
                                     <% end %>
                                 </div>
                                 <div class="absolute h-full w-full z-30 flex items-end justify-center">
@@ -122,9 +124,35 @@
                             </div>
                             <div class="flex items-center justify-center w-full h-fit">
                                 <%= if @approval_status == :apply  do %>
-                                    <button class="btn btn-outline btn-wide" phx-click="request-invigilator">
-                                        <p class="normal-case text-lg px-3">Request to Join</p>
-                                    </button>
+                                    <%= if @camera_timer in [:start, :stand_by]  do %>
+                                        <form class="flex flex-col gap-5 w-full justify-center items-center" id="upload-user-photo-form" phx-submit="user-photo-uploaded" phx-change="user-photo-changed">
+                                            <div class="user-image-viewer w-96 aspect-video" id="ignore-photo-container" phx-update="ignore">
+                                                <img id="user-photo-blob-viewer" class="w-96 aspect-video object-cover" phx-hook="PreviewCaptureImage" src=""/>
+                                                <div class="loader flex items-center justify-center w-full h-full">
+                                                    <%= dash_loader(%{text: "Please look at the camera for clear snap"})  %>
+                                                </div>
+                                            </div>
+                                            <%= live_file_input @uploads.user_photo, class: "focus:outline-none hidden block w-fit text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100" %>
+                                           <div class="flex items-center justify-center gap-x-5">
+                                                <button type="button" phx-click="retake-photo" phx-value-ref={photo_ref(@uploads.user_photo.entries)} phx-disable-with="uploading" class={if (@uploads.user_photo.entries |> Enum.count() == 0), do: "btn text-sm font-normal btn-sm btn-disabled", else: "btn text-sm font-normal btn-info btn-sm btn-outline"}>
+                                                    retake
+                                                </button>
+                                                <button type="submit" phx-disable-with="uploading" class={if (@uploads.user_photo.entries |> Enum.count() == 0), do: "btn text-sm font-normal btn-sm btn-disabled", else: "btn text-sm font-normal btn-sm btn-outline"}>
+                                                    submit
+                                                </button>
+                                           </div>
+                                        </form>
+                                    <% else %> 
+                                        <%= if @show_upload_form do %>
+                                            <div class="loader flex items-center justify-center w-96 aspect-video">
+                                                <%= dash_loader(%{text: "Waiting for the photo ID..."})  %>
+                                            </div>
+                                        <% else %> 
+                                            <button class="btn btn-outline btn-wide" phx-click="request-invigilator">
+                                                <p class="normal-case text-lg px-3">Request to Join</p>
+                                            </button>
+                                        <% end %>  
+                                    <% end %>  
                                 <% else %>
                                     <%= loader(%{})  %> 
                                 <% end %> 

@@ -112,7 +112,6 @@ export class StudentExamRoom {
     video.autoplay = true;
     video.playsInline = true;
     video.srcObject = this.localVideoStream;
-    video.style.height = video.style.width;
   };
 
   public async joinChannel(socket: Socket, roomId: string, user) {

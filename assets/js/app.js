@@ -21,6 +21,7 @@
 
 // Include phoenix_html to handle method=PUT/DELETE in forms and buttons.
 import "phoenix_html";
+
 // Establish Phoenix Socket and LiveView configuration.
 import { Socket } from "phoenix";
 import { LiveSocket } from "phoenix_live_view";
@@ -356,32 +357,34 @@ Hooks.Timezone = {
 
 Hooks.DocumentViewer = {
   mounted() {
-    request = JSON.parse(this.el.dataset.request);
-    let xhr = new XMLHttpRequest();
-    el = this.el;
-    xhr.responseType = "blob";
-    xhr.open("GET", request.url);
-    console.log(request);
-    Object.entries(request.headers).forEach((entry) => {
-      let [key, value] = entry;
-      xhr.setRequestHeader(key, value);
-    });
-    xhr.onreadystatechange = xhr.onreadystatechange = function () {
-      // In local files, status is 0 upon success in Mozilla Firefox
-      if (xhr.readyState === XMLHttpRequest.DONE) {
-        var status = xhr.status;
-        if (status === 0 || (status >= 200 && status < 400)) {
-          // The request has been completed successfully
-          let url = URL.createObjectURL(xhr.response);
-          el.src = `${url}#toolbar=0&navpanes=0&scrollbar=0`;
-          //? add customisation for firefox
-        } else {
-          //! Oh no! There has been an error with the request!
-        }
-      }
-    };
-    xhr.send();
+    viewDocument(this);
   },
+};
+
+let viewDocument = (hook) => {
+  request = JSON.parse(hook.el.dataset.request);
+  let xhr = new XMLHttpRequest();
+  xhr.responseType = "blob";
+  xhr.open("GET", request.url);
+  Object.entries(request.headers).forEach((entry) => {
+    let [key, value] = entry;
+    xhr.setRequestHeader(key, value);
+  });
+  xhr.onreadystatechange = function () {
+    // In local files, status is 0 upon success in Mozilla Firefox
+    if (xhr.readyState === XMLHttpRequest.DONE) {
+      var status = xhr.status;
+      if (status === 0 || (status >= 200 && status < 400)) {
+        // The request has been completed successfully
+        let url = URL.createObjectURL(xhr.response);
+        hook.el.src = `${url}#toolbar=0&navpanes=0&scrollbar=0`;
+        //? add customisation for firefox
+      } else {
+        //! Oh no! There has been an error with the request!
+      }
+    }
+  };
+  xhr.send();
 };
 
 Hooks.SessionError = {
@@ -403,6 +406,66 @@ Hooks.SessionError = {
     if (this.refreshInterval) {
       clearInterval(this.refreshInterval);
     }
+  },
+};
+
+Hooks.CapturePhoto = {
+  count: 7,
+  refreshInterval: null,
+  mounted() {
+    this.refreshInterval = setInterval(() => {
+      if (this.count <= 0) {
+        if (room.localVideoStream) {
+          const video = document.createElement("video");
+          const canvas = document.createElement("canvas");
+          const context = canvas.getContext("2d");
+          const img = document.getElementById("user-photo-blob-viewer");
+          video.srcObject = room.localVideoStream;
+          video.muted = true;
+
+          clearInterval(this.refreshInterval);
+          video.addEventListener("loadeddata", async () => {
+            const { videoWidth, videoHeight } = video;
+            canvas.width = videoWidth;
+            canvas.height = videoHeight;
+
+            try {
+              await video.play();
+              context.drawImage(video, 0, 0, videoWidth, videoHeight);
+              canvas.toBlob(
+                (blob) => {
+                  this.upload("user_photo", [blob]);
+                  console.log(img);
+                  img.src = URL.createObjectURL(blob);
+                },
+                "image/jpeg",
+                0.8
+              );
+            } catch (error) {
+              console.log(error);
+            }
+          });
+        }
+      } else if (this.count <= 5) {
+        this.el.innerText = `${this.count}`;
+        this.count -= 1;
+      } else {
+        this.count -= 1;
+      }
+    }, 1000);
+  },
+  destroyed() {
+    if (this.refreshInterval) {
+      clearInterval(this.refreshInterval);
+    }
+  },
+};
+
+Hooks.PreviewCaptureImage = {
+  mounted() {
+    this.handleEvent("remove-image", (_) => {
+      this.el.src = "";
+    });
   },
 };
 
