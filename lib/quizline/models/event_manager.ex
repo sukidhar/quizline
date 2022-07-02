@@ -72,4 +72,20 @@ defmodule Quizline.EventManager do
   def delete_qp(id) do
     Necto.delete_question_paper(id)
   end
+
+  def distribute_qps(id) do
+    Necto.distribute_question_papers(id)
+  end
+
+  def redistribute_qps(id) do
+    Necto.distribute_question_papers(id, true)
+  end
+
+  def undistribute_qps(id) do
+    Necto.undistribute_question_papers(id)
+  end
+
+  def qps_distributed?(id) do
+    Necto.distrubuted_question_papers?(id)
+  end
 end

@@ -44,16 +44,19 @@ defmodule QuizlineWeb.ExamRoomChannel do
      })}
   end
 
-  def handle_in("start-exam", %{"peer_id" => peer_id}, socket) do
-    Process.monitor(socket.assigns.room_pid)
-    send(socket.assigns.room_pid, {:add_peer_channel, self(), peer_id})
-    {:noreply, Phoenix.Socket.assign(socket, %{peer_id: peer_id})}
-  end
-
   @impl true
   def handle_in("mediaEvent", %{"data" => event}, socket) do
     send(socket.assigns.room_pid, {:media_event, socket.assigns.peer_id, event})
 
+    {:noreply, socket}
+  end
+
+  def handle_in("start-exam", %{"peer_id" => peer_id}, socket) do
+    Process.monitor(socket.assigns.room_pid)
+    {:noreply, Phoenix.Socket.assign(socket, %{peer_id: peer_id})}
+  end
+
+  def handle_in("reveal_qp", _, socket) do
     {:noreply, socket}
   end
 
@@ -96,9 +99,12 @@ defmodule QuizlineWeb.ExamRoomChannel do
       end
     )
 
+    send(socket.assigns.room_pid, {:add_peer_channel, self(), socket.assigns.user.id})
+
     if socket.assigns.user.type == "invigilator" do
       [{_pid, lv_pid}] = Registry.lookup(Quizline.SessionRegistry, socket.assigns.user.id)
       send(lv_pid, {:presence_state, Presence.list("exam-channel:" <> socket.assigns.room_id)})
+      send(lv_pid, :join_rtc_engine)
     end
 
     {:noreply, socket}

@@ -74,7 +74,9 @@ defmodule Quizline.ExamRoom do
        rtc_engine: pid,
        peer_channels: %{},
        network_options: network_options,
-       trace_ctx: trace_ctx
+       trace_ctx: trace_ctx,
+       exam_status: :will_start,
+       dead_channels: %{}
      }}
   end
 

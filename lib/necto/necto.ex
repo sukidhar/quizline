@@ -1707,4 +1707,69 @@ defmodule Necto do
     e ->
       {:error, e}
   end
+
+  def distribute_question_papers(id, redo \\ false) do
+    query = """
+    #{if redo,
+      do: "MATCH (e:Event{id: $id}) OPTIONAL MATCH (e)-[:has_qp]->(:QuestionPaper)<-[r:writes]-() DELETE r WITH null as o",
+      else: ""}
+    MATCH (event:Event{id: $id})
+    OPTIONAL MATCH (event)-[:has_qp]->(qp:QuestionPaper)
+    WITH collect(qp) as qps, event
+    CALL{
+      WITH qps, event
+      WITH qps, event
+      WHERE isEmpty(qps)
+      RETURN false as res
+
+      UNION
+
+      WITH qps, event
+      WITH qps, event
+      WHERE not isEmpty(qps)
+      MATCH (event)-[:has_room]->()<-[:is_assigned]-(student:Student)
+      WITH collect(student) as students, qps
+      UNWIND students as student
+      WITH student, apoc.coll.randomItem(qps) as qp
+      CREATE (student)-[:writes]->(qp)
+      RETURN true as res
+    }
+    RETURN res
+    """
+
+    conn = Sips.conn()
+    _ = Sips.query!(conn, query, %{id: id})
+    :ok
+  rescue
+    e -> {:error, e}
+  end
+
+  def distrubuted_question_papers?(id) do
+    query = """
+    MATCH (event:Event{id: $id})
+    OPTIONAL MATCH (event)-[:has_qp]->(qp:QuestionPaper)
+    RETURN collect(exists((qp)-[:writes]-())) as res
+    """
+
+    conn = Sips.conn()
+    %Sips.Response{results: [%{"res" => res}]} = Sips.query!(conn, query, %{id: id})
+    IO.inspect(res)
+    Enum.all?(res)
+  rescue
+    e -> {:error, e}
+  end
+
+  def undistribute_question_papers(id) do
+    query = """
+    MATCH (event:Event{id: $id})
+    OPTIONAL MATCH (event)-[:has_qp]->(qp:QuestionPaper)<-[r:writes]-()
+    DELETE r
+    """
+
+    conn = Sips.conn()
+    _ = Sips.query!(conn, query, %{id: id})
+    :ok
+  rescue
+    e -> {:error, e}
+  end
 end

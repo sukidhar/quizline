@@ -99,7 +99,10 @@ export class InvigilatorExamRoom {
     );
 
     await this.phoenixChannelPushResult(this.webrtcChannel.join());
-    // this.webrtc.join({ userType: "invigilator" });
+  }
+
+  public joinRTCEngine(meta) {
+    this.webrtc.join(meta);
   }
 
   public init = async () => {

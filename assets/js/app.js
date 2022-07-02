@@ -326,6 +326,16 @@ Hooks.InvigilatorRoomStartUp = {
   },
 };
 
+Hooks.InvigilatorRoom = {
+  mounted() {
+    if (room) {
+      this.handleEvent("join-engine", (data) => {
+        room.joinRTCEngine(data);
+      });
+    }
+  },
+};
+
 Hooks.InvigilatorRoomView = {
   mounted() {
     // room = new InvigilatorExamRoom(
@@ -466,6 +476,9 @@ Hooks.PreviewCaptureImage = {
     this.handleEvent("remove-image", (_) => {
       this.el.src = "";
     });
+  },
+  destroyed() {
+    this.el.src = "";
   },
 };
 

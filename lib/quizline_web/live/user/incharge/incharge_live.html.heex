@@ -1,7 +1,11 @@
 <div class="relative h-screen overflow-y-hidden bg-white">
-    <div class="sticky z-10 top-0 h-16 border-b bg-white">
+    <div class="sticky z-10 top-0 h-16 border-b bg-white flex items-center">
         <div class="px-6 py-2">
             <button class="btn btn-ghost normal-case text-xl">Quizline</button>
+        </div>
+        <div class="flex-grow"></div>
+        <div class="px-6 py-2">
+            <button phx-click="distribute-qps" class="btn btn-outline btn-sm w-40 normal-case text-xl"><%= if @distributed?, do: "Redistribute", else: "Distribute"  %> </button>
         </div>
     </div>
     <%= if not is_nil(@view_document) do %>
@@ -64,15 +68,17 @@
                     <% end %> 
                 </tbody>
             </table>
-            <div class="flex items-center justify-center sticky bottom-0 glass bg-white/30 rounded-lg">
-                <.form let = {f} for={@qp_changeset} id="qp_form", class="flex w-full w-max-[100%] h-fit gap-x-5 p-5 items-center" phx-change="qp-change" phx-submit="qp-submit">
-                    <%= floating_input f, :set, wrapper: ["relative scale-90"], placeholder: "QP Set Id" %>
-                    <%= live_file_input @uploads.question_paper, class: "focus:outline-none block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100" %>
-                    <button type="submit"  phx-disable-with="uploading" class={if (@uploads.question_paper.entries |> Enum.count() == 0), do: "btn text-sm font-normal btn-sm btn-disabled mr-5", else: "btn text-sm font-normal btn-sm mr-5 btn-outline"}>
-                        submit
-                    </button>
-                </.form>
-            </div>
+            <%= if @exam.question_papers |> Enum.count() < 5 do %> 
+                <div class="flex items-center justify-center sticky bottom-0 glass bg-white/30 rounded-lg">
+                    <.form let = {f} for={@qp_changeset} id="qp_form", class="flex w-full w-max-[100%] h-fit gap-x-5 p-5 items-center" phx-change="qp-change" phx-submit="qp-submit">
+                        <%= floating_input f, :set, wrapper: ["relative scale-90"], placeholder: "QP Set Id" %>
+                        <%= live_file_input @uploads.question_paper, class: "focus:outline-none block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100" %>
+                        <button type="submit"  phx-disable-with="uploading" class={if (@uploads.question_paper.entries |> Enum.count() == 0), do: "btn text-sm font-normal btn-sm btn-disabled mr-5", else: "btn text-sm font-normal btn-sm mr-5 btn-outline"}>
+                            submit
+                        </button>
+                    </.form>
+                </div>
+            <% end %> 
         </div>
     </div>
 </div>

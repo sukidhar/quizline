@@ -38,6 +38,7 @@ defmodule QuizlineWeb.User.Student.ExamRoomLive do
              |> assign(:is_mic_enabled, true)
              |> assign(:show_upload_form, false)
              |> assign(:is_video_enabled, true)
+             |> assign(:exam_status, :will_start)
              |> allow_upload(:photo_id,
                accept: ~w(.pdf .jpg .png .jpeg),
                max_entries: 1,

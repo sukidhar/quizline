@@ -35,6 +35,7 @@
                             <%= dash_loader(%{text: ""})  %>
                         </div>
                     </div>
+                    <!-- prolly provide a way to load the iframe later -->
                     <iframe id="document-viewer-photo-id" class="w-full h-full" phx-hook="DocumentViewer" data-request={query_data(@selected_request, 1)}></iframe>
                     <div class="flex justify-end items-center w-full gap-3 mt-3">
                         <button class="btn btn-outline" phx-click="respond-to-request" phx-value-response="accept">

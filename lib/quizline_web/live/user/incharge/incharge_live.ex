@@ -9,27 +9,36 @@ defmodule QuizlineWeb.User.Incharge.InchargeLive do
   def mount(%{"token" => token}, _, socket) do
     case Guardian.decode_and_verify(token) do
       {:ok, %{"sub" => %{"email" => email, "event" => event}}} ->
-        case EventManager.fetch_question_papers(event) do
-          {:error, e} ->
+        with {[exam], bool} <-
+               {EventManager.fetch_question_papers(event), EventManager.qps_distributed?(event)} do
+          IO.inspect(bool)
+
+          {:ok,
+           socket
+           |> assign(:email, email)
+           |> assign(:exam, exam)
+           |> assign(:fid, UUID.uuid4())
+           |> assign(:upload_error, false)
+           |> assign(:view_document, nil)
+           |> assign(:distributed?, bool)
+           |> assign(
+             :qp_changeset,
+             EventManager.qp_changeset(%QuestionPaper{})
+           )
+           |> allow_upload(:question_paper,
+             accept: ~w(.pdf .docx .txt .rtf),
+             max_entries: 1,
+             external: &presign_upload/2
+           )}
+        else
+          {{:error, _}, {:error, _}} ->
             {:ok, socket |> redirect(to: "/error")}
 
-          [exam] ->
-            {:ok,
-             socket
-             |> assign(:email, email)
-             |> assign(:exam, exam)
-             |> assign(:fid, UUID.uuid4())
-             |> assign(:upload_error, false)
-             |> assign(:view_document, nil)
-             |> assign(
-               :qp_changeset,
-               EventManager.qp_changeset(%QuestionPaper{})
-             )
-             |> allow_upload(:question_paper,
-               accept: ~w(.pdf .docx .txt .rtf),
-               max_entries: 1,
-               external: &presign_upload/2
-             )}
+          {{:error, _}, _} ->
+            {:ok, socket |> redirect(to: "/error")}
+
+          {_, {:error, _}} ->
+            {:ok, socket |> redirect(to: "/error")}
         end
 
       _ ->
@@ -115,6 +124,23 @@ defmodule QuizlineWeb.User.Incharge.InchargeLive do
 
   def handle_event("hide-document", _, socket) do
     {:noreply, socket |> assign(:view_document, nil)}
+  end
+
+  def handle_event("distribute-qps", _, socket) do
+    if socket.assigns.exam.question_papers |> Enum.count() <= 0 do
+      {:noreply, socket}
+    else
+      if socket.assigns.distributed? do
+        EventManager.redistribute_qps(socket.assigns.exam.id)
+      else
+        EventManager.distribute_qps(socket.assigns.exam.id)
+      end
+      |> IO.inspect()
+      |> case do
+        :ok -> {:noreply, socket |> assign(:distributed?, true)}
+        {:error, e} -> {:noreply, socket}
+      end
+    end
   end
 
   def is_changeset_valid(%Ecto.Changeset{valid?: valid}) do
