@@ -76,15 +76,47 @@ defmodule Quizline.ExamRoom do
        network_options: network_options,
        trace_ctx: trace_ctx,
        exam_status: :will_start,
-       dead_channels: %{}
+       students: %{},
+       invigilator: nil
      }}
   end
 
   @impl true
-  def handle_info({:add_peer_channel, peer_channel_pid, peer_id}, state) do
-    state = put_in(state, [:peer_channels, peer_id], peer_channel_pid)
-    Process.monitor(peer_channel_pid)
+  def handle_info({:student, %{channel: channel, user: %{id: uid} = user}}, state) do
+    Process.monitor(channel)
+
+    state =
+      state
+      |> put_in([:peer_channels, uid], channel)
+      |> put_in(
+        [:students, uid],
+        user |> Map.put(:time, DateTime.utc_now() |> DateTime.to_unix())
+      )
+
+    [{_pid, lv_pid}] = Registry.lookup(Quizline.SessionRegistry, uid)
+
+    case state.invigilator do
+      %{id: id} ->
+        [{_pid, lv_pid}] = Registry.lookup(Quizline.SessionRegistry, id)
+        send(lv_pid, {:current_students, state.students})
+
+      _ ->
+        nil
+    end
+
     {:noreply, state}
+  end
+
+  @impl true
+  def handle_info({:invigilator, %{channel: channel, user: %{id: uid} = user}}, state) do
+    Process.monitor(channel)
+    [{_pid, lv_pid}] = Registry.lookup(Quizline.SessionRegistry, uid)
+    send(lv_pid, {:current_students, state.students})
+
+    {:noreply,
+     state
+     |> put_in([:peer_channels, uid], channel)
+     |> Map.put(:invigilator, user |> Map.put(:time, DateTime.utc_now() |> DateTime.to_unix()))}
   end
 
   @impl true
@@ -165,6 +197,13 @@ defmodule Quizline.ExamRoom do
       {peer_id, _peer_channel_id} =
         state.peer_channels
         |> Enum.find(fn {_peer_id, peer_channel_pid} -> peer_channel_pid == pid end)
+
+      state = state |> Map.put(:students, state.students |> Map.delete(peer_id))
+
+      if not is_nil(state.invigilator) and not (state.invigilator.id == peer_id) do
+        [{_pid, lv_pid}] = Registry.lookup(Quizline.SessionRegistry, state.invigilator.id)
+        send(lv_pid, {:current_students, state.students})
+      end
 
       Engine.remove_peer(state.rtc_engine, peer_id)
       {_elem, state} = pop_in(state, [:peer_channels, peer_id])

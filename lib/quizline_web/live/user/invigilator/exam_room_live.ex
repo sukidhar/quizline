@@ -218,6 +218,11 @@ defmodule QuizlineWeb.User.Invigilator.ExamRoomLive do
     |> assign(:selected_request, selected_request)
   end
 
+  def handle_info({:current_students, students}, socket) do
+    IO.inspect(students)
+    {:noreply, socket}
+  end
+
   def handle_info(:after_started_room, socket) do
     {:noreply, socket |> assign(:started, true)}
   end

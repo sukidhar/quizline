@@ -76,35 +76,27 @@ defmodule QuizlineWeb.ExamRoomChannel do
   end
 
   @impl true
-  def handle_info(:after_join, socket) do
-    Phoenix.PubSub.subscribe(PubSub, "exam-channel:" <> socket.assigns.room_id)
+  def handle_info(
+        :after_join,
+        %{assigns: %{room_pid: room_pid, room_id: room_id, user: %{type: type} = user}} = socket
+      ) do
+    Phoenix.PubSub.subscribe(PubSub, "exam-channel:" <> room_id)
 
     Presence.track(
       self(),
       "exam-channel:" <> socket.assigns.room_id,
       socket.assigns.user.id,
-      case socket.assigns.user.type do
-        "invigilator" ->
-          %{
-            pid: self(),
-            user: socket.assigns.user
-          }
-
-        "student" ->
-          %{
-            pid: self(),
-            user: socket.assigns.user,
-            status: :requested
-          }
-      end
+      %{
+        pid: self()
+      }
     )
 
-    send(socket.assigns.room_pid, {:add_peer_channel, self(), socket.assigns.user.id})
+    case type do
+      "student" ->
+        send(room_pid, {:student, %{channel: self(), user: user |> Map.delete(:type)}})
 
-    if socket.assigns.user.type == "invigilator" do
-      [{_pid, lv_pid}] = Registry.lookup(Quizline.SessionRegistry, socket.assigns.user.id)
-      send(lv_pid, {:presence_state, Presence.list("exam-channel:" <> socket.assigns.room_id)})
-      send(lv_pid, :join_rtc_engine)
+      "invigilator" ->
+        send(room_pid, {:invigilator, %{channel: self(), user: user |> Map.delete(:type)}})
     end
 
     {:noreply, socket}
@@ -116,8 +108,8 @@ defmodule QuizlineWeb.ExamRoomChannel do
         },
         socket
       ) do
-    [{_pid, lv_pid}] = Registry.lookup(Quizline.SessionRegistry, socket.assigns.user.id)
-    send(lv_pid, {:presence_diff, Presence.list("exam-channel:" <> socket.assigns.room_id)})
+    # [{_pid, lv_pid}] = Registry.lookup(Quizline.SessionRegistry, socket.assigns.user.id)
+    # send(lv_pid, {:presence_diff, Presence.list("exam-channel:" <> socket.assigns.room_id)})
 
     {:noreply, socket}
   end
