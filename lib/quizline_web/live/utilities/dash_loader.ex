@@ -10,8 +10,18 @@ defmodule QuizlineWeb.Live.Utilities.DashLoader do
         <div class="dash tres"></div>
         <div class="dash cuatro"></div>
       </div>
-      <p class="w-full text-center h-fit -mt-14 animate-bounce"><%= text %></p>
+      <%= if text != "" do %>
+        <p class={pos(assigns, "w-full text-center h-fit animate-bounce")}><%= text %></p>
+      <% end %>
     </div>
     """
+  end
+
+  defp pos(%{pos: pos}, classlist) do
+    classlist <> "-mt-[#{pos * 0.25}rem]"
+  end
+
+  defp pos(_, classlist) do
+    classlist <> "-mt-14"
   end
 end

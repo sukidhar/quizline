@@ -55,7 +55,7 @@ defmodule Quizline.MixProject do
       {:email_checker, "~> 0.2.4"},
       {:csv, "~> 2.4"},
       {:timex, "~> 3.0"},
-      {:xandra, "~> 0.11"},
+      {:xandra, "~> 0.14.0"},
       {:eqrcode, "~> 0.1.10"},
       {:aws, "~> 0.11.0"},
       {:hackney, "~> 1.18"},

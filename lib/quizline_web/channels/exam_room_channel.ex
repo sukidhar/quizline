@@ -46,14 +46,9 @@ defmodule QuizlineWeb.ExamRoomChannel do
 
   @impl true
   def handle_in("mediaEvent", %{"data" => event}, socket) do
-    send(socket.assigns.room_pid, {:media_event, socket.assigns.peer_id, event})
+    send(socket.assigns.room_pid, {:media_event, socket.assigns.user.id, event})
 
     {:noreply, socket}
-  end
-
-  def handle_in("start-exam", %{"peer_id" => peer_id}, socket) do
-    Process.monitor(socket.assigns.room_pid)
-    {:noreply, Phoenix.Socket.assign(socket, %{peer_id: peer_id})}
   end
 
   def handle_in("reveal_qp", _, socket) do

@@ -225,6 +225,10 @@ defmodule QuizlineWeb.User.Student.ExamRoomLive do
     {:noreply, sync_presences(presences, socket)}
   end
 
+  def handle_info({:status, status}, socket) do
+    {:noreply, socket |> assign(:approval_status, status)}
+  end
+
   def handle_info(
         %Phoenix.Socket.Broadcast{
           event: "presence_diff",

@@ -19,6 +19,8 @@ export class StudentExamRoom {
   localAudioStream: MediaStream;
   localVideoTrackId: string;
 
+  user = {};
+
   constructor() {
     this.webrtc = new MembraneWebRTC({
       callbacks: {
@@ -119,6 +121,7 @@ export class StudentExamRoom {
     this.webrtcChannel = this.socket.channel(`exam_room:${roomId}`, {
       user: user,
     });
+    this.user = user;
     this.webrtcChannel.onError(() => {
       this.socketOff();
       window.location.reload();
@@ -135,15 +138,11 @@ export class StudentExamRoom {
       this.webrtc.receiveMediaEvent(event.data)
     );
 
-    this.webrtcChannel.on("presence_state", (data: any) => {
-      console.log(data);
-    });
-
     await this.phoenixChannelPushResult(this.webrtcChannel.join());
   }
 
-  public join = (meta) => {
-    this.webrtc.join(meta);
+  public joinRTCEngine = () => {
+    this.webrtc.join(this.user);
   };
 
   public setVideoStreamState(enabled: boolean) {

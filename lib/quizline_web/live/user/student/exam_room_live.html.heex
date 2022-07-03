@@ -19,15 +19,15 @@
 
 
     <% @approval_status == :approved  -> %> 
-        <div class="relative h-screen overflow-y-hidden" id="student-exam-room-view" phx-hook="ExamRoomStudent" data-room_id={@room_id}>
+        <div class="relative h-screen overflow-y-hidden" id="student-exam-room-view" phx-hook="ExamRoomStudent">
             <div class="sticky z-10 top-0 h-16 border-b bg-white">
                 <div class="px-6 py-2">
                     <button class="btn btn-ghost normal-case text-xl">Quizline</button>
                 </div>
             </div>
             <div class="flex-1 mb-5 h-[calc(100%-theme(spacing.16))] bg-white flex">
-                <div class="flex w-full h-full bg-black/5">
-
+                <div class="flex w-full h-full bg-black/5 items-center justify-center">
+                    <p>wait for invigilator to show question paper</p>
                 </div>
                 <div class="flex flex-col w-[35%] h-full rounded-md">
                     <div class="p-5 w-full h-fit">
@@ -36,13 +36,16 @@
                 </div>
             </div>
         </div>
+    
+    <% @approval_status == :refused -> %>
+        
 
     <% @approval_status in [:apply, :waiting] -> %>
         <%= if @show_upload_form do %>
             <div class="absolute h-full w-full bg-black/10 z-50 flex items-center justify-center">
                 <div class="card rounded-lg p-5 h-fit w-2/5 bg-white">
                     <div class="flex w-full justify-center items-center mb-3">
-                        <p class="text-2xl w-full px-5">Provide Photo ID of University/Institue</p>
+                        <p class="text-2xl w-full px-5">Provide Photo ID of University/Institute</p>
                         <button phx-click="hide-upload-form" class="btn bg-white btn-sm btn-square btn-outline m-2">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
                         </button>

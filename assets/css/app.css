@@ -261,6 +261,7 @@
   }
 }
 
+
 .user-image-viewer>img[src=""] {
   display: none !important;
 }
@@ -278,7 +279,7 @@
 }
 
 .dash-container {
-  @apply flex items-center justify-center w-full h-full
+  @apply flex items-center justify-center h-full
 }
 
 .dash {

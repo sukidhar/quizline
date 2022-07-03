@@ -256,16 +256,15 @@ Hooks.subjectPressed = {
     });
   },
 };
+
 let room = null;
-// Hooks.ExamRoomStudent = {
-//   async mounted() {
-//     room = new StudentExamRoom();
-//     await room.init();
-//     this.handleEvent("start-exam-room", (data) => {
-//       console.log(data);
-//     });
-//   },
-// };
+Hooks.ExamRoomStudent = {
+  async mounted() {
+    if (room) {
+      room.joinRTCEngine();
+    }
+  },
+};
 
 Hooks.StudentStartUpPreview = {
   mounted() {
@@ -329,31 +328,26 @@ Hooks.InvigilatorRoomStartUp = {
 Hooks.InvigilatorRoom = {
   mounted() {
     if (room) {
-      this.handleEvent("join-engine", (data) => {
-        room.joinRTCEngine(data);
+      this.handleEvent("set-track", (data) => {
+        console.log("received track");
+        let video = document.getElementById(`${data.peer.id}-video-element`);
+        if (video) {
+          room.tracks.get(data.peer.id).forEach((ctx) => {
+            if (video.srcObject != ctx.stream) {
+              video.srcObject = ctx.stream;
+            }
+          });
+        }
       });
     }
   },
 };
 
-Hooks.InvigilatorRoomView = {
+Hooks.VideoElement = {
   mounted() {
-    // room = new InvigilatorExamRoom(
-    //   userSocket,
-    //   this.el.dataset.room_id || "hello",
-    //   this
-    // );
-    // room.init();
-    // this.handleEvent("set-track", (data) => {
-    //   let video = document.getElementById(`${data.peer.id}-video-element`);
-    //   if (video) {
-    //     room.tracks.get(data.peer.id).forEach((ctx) => {
-    //       if (video.srcObject != ctx.stream) {
-    //         video.srcObject = ctx.stream;
-    //       }
-    //     });
-    //   }
-    // });
+    this.el.addEventListener("canplay", (event) => {
+      this.el.nextElementSibling.classList.add("hidden");
+    });
   },
 };
 

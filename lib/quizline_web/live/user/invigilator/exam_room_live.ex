@@ -62,6 +62,10 @@ defmodule QuizlineWeb.User.Invigilator.ExamRoomLive do
      })}
   end
 
+  def handle_event("start-exam", _, socket) do
+    {:noreply, socket}
+  end
+
   def handle_event("joined-rtc-engine", %{"peers" => peers}, socket) do
     {:noreply, socket |> assign(:peers, peers)}
   end
@@ -154,34 +158,42 @@ defmodule QuizlineWeb.User.Invigilator.ExamRoomLive do
   def handle_event("respond-to-request", %{"response" => res}, socket) do
     req = socket.assigns.selected_request
 
-    case {res, req} do
-      {"accept", req} when not is_nil(req) ->
-        Presence.update(
-          req.pid,
-          "exam-channel:" <> socket.assigns.room_id,
-          req.user.id,
-          req |> Map.put(:status, :approved)
-        )
+    socket =
+      case :global.whereis_name(socket.assigns.room_id) do
+        :undefined ->
+          socket
 
-      {"refuse", req} when not is_nil(req) ->
-        Presence.update(
-          req.pid,
-          "exam-channel:" <> socket.assigns.room_id,
-          req.user.id,
-          req |> Map.put(:status, :refused)
-        )
+        pid ->
+          case {res, req} do
+            {"accept", req} when not is_nil(req) ->
+              send(pid, {:update, :student, req.id, :approved})
 
-      {_, nil} ->
-        nil
-    end
+              socket
+              |> assign(:requests, socket.assigns.requests |> Enum.reject(&(&1.id == req.id)))
+              |> assign(
+                :participants,
+                socket.assigns.participants ++ [req |> Map.put(:status, :approved)]
+              )
 
-    {:noreply, socket |> assign(:selected_request, nil)}
+            {"refuse", req} when not is_nil(req) ->
+              send(pid, {:update, :student, req.id, :refused})
+
+              socket
+              |> assign(:requests, socket.assigns.requests |> Enum.reject(&(&1.id == req.id)))
+
+            {_, nil} ->
+              socket
+          end
+      end
+      |> assign(:selected_request, nil)
+
+    {:noreply, socket}
   end
 
   def handle_event("select-request", %{"id" => id}, socket) do
     request =
       Enum.find(socket.assigns.requests, nil, fn k ->
-        k.user.id == id
+        k.id == id
       end)
 
     {:noreply, socket |> assign(:selected_request, request)}
@@ -191,48 +203,31 @@ defmodule QuizlineWeb.User.Invigilator.ExamRoomLive do
     request.queries |> Enum.at(index) |> Jason.encode!()
   end
 
-  defp sync_presences(presences, socket) do
-    presences =
-      presences
-      |> Map.delete(socket.assigns.user.id)
+  def handle_info({:current_students, students}, socket) do
+    students =
+      students
       |> Map.values()
-      |> Enum.map(fn v ->
-        [[h] | _] = v |> Map.values()
+      |> Enum.map(&Map.merge(generate_queries(socket.assigns.room_id, &1.id), &1))
 
-        Map.merge(h, generate_queries(socket.assigns.room_id, h.user.id))
-      end)
-
-    {requests, attendees} = Enum.split_with(presences, &(&1.status == :requested))
+    {waitlist, accepted} = Enum.split_with(students, &(&1.status == :waiting))
 
     selected_request =
       if not is_nil(socket.assigns.selected_request),
         do:
-          Enum.find(requests, nil, fn k ->
-            k.user.id == socket.assigns.selected_request.user.id
+          Enum.find(waitlist, nil, fn k ->
+            k.id == socket.assigns.selected_request.id
           end),
         else: nil
 
-    socket
-    |> assign(:attendees, attendees)
-    |> assign(:requests, requests)
-    |> assign(:selected_request, selected_request)
-  end
-
-  def handle_info({:current_students, students}, socket) do
-    IO.inspect(students)
-    {:noreply, socket}
+    {:noreply,
+     socket
+     |> assign(:seleced_request, selected_request)
+     |> assign(:requests, waitlist)
+     |> assign(:participants, accepted)}
   end
 
   def handle_info(:after_started_room, socket) do
     {:noreply, socket |> assign(:started, true)}
-  end
-
-  def handle_info({:presence_state, presences}, socket) do
-    {:noreply, sync_presences(presences, socket)}
-  end
-
-  def handle_info({:presence_diff, presences}, socket) do
-    {:noreply, sync_presences(presences, socket)}
   end
 
   def handle_info(

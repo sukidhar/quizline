@@ -90,7 +90,9 @@ defmodule Quizline.ExamRoom do
       |> put_in([:peer_channels, uid], channel)
       |> put_in(
         [:students, uid],
-        user |> Map.put(:time, DateTime.utc_now() |> DateTime.to_unix())
+        user
+        |> Map.put(:time, DateTime.utc_now() |> DateTime.to_unix())
+        |> Map.put(:status, :waiting)
       )
 
     [{_pid, lv_pid}] = Registry.lookup(Quizline.SessionRegistry, uid)
@@ -117,6 +119,21 @@ defmodule Quizline.ExamRoom do
      state
      |> put_in([:peer_channels, uid], channel)
      |> Map.put(:invigilator, user |> Map.put(:time, DateTime.utc_now() |> DateTime.to_unix()))}
+  end
+
+  def handle_info({:update, :student, id, status}, state) do
+    student = state.students |> Map.get(id)
+
+    students =
+      if not is_nil(student) do
+        [{_pid, lv_pid}] = Registry.lookup(Quizline.SessionRegistry, id)
+        send(lv_pid, {:status, status})
+        put_in(state.students, [id, :status], status)
+      else
+        state.students
+      end
+
+    {:noreply, state |> Map.put(:students, students)}
   end
 
   @impl true

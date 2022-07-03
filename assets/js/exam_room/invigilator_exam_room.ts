@@ -18,6 +18,8 @@ export class InvigilatorExamRoom {
   public tracks: Map<string, TrackContext[]> = new Map();
   private hookRef: any;
 
+  user = {};
+
   constructor(hookRef: any) {
     this.hookRef = hookRef;
 
@@ -82,6 +84,7 @@ export class InvigilatorExamRoom {
     this.webrtcChannel = this.socket.channel(`exam_room:${roomId}`, {
       user: user,
     });
+    this.user = user;
     this.webrtcChannel.onError(() => {
       this.socketOff();
       window.location.reload();
@@ -99,10 +102,11 @@ export class InvigilatorExamRoom {
     );
 
     await this.phoenixChannelPushResult(this.webrtcChannel.join());
+    this.joinRTCEngine();
   }
 
-  public joinRTCEngine(meta) {
-    this.webrtc.join(meta);
+  public joinRTCEngine() {
+    this.webrtc.join(this.user);
   }
 
   public init = async () => {
