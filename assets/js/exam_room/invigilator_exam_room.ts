@@ -154,33 +154,4 @@ export class InvigilatorExamRoom {
         .receive("error", (response: any) => reject(response));
     });
   };
-
-  private addNewVideoElement = (peer: Peer) => {
-    let div = document.createElement("div");
-    div.className = "remote-video-element";
-    let videoElement = document.createElement("video") as HTMLVideoElement;
-    videoElement.id = `${peer.id}-video-element`;
-    videoElement.autoplay = true;
-    videoElement.playsInline = true;
-    videoElement.muted = false;
-
-    let container = document.getElementById("streams-container");
-    div.appendChild(videoElement);
-    container.appendChild(div);
-  };
-
-  private attachStream = (peerId: string, streams: MediaStream) => {
-    const videoId = `${peerId}-video-element`;
-
-    let video = document.getElementById(videoId) as HTMLVideoElement;
-
-    video.srcObject = streams;
-  };
-
-  private removeVideoElement = (peer: Peer) => {
-    const videoId = `${peer.id}-video-element`;
-
-    let video = document.getElementById(videoId) as HTMLVideoElement;
-    document.removeChild(video.parentNode);
-  };
 }

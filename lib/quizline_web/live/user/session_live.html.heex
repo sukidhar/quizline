@@ -74,7 +74,12 @@
         <% :events -> %>
             <.live_component module={QuizlineWeb.User.SessionLive.EventsComponent} id="events-component" user={@user} events_data={@events_data} current_time={@time}/>
         <% :messages -> %>
-            <.live_component module={QuizlineWeb.User.SessionLive.ChatComponent} id="chat-component" user={@user} />
+            <%= case @user do %>
+                <% %Invigilator{} -> %> 
+                    <%= live_render(@socket, QuizlineWeb.Live.User.Invigilator.ChatsLive, id: "chats-live")  %> 
+                <% %Student{} -> %> 
+                    <%= live_render(@socket, QuizlineWeb.Live.User.Student.ChatsLive, id: "chats-live")  %> 
+         <% end %> 
         <% :notifications -> %>
             <.live_component module={QuizlineWeb.User.SessionLive.NotificationsComponent} id="notifications-component" user={@user} />
         <% end %>

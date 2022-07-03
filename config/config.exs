@@ -6,6 +6,16 @@
 
 # General application configuration
 import Config
+
+config :quizline,
+  ecto_repos: [Quizline.Repo]
+
+config :quizline, Quizline.Repo,
+  database: "quizline_repo",
+  username: "sukidhar",
+  password: "Suki1329",
+  hostname: "localhost"
+
 # GUARDIAN config
 config :quizline, Quizline.AdminManager.Guardian,
   issuer: "quizline",

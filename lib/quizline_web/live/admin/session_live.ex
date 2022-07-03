@@ -251,6 +251,10 @@ defmodule QuizlineWeb.Admin.SessionLive do
   @impl true
   def handle_info(%{event: "create-exam", data: data}, socket) do
     case EventManager.create_exam(data, socket.assigns.admin.id) do
+      {:error, error} ->
+        IO.inspect(error)
+        {:noreply, socket}
+
       :ok ->
         {:noreply,
          socket
@@ -263,10 +267,6 @@ defmodule QuizlineWeb.Admin.SessionLive do
            |> Map.put(:selected_subject, nil)
            |> Map.put(:show_event_form?, false)
          )}
-
-      {:error, error} ->
-        IO.inspect(error)
-        {:noreply, socket}
     end
   end
 

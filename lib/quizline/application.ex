@@ -15,6 +15,7 @@ defmodule Quizline.Application do
     create_integrated_turn_cert_file()
 
     children = [
+      Quizline.Repo,
       # Start the Telemetry supervisor
       QuizlineWeb.Telemetry,
       # Start the PubSub system
