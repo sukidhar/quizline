@@ -8,9 +8,21 @@
     "phoenix": "file:../deps/phoenix",
     "phoenix_html": "file:../deps/phoenix_html",
     "query-string": "^7.0.0",
-    "uuid": "^8.3.2"
+    "uuid": "^11.1.1"
   },
   "devDependencies": {
-    "tailwindcss": "^3.0.5"
+    "tailwindcss": "^3.4.17"
+  },
+  "overrides": {
+    "postcss": "^8.5.23",
+    "postcss-selector-parser": "^7.1.6",
+    "browserslist": "^4.28.7",
+    "nanoid": "^3.3.18",
+    "decode-uri-component": "^0.5.0",
+    "picomatch": "^2.3.2",
+    "micromatch": "^4.0.8",
+    "braces": "^3.0.3",
+    "yaml": "^2.8.1",
+    "uuid": "$uuid"
   }
 }
